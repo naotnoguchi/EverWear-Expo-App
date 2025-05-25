@@ -1,0 +1,305 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+interface ItemCalendarProps {
+  wearHistory: string[];
+  washHistory: string[];
+}
+
+// 月の日数を取得する関数
+const getDaysInMonth = (year: number, month: number) => {
+  return new Date(year, month + 1, 0).getDate();
+};
+
+// 月の最初の日の曜日を取得する関数（0: 日曜日, 1: 月曜日, ..., 6: 土曜日）
+const getFirstDayOfMonth = (year: number, month: number) => {
+  return new Date(year, month, 1).getDay();
+};
+
+// 日付をYYYY-MM-DD形式に変換する関数
+const formatDate = (year: number, month: number, day: number) => {
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+};
+
+export default function ItemCalendar({ wearHistory, washHistory }: ItemCalendarProps) {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [calendarDays, setCalendarDays] = useState<Array<{ day: number; date: string } | null>>([]);
+  
+  // 現在の年と月
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth();
+  
+  // 実際の現在日付（システム日付）
+  const today = new Date();
+  const todayYear = today.getFullYear();
+  const todayMonth = today.getMonth();
+  
+  // 現在表示中の月が今月かどうかをチェック
+  const isCurrentMonthToday = currentYear === todayYear && currentMonth === todayMonth;
+  
+  // 月の名前
+  const monthNames = [
+    '1月', '2月', '3月', '4月', '5月', '6月',
+    '7月', '8月', '9月', '10月', '11月', '12月'
+  ];
+
+  // 曜日の名前
+  const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+
+  // 前の月に移動
+  const goToPreviousMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(currentDate.getMonth() - 1);
+    setCurrentDate(newDate);
+  };
+
+  // 次の月に移動（当月を超えないように制限）
+  const goToNextMonth = () => {
+    // 既に当月を表示している場合は何もしない
+    if (isCurrentMonthToday) {
+      return;
+    }
+    
+    const newDate = new Date(currentDate);
+    newDate.setMonth(currentDate.getMonth() + 1);
+    
+    // 移動先が当月を超えないことを確認
+    if (newDate.getFullYear() > todayYear || 
+        (newDate.getFullYear() === todayYear && newDate.getMonth() > todayMonth)) {
+      // 当月までしか進めない場合は当月に設定
+      newDate.setFullYear(todayYear);
+      newDate.setMonth(todayMonth);
+    }
+    
+    setCurrentDate(newDate);
+  };
+
+  // カレンダーの日付を生成
+  useEffect(() => {
+    const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+    const firstDayOfMonth = getFirstDayOfMonth(currentYear, currentMonth);
+    
+    const days: Array<{ day: number; date: string } | null> = [];
+    
+    // 月の最初の日の前に空白を追加
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      days.push(null);
+    }
+    
+    // 月の日を追加
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({
+        day: i,
+        date: formatDate(currentYear, currentMonth, i)
+      });
+    }
+    
+    setCalendarDays(days);
+  }, [currentDate]);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>着用・洗濯履歴</Text>
+      </View>
+      
+      <View style={styles.calendarHeader}>
+        <TouchableOpacity onPress={goToPreviousMonth}>
+          <Ionicons name="chevron-back" size={24} color="#333" />
+        </TouchableOpacity>
+        
+        <Text style={styles.monthText}>{currentYear}年 {monthNames[currentMonth]}</Text>
+        
+        {/* 当月を表示している場合は次の月ボタンを非表示または無効化 */}
+        {isCurrentMonthToday ? (
+          <View style={styles.disabledButton}>
+            <Ionicons name="chevron-forward" size={24} color="#ccc" />
+          </View>
+        ) : (
+          <TouchableOpacity onPress={goToNextMonth}>
+            <Ionicons name="chevron-forward" size={24} color="#333" />
+          </TouchableOpacity>
+        )}
+      </View>
+      
+      <View style={styles.daysHeader}>
+        {dayNames.map((day, index) => (
+          <Text key={index} style={[
+            styles.dayName,
+            index === 0 ? styles.sundayText : null,
+            index === 6 ? styles.saturdayText : null
+          ]}>
+            {day}
+          </Text>
+        ))}
+      </View>
+      
+      <View style={styles.calendarGrid}>
+        {calendarDays.map((dayObj, index) => {
+          if (!dayObj) {
+            return <View key={`empty-${index}`} style={styles.emptyDay} />;
+          }
+          
+          const isWorn = wearHistory.includes(dayObj.date);
+          const isWashed = washHistory.includes(dayObj.date);
+          
+          // 当月のカレンダーで、今日より後の日付かどうかをチェック
+          const isDateInFuture = isCurrentMonthToday && dayObj.day > today.getDate();
+
+          return (
+            <View
+              key={dayObj.day}
+              style={[
+                styles.dayCell,
+                isDateInFuture ? styles.futureDay : null
+              ]}
+            >
+              <Text
+                style={[
+                  styles.dayNumber,
+                  isDateInFuture ? styles.futureDayText : null
+                ]}
+              >
+                {dayObj.day}
+              </Text>
+              {!isDateInFuture && (
+                <View style={styles.eventIndicators}>
+                  {isWorn && <View style={styles.wearIndicator} />}
+                  {isWashed && <View style={styles.washIndicator} />}
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
+
+      <View style={styles.legend}>
+        <View style={styles.legendItem}>
+          <View style={styles.wearIndicator} />
+          <Text style={styles.legendText}>着用</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={styles.washIndicator} />
+          <Text style={styles.legendText}>洗濯</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 16,
+    paddingBottom: 8, // 下部のパディングを減らす
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  header: {
+    marginBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  monthText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  disabledButton: {
+    opacity: 0.5,
+    // ボタンの幅と高さを保持して、レイアウトが崩れないようにする
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  daysHeader: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  dayName: {
+    flex: 1,
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  sundayText: {
+    color: '#e74c3c',
+  },
+  saturdayText: {
+    color: '#3498db',
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 2, // マージンを追加
+  },
+  emptyDay: {
+    width: `${100 / 7}%`,
+    aspectRatio: 1,
+  },
+  dayCell: {
+    width: `${100 / 7}%`,
+    aspectRatio: 1,
+    padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  futureDay: {
+    opacity: 0.3, // 未来の日付は薄く表示
+  },
+  dayNumber: {
+    fontSize: 14,
+    marginBottom: 2, // 4pxから2pxに縮小
+  },
+  futureDayText: {
+    color: '#999', // 未来の日付のテキストを薄いグレーに
+  },
+  eventIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  wearIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#3498db',
+    marginHorizontal: 2,
+  },
+  washIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#2ecc71',
+    marginHorizontal: 2,
+  },
+  legend: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end', // 右寄せに変更
+    marginTop: 4, // 4pxのままキープ
+    paddingRight: 8, // 右側に余白を追加
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 4, // さらに縮小
+    marginLeft: 8, // 左側の間隔を広げる
+  },
+  legendText: {
+    marginLeft: 3, // 4pxから3pxに縮小
+    fontSize: 11, // 12pxから11pxに縮小
+  },
+});

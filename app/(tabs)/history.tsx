@@ -12,7 +12,7 @@ import {
   UIManager,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  useWindowDimensions,
+  useWindowDimensions, Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useClothing } from '../../contexts/ClothingContext';
@@ -43,89 +43,42 @@ interface HistorySection {
   data: HistoryItem[];
 }
 
-// Dummy history data
-const dummyHistoryData: HistoryItem[] = [
-  {
-    id: "1",
-    itemId: "1",
-    itemName: "お気に入りの白シャツ",
-    category: "トップス",
-    eventType: "wear",
-    date: "2023-10-15",
-  },
-  {
-    id: "2",
-    itemId: "2",
-    itemName: "黒パンツ",
-    category: "ボトムス",
-    eventType: "wear",
-    date: "2023-10-14",
-  },
-  {
-    id: "3",
-    itemId: "3",
-    itemName: "デニムジャケット",
-    category: "アウター",
-    eventType: "wear",
-    date: "2023-10-10",
-  },
-  {
-    id: "4",
-    itemId: "1",
-    itemName: "お気に入りの白シャツ",
-    category: "トップス",
-    eventType: "wash",
-    date: "2023-10-09",
-  },
-  {
-    id: "5",
-    itemId: "2",
-    itemName: "黒パンツ",
-    category: "ボトムス",
-    eventType: "wash",
-    date: "2023-10-08",
-  },
-  {
-    id: "6",
-    itemId: "4",
-    itemName: "グレーのセーター",
-    category: "トップス",
-    eventType: "wear",
-    date: "2023-10-12",
-  },
-  {
-    id: "7",
-    itemId: "5",
-    itemName: "チノパン",
-    category: "ボトムス",
-    eventType: "wear",
-    date: "2023-10-13",
-  },
-  {
-    id: "8",
-    itemId: "4",
-    itemName: "グレーのセーター",
-    category: "トップス",
-    eventType: "wash",
-    date: "2023-10-07",
-  },
-  {
-    id: "9",
-    itemId: "3",
-    itemName: "デニムジャケット",
-    category: "アウター",
-    eventType: "wash",
-    date: "2023-10-05",
-  },
-  {
-    id: "10",
-    itemId: "5",
-    itemName: "チノパン",
-    category: "ボトムス",
-    eventType: "wash",
-    date: "2023-10-06",
-  },
-];
+// 実際の履歴データを生成する関数
+const generateHistoryData = (clothingItems: any[]): HistoryItem[] => {
+  const historyItems: HistoryItem[] = [];
+
+  clothingItems.forEach(item => {
+    // 着用履歴を追加
+    if (item.wearHistory && item.wearHistory.length > 0) {
+      item.wearHistory.forEach((date: string) => {
+        historyItems.push({
+          id: `wear-${item.id}-${date}`,
+          itemId: item.id,
+          itemName: item.name,
+          category: item.category,
+          eventType: "wear",
+          date: date
+        });
+      });
+    }
+
+    // 洗濯履歴を追加
+    if (item.washHistory && item.washHistory.length > 0) {
+      item.washHistory.forEach((date: string) => {
+        historyItems.push({
+          id: `wash-${item.id}-${date}`,
+          itemId: item.id,
+          itemName: item.name,
+          category: item.category,
+          eventType: "wash",
+          date: date
+        });
+      });
+    }
+  });
+
+  return historyItems;
+};
 
 // 曜日付きの日付フォーマット
 const formatDateWithDay = (dateString: string): string => {
@@ -136,8 +89,10 @@ const formatDateWithDay = (dateString: string): string => {
 };
 
 export default function History() {
+  const { clothingItems, deleteWearHistory, deleteWashHistory } = useClothing();
   const [selectedDate, setSelectedDate] = useState<string | null>(null); // 選択された日付
   const [isCalendarMinimized, setIsCalendarMinimized] = useState(false); // カレンダーが最小化されているかどうか
+  const [showHint, setShowHint] = useState(true); // ヒントを表示するかどうか
   const sectionListRef = useRef<SectionList>(null);
   const lastScrollY = useRef(0); // 前回のスクロール位置を記録
   const scrollDirection = useRef<'up' | 'down'>('down'); // スクロール方向
@@ -149,18 +104,18 @@ export default function History() {
   const calendarHeaderOpacity = useRef(new Animated.Value(1)).current; // ヘッダーの透明度
   const expandButtonOpacity = useRef(new Animated.Value(0)).current; // 展開ボタンの透明度
   // 折りたたみボタンの位置のアニメーション値を削除
-  
+
   // ページがフォーカスされた時に状態をリセット
   useEffect(() => {
     // カレンダーを最大化状態に戻す
     if (isCalendarMinimized) {
       animateCalendar(false);
     }
-    
+
     // スクロール位置をリセット
     lastScrollY.current = 0;
     scrollDirection.current = 'down';
-    
+
     return () => {
       // クリーンアップ
     };
@@ -168,20 +123,23 @@ export default function History() {
 
   // 測定されたカレンダーの元の高さ
   const [fullCalendarHeight, setFullCalendarHeight] = useState(350); // デフォルト値を大きめに設定
-  
+
   // デバイスの画面高さを取得
   const { height: windowHeight } = useWindowDimensions();
-  
+
   // 画面の高さに応じてカレンダーの最大高さを設定
   const maxCalendarHeight = Math.min(windowHeight * 0.4, 350); // 画面の60%または500pxのいずれか小さい方
+
+  // 履歴データを取得
+  const historyData = useMemo(() => generateHistoryData(clothingItems), [clothingItems]);
 
   // Filter history data based on selected date only
   const filteredHistory = useMemo(() => {
     if (selectedDate) {
-      return dummyHistoryData.filter(item => item.date === selectedDate);
+      return historyData.filter(item => item.date === selectedDate);
     }
-    return dummyHistoryData;
-  }, [selectedDate]);
+    return historyData;
+  }, [selectedDate, historyData]);
 
   // Group by date and create section data
   const groupedSections = useMemo(() => {
@@ -213,22 +171,22 @@ export default function History() {
     if ((minimize && isCalendarMinimized) || (!minimize && !isCalendarMinimized) || animationInProgressRef.current) {
       return;
     }
-    
+
     // アニメーション進行中フラグを設定
     animationInProgressRef.current = true;
-  
+
     // 共通のアニメーション設定
     const config = {
       duration: 250, // より速くする
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: false
     };
-    
+
     // 最小化時は先に状態を更新してUIを変更
     if (minimize) {
       setIsCalendarMinimized(true);
     }
-  
+
     // メインのカレンダーアニメーション
     Animated.parallel([
       Animated.timing(calendarHeight, {
@@ -270,7 +228,6 @@ export default function History() {
   const measureCalendarContainer = (event: any) => {
     const { height } = event.nativeEvent.layout;
     if (height > 0 && !isCalendarMinimized) {
-      console.log("Measured calendar height:", height);
       // 最小値を設定して、常に十分な高さを確保する
       setFullCalendarHeight(Math.max(height, 350));
     }
@@ -287,11 +244,34 @@ export default function History() {
     router.push(`/item/${itemId}`);
   };
 
+  // 履歴削除ハンドラー
+  const handleDeleteHistory = (item: HistoryItem) => {
+    Alert.alert(
+      "履歴の削除",
+      `${item.itemName}の${item.date}の${item.eventType === "wear" ? "着用" : "洗濯"}履歴を削除しますか？`,
+      [
+        { text: "キャンセル", style: "cancel" },
+        {
+          text: "削除",
+          style: "destructive",
+          onPress: () => {
+            if (item.eventType === "wear") {
+              deleteWearHistory(item.itemId, item.date);
+            } else {
+              deleteWashHistory(item.itemId, item.date);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const renderHistoryItem = ({ item }: { item: HistoryItem }) => {
     return (
       <TouchableOpacity
         style={styles.historyItem}
         onPress={() => handleItemPress(item.itemId)}
+        onLongPress={() => handleDeleteHistory(item)} // 長押しで削除オプションを表示
       >
         <View style={styles.iconContainer}>
           <View
@@ -370,32 +350,30 @@ export default function History() {
   // Handle scroll events to minimize/maximize calendar
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollY = event.nativeEvent.contentOffset.y;
-    
+
     // アニメーション中は処理をスキップ
     if (animationInProgressRef.current) {
       return;
     }
-    
+
     // スクロール方向を判定（前回のスクロール位置と比較）
     // 閾値を下げて、より敏感に反応するようにする
     const isSignificantChange = Math.abs(scrollY - lastScrollY.current) > 0.5;
     const newDirection = isSignificantChange 
       ? (scrollY > lastScrollY.current ? 'down' : 'up')
       : scrollDirection.current;
-    
+
     if (isSignificantChange) {
       scrollDirection.current = newDirection;
       lastScrollY.current = scrollY;
     }
-  
+
     // カレンダーを最小化する条件: 下スクロール時で、閾値よりスクロールした場合
     if (newDirection === 'down' && scrollY > 10 && !isCalendarMinimized) {
-      console.log("Minimizing calendar, scrollY:", scrollY);
       animateCalendar(true);
     } 
     // カレンダーを最大化する条件: 上スクロール時で、リストの先頭に近い場合
     else if (newDirection === 'up' && scrollY < 5 && isCalendarMinimized) {
-      console.log("Maximizing calendar, scrollY:", scrollY);
       animateCalendar(false);
     }
   };
@@ -455,20 +433,20 @@ export default function History() {
           }}
         >
           <HistoryCalendar
-            historyData={dummyHistoryData}
+            historyData={historyData}
             onDateSelect={handleDateSelect}
             selectedDate={selectedDate}
             onResetToToday={resetToToday}
             customStyle={calendarCustomStyle}
           />
         </Animated.View>
-        
+
         {/* 最小化時のヘッダーとボタン */}
         {isCalendarMinimized && (
           <>
             <View style={styles.minimizedHeader}>
             </View>
-            
+
             <Animated.View style={[
               styles.expandButton,
               { opacity: expandButtonOpacity }
@@ -485,6 +463,18 @@ export default function History() {
           </>
         )}
       </Animated.View>
+
+      {/* ヒント表示 */}
+      {showHint && filteredHistory.length > 0 && (
+        <View style={styles.hintContainer}>
+          <Text style={styles.hintText}>
+            履歴を長押しすると削除できます
+          </Text>
+          <TouchableOpacity onPress={() => setShowHint(false)}>
+            <Text style={styles.hintCloseText}>閉じる</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* 履歴リスト表示 */}
       <SectionList
@@ -657,5 +647,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 30,
+  },
+  hintContainer: {
+    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+    padding: 12,
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderLeftWidth: 3,
+    borderLeftColor: '#3498db',
+  },
+  hintText: {
+    fontSize: 14,
+    color: '#2c3e50',
+    flex: 1,
+  },
+  hintCloseText: {
+    fontSize: 14,
+    color: '#3498db',
+    fontWeight: '500',
+    marginLeft: 8,
   },
 });

@@ -1,6 +1,14 @@
 // contexts/ClothingContext.tsx
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
+// ヘルパー関数: 日付をローカルタイムゾーンでISO形式の文字列に変換
+function formatDateToLocalISOString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 interface ClothingItem {
   id: string;
   name: string;
@@ -15,11 +23,13 @@ interface ClothingItem {
 
 interface ClothingContextType {
   clothingItems: ClothingItem[];
-  wearItem: (id: string) => void;
-  washItem: (id: string) => void;
+  wearItem: (id: string, date?: string) => boolean; // 成功時はtrue、重複時はfalseを返す
+  washItem: (id: string, date?: string) => boolean; // 成功時はtrue、重複時はfalseを返す
   addItem: (item: Omit<ClothingItem, 'id'>) => void;
   updateItem: (item: ClothingItem) => void;
   deleteItem: (id: string) => void;
+  deleteWearHistory: (itemId: string, date: string) => boolean; // 成功時はtrue、失敗時はfalseを返す
+  deleteWashHistory: (itemId: string, date: string) => boolean; // 成功時はtrue、失敗時はfalseを返す
   // ソート関連の状態を追加
   sortConfig: {
     sortBy: string;
@@ -103,33 +113,69 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
   };
 
   // 着用ボタンクリック時の処理を修正
-  const wearItem = (id: string) => {
-    const today = new Date().toISOString().split("T")[0];
+  const wearItem = (id: string, date?: string): boolean => {
+    // dateパラメータが提供されていない場合は今日の日付を使用
+    const recordDate = date || formatDateToLocalISOString(new Date());
+
+    // 該当アイテムを検索
+    const targetItem = clothingItems.find(item => item.id === id);
+
+    // アイテムが見つからない場合はfalseを返す
+    if (!targetItem) return false;
+
+    // 既に同じ日付の記録が存在するかチェック
+    if (targetItem.wearHistory && targetItem.wearHistory.includes(recordDate)) {
+      // 重複している場合はfalseを返す
+      return false;
+    }
+
+    // 重複していない場合は記録を追加
     setClothingItems(clothingItems.map(item => 
       item.id === id
         ? {
             ...item,
             wearCount: item.wearCount + 1,
-            lastWorn: today,
+            lastWorn: recordDate,
             // wearHistoryが存在しない場合は空の配列を初期値として使用
-            wearHistory: [...(item.wearHistory || []), today]
+            wearHistory: [...(item.wearHistory || []), recordDate]
           }
         : item
     ));
+
+    // 成功したらtrueを返す
+    return true;
   };
 
-const washItem = (id: string) => {
-  const today = new Date().toISOString().split("T")[0];
+const washItem = (id: string, date?: string): boolean => {
+  // dateパラメータが提供されていない場合は今日の日付を使用
+  const recordDate = date || formatDateToLocalISOString(new Date());
+
+  // 該当アイテムを検索
+  const targetItem = clothingItems.find(item => item.id === id);
+
+  // アイテムが見つからない場合はfalseを返す
+  if (!targetItem) return false;
+
+  // 既に同じ日付の記録が存在するかチェック
+  if (targetItem.washHistory && targetItem.washHistory.includes(recordDate)) {
+    // 重複している場合はfalseを返す
+    return false;
+  }
+
+  // 重複していない場合は記録を追加
   setClothingItems(clothingItems.map(item => 
     item.id === id
       ? {
           ...item,
           wearCount: 0,
           // washHistoryが存在しない場合は空の配列を初期値として使用
-          washHistory: [...(item.washHistory || []), today]
+          washHistory: [...(item.washHistory || []), recordDate]
         }
       : item
   ));
+
+  // 成功したらtrueを返す
+  return true;
 };
 
   const addItem = (item: Omit<ClothingItem, 'id'>) => {
@@ -154,6 +200,78 @@ const washItem = (id: string) => {
     setClothingItems(clothingItems.filter((item) => item.id !== id));
   };
 
+  // 着用履歴を削除する関数
+  const deleteWearHistory = (itemId: string, date: string): boolean => {
+    // 該当アイテムを検索
+    const targetItem = clothingItems.find(item => item.id === itemId);
+
+    // アイテムが見つからない場合はfalseを返す
+    if (!targetItem) return false;
+
+    // 該当する日付の履歴が存在するかチェック
+    if (!targetItem.wearHistory || !targetItem.wearHistory.includes(date)) {
+      return false;
+    }
+
+    // 履歴から該当する日付を削除
+    const updatedWearHistory = targetItem.wearHistory.filter(d => d !== date);
+
+    // 最終着用日の更新
+    let updatedLastWorn = targetItem.lastWorn;
+    if (targetItem.lastWorn === date) {
+      // 削除する日付が最終着用日の場合、残りの履歴から最新の日付を取得
+      updatedLastWorn = updatedWearHistory.length > 0 
+        ? updatedWearHistory.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
+        : "";
+    }
+
+    // 着用回数の更新（削除した分だけ減らす）
+    const updatedWearCount = Math.max(0, targetItem.wearCount - 1);
+
+    // アイテムを更新
+    setClothingItems(clothingItems.map(item => 
+      item.id === itemId
+        ? {
+            ...item,
+            wearCount: updatedWearCount,
+            lastWorn: updatedLastWorn,
+            wearHistory: updatedWearHistory
+          }
+        : item
+    ));
+
+    return true;
+  };
+
+  // 洗濯履歴を削除する関数
+  const deleteWashHistory = (itemId: string, date: string): boolean => {
+    // 該当アイテムを検索
+    const targetItem = clothingItems.find(item => item.id === itemId);
+
+    // アイテムが見つからない場合はfalseを返す
+    if (!targetItem) return false;
+
+    // 該当する日付の履歴が存在するかチェック
+    if (!targetItem.washHistory || !targetItem.washHistory.includes(date)) {
+      return false;
+    }
+
+    // 履歴から該当する日付を削除
+    const updatedWashHistory = targetItem.washHistory.filter(d => d !== date);
+
+    // アイテムを更新
+    setClothingItems(clothingItems.map(item => 
+      item.id === itemId
+        ? {
+            ...item,
+            washHistory: updatedWashHistory
+          }
+        : item
+    ));
+
+    return true;
+  };
+
   return (
     <ClothingContext.Provider
       value={{
@@ -163,6 +281,8 @@ const washItem = (id: string) => {
         addItem,
         updateItem,
         deleteItem,
+        deleteWearHistory,
+        deleteWashHistory,
         sortConfig,
         updateSortConfig
       }}

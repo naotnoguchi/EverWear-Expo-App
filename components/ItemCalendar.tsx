@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface ItemCalendarProps {
   wearHistory: string[];
   washHistory: string[];
+  onDeleteWearHistory?: (date: string) => void;
+  onDeleteWashHistory?: (date: string) => void;
 }
 
 // 月の日数を取得する関数
@@ -22,22 +24,22 @@ const formatDate = (year: number, month: number, day: number) => {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 };
 
-export default function ItemCalendar({ wearHistory, washHistory }: ItemCalendarProps) {
+export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHistory, onDeleteWashHistory }: ItemCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState<Array<{ day: number; date: string } | null>>([]);
-  
+
   // 現在の年と月
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
-  
+
   // 実際の現在日付（システム日付）
   const today = new Date();
   const todayYear = today.getFullYear();
   const todayMonth = today.getMonth();
-  
+
   // 現在表示中の月が今月かどうかをチェック
   const isCurrentMonthToday = currentYear === todayYear && currentMonth === todayMonth;
-  
+
   // 月の名前
   const monthNames = [
     '1月', '2月', '3月', '4月', '5月', '6月',
@@ -60,10 +62,10 @@ export default function ItemCalendar({ wearHistory, washHistory }: ItemCalendarP
     if (isCurrentMonthToday) {
       return;
     }
-    
+
     const newDate = new Date(currentDate);
     newDate.setMonth(currentDate.getMonth() + 1);
-    
+
     // 移動先が当月を超えないことを確認
     if (newDate.getFullYear() > todayYear || 
         (newDate.getFullYear() === todayYear && newDate.getMonth() > todayMonth)) {
@@ -71,22 +73,49 @@ export default function ItemCalendar({ wearHistory, washHistory }: ItemCalendarP
       newDate.setFullYear(todayYear);
       newDate.setMonth(todayMonth);
     }
-    
+
     setCurrentDate(newDate);
+  };
+
+  // 日付タップ時のハンドラー
+  const handleDayPress = (dayObj: { day: number; date: string }) => {
+    const isWorn = wearHistory.includes(dayObj.date);
+    const isWashed = washHistory.includes(dayObj.date);
+
+    if (!isWorn && !isWashed) return; // 履歴がない日付は何もしない
+
+    // 履歴削除のオプションを表示
+    Alert.alert(
+      "履歴の削除",
+      `${dayObj.date}の履歴を削除しますか？`,
+      [
+        { text: "キャンセル", style: "cancel" },
+        ...(isWorn ? [{
+          text: "着用履歴を削除",
+          style: "destructive",
+          onPress: () => onDeleteWearHistory && onDeleteWearHistory(dayObj.date)
+        }] : []),
+        ...(isWashed ? [{
+          text: "洗濯履歴を削除",
+          style: "destructive",
+          onPress: () => onDeleteWashHistory && onDeleteWashHistory(dayObj.date)
+        }] : [])
+      ]
+    );
   };
 
   // カレンダーの日付を生成
   useEffect(() => {
     const daysInMonth = getDaysInMonth(currentYear, currentMonth);
     const firstDayOfMonth = getFirstDayOfMonth(currentYear, currentMonth);
-    
+
     const days: Array<{ day: number; date: string } | null> = [];
-    
+
     // 月の最初の日の前に空白を追加
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(null);
     }
-    
+
     // 月の日を追加
     for (let i = 1; i <= daysInMonth; i++) {
       days.push({
@@ -94,7 +123,7 @@ export default function ItemCalendar({ wearHistory, washHistory }: ItemCalendarP
         date: formatDate(currentYear, currentMonth, i)
       });
     }
-    
+
     setCalendarDays(days);
   }, [currentDate]);
 
@@ -103,14 +132,14 @@ export default function ItemCalendar({ wearHistory, washHistory }: ItemCalendarP
       <View style={styles.header}>
         <Text style={styles.headerTitle}>着用・洗濯履歴</Text>
       </View>
-      
+
       <View style={styles.calendarHeader}>
         <TouchableOpacity onPress={goToPreviousMonth}>
           <Ionicons name="chevron-back" size={24} color="#333" />
         </TouchableOpacity>
-        
+
         <Text style={styles.monthText}>{currentYear}年 {monthNames[currentMonth]}</Text>
-        
+
         {/* 当月を表示している場合は次の月ボタンを非表示または無効化 */}
         {isCurrentMonthToday ? (
           <View style={styles.disabledButton}>
@@ -122,7 +151,7 @@ export default function ItemCalendar({ wearHistory, washHistory }: ItemCalendarP
           </TouchableOpacity>
         )}
       </View>
-      
+
       <View style={styles.daysHeader}>
         {dayNames.map((day, index) => (
           <Text key={index} style={[
@@ -134,26 +163,29 @@ export default function ItemCalendar({ wearHistory, washHistory }: ItemCalendarP
           </Text>
         ))}
       </View>
-      
+
       <View style={styles.calendarGrid}>
         {calendarDays.map((dayObj, index) => {
           if (!dayObj) {
             return <View key={`empty-${index}`} style={styles.emptyDay} />;
           }
-          
+
           const isWorn = wearHistory.includes(dayObj.date);
           const isWashed = washHistory.includes(dayObj.date);
-          
+
           // 当月のカレンダーで、今日より後の日付かどうかをチェック
           const isDateInFuture = isCurrentMonthToday && dayObj.day > today.getDate();
 
           return (
-            <View
+            <TouchableOpacity
               key={dayObj.day}
               style={[
                 styles.dayCell,
                 isDateInFuture ? styles.futureDay : null
               ]}
+              onPress={() => !isDateInFuture && handleDayPress(dayObj)}
+              disabled={isDateInFuture || (!isWorn && !isWashed)}
+              activeOpacity={isWorn || isWashed ? 0.7 : 1}
             >
               <Text
                 style={[
@@ -169,7 +201,7 @@ export default function ItemCalendar({ wearHistory, washHistory }: ItemCalendarP
                   {isWashed && <View style={styles.washIndicator} />}
                 </View>
               )}
-            </View>
+            </TouchableOpacity>
           );
         })}
       </View>

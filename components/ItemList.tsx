@@ -1,8 +1,18 @@
-import React from "react";
-import { FlatList, TouchableOpacity, Text, View, Image, Alert, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import { FlatList, TouchableOpacity, Text, View, Image, Alert, StyleSheet, Modal, Platform, useColorScheme } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { StatusBar } from 'expo-status-bar';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useClothing } from '../contexts/ClothingContext';
+
+// ヘルパー関数: 日付をローカルタイムゾーンでISO形式の文字列に変換
+function formatDateToLocalISOString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 // インターフェース定義
 interface ClothingItem {
@@ -24,12 +34,25 @@ interface ItemListProps {
 export default function ItemList({ category }: ItemListProps) {
   const { clothingItems, wearItem, washItem } = useClothing();
   const router = useRouter();
+  const colorScheme = useColorScheme(); // 現在のカラースキーム（ライト/ダーク）を取得
+
+  // 日付選択用の状態
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [showWearDatePicker, setShowWearDatePicker] = useState(false);
+  const [showWashDatePicker, setShowWashDatePicker] = useState(false);
+  const [datePickerMode, setDatePickerMode] = useState<'date' | 'time'>('date');
+
+  // モーダル表示用の状態（iOSの場合）
+  const [showWearModal, setShowWearModal] = useState(false);
+  const [showWashModal, setShowWashModal] = useState(false);
+
 
   // カテゴリでフィルタリングおよび残り着用可能回数が少ない順にソートを適用
   const getFilteredAndSortedItems = () => {
     // カテゴリでフィルタリング
     let result = [...clothingItems];
-    
+
     // カテゴリが指定されている場合はフィルタリング
     if (category) {
       result = result.filter(item => item.category === category);
@@ -40,25 +63,119 @@ export default function ItemList({ category }: ItemListProps) {
       // 洗濯推奨のアイテムを上位に
       const needsWashA = a.wearCount >= a.washThreshold;
       const needsWashB = b.wearCount >= b.washThreshold;
-      
+
       if (needsWashA && !needsWashB) return -1;
       if (!needsWashA && needsWashB) return 1;
-      
+
       // 同じ洗濯状態なら着用回数の多い順
       return b.wearCount - a.wearCount;
     });
-    
+
     return result;
   };
 
-  const handleWearItem = (id: string) => {
-    wearItem(id);
-    Alert.alert("着用記録", "着用回数を更新しました");
+  // 日付選択の変更ハンドラー
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    // キャンセルされた場合は何もせずに日付ピッカーを閉じる
+    if (event.type === 'dismissed') {
+      setShowWearDatePicker(false);
+      setShowWashDatePicker(false);
+      setSelectedItemId(null);
+      return;
+    }
+
+    const currentDate = selectedDate || new Date();
+    setSelectedDate(currentDate);
+
+    if (Platform.OS === 'android') {
+      setShowWearDatePicker(false);
+      setShowWashDatePicker(false);
+
+      // Androidの場合は日付選択後に直接アクションを実行
+      if (showWearDatePicker && selectedDate && selectedItemId) {
+        const formattedDate = formatDateToLocalISOString(currentDate);
+        const success = wearItem(selectedItemId, formattedDate);
+
+        if (success) {
+          Alert.alert("着用記録", `${formattedDate}に着用記録を追加しました`);
+        } else {
+          Alert.alert("エラー", `${formattedDate}の着用記録は既に存在します`);
+        }
+        setSelectedItemId(null);
+      } else if (showWashDatePicker && selectedDate && selectedItemId) {
+        const formattedDate = formatDateToLocalISOString(currentDate);
+        const success = washItem(selectedItemId, formattedDate);
+
+        if (success) {
+          Alert.alert("洗濯記録", `${formattedDate}に洗濯記録を追加しました`);
+        } else {
+          Alert.alert("エラー", `${formattedDate}の洗濯記録は既に存在します`);
+        }
+        setSelectedItemId(null);
+      }
+    }
   };
 
+  // 着用記録ボタンのハンドラー
+  const handleWearItem = (id: string) => {
+    setSelectedItemId(id);
+    // 日付を現在の日付にリセット
+    setSelectedDate(new Date());
+
+    if (Platform.OS === 'ios') {
+      // iOSの場合はモーダルを表示
+      setShowWearModal(true);
+    } else {
+      // Androidの場合は直接DatePickerを表示
+      setShowWearDatePicker(true);
+    }
+  };
+
+  // 洗濯記録ボタンのハンドラー
   const handleWashItem = (id: string) => {
-    washItem(id);
-    Alert.alert("洗濯記録", "洗濯を記録し、着用回数をリセットしました");
+    setSelectedItemId(id);
+    // 日付を現在の日付にリセット
+    setSelectedDate(new Date());
+
+    if (Platform.OS === 'ios') {
+      // iOSの場合はモーダルを表示
+      setShowWashModal(true);
+    } else {
+      // Androidの場合は直接DatePickerを表示
+      setShowWashDatePicker(true);
+    }
+  };
+
+  // iOS用の着用記録確定ハンドラー
+  const confirmWearDate = () => {
+    if (selectedItemId) {
+      const formattedDate = formatDateToLocalISOString(selectedDate);
+      const success = wearItem(selectedItemId, formattedDate);
+
+      if (success) {
+        Alert.alert("着用記録", `${formattedDate}に着用記録を追加しました`);
+      } else {
+        Alert.alert("エラー", `${formattedDate}の着用記録は既に存在します`);
+      }
+      setShowWearModal(false);
+      setSelectedItemId(null);
+    }
+  };
+
+  // iOS用の洗濯記録確定ハンドラー
+  const confirmWashDate = () => {
+    if (selectedItemId) {
+      const formattedDate = formatDateToLocalISOString(selectedDate);
+      const success = washItem(selectedItemId, formattedDate);
+
+      if (success) {
+        Alert.alert("洗濯記録", `${formattedDate}に洗濯記録を追加しました`);
+      } else {
+        Alert.alert("エラー", `${formattedDate}の洗濯記録は既に存在します`);
+      }
+      setShowWashModal(false);
+      setSelectedItemId(null);
+    }
   };
 
   const renderItem = ({ item }: { item: ClothingItem }) => {
@@ -173,6 +290,104 @@ export default function ItemList({ category }: ItemListProps) {
 
   return (
     <View style={{ flex: 1 }}>
+      {/* StatusBarコンポーネントを条件付きでレンダリング */}
+      <StatusBar style={(showWearModal || showWashModal) ? 'dark' : (colorScheme === 'dark' ? 'light' : 'dark')} />
+      {/* Android用の日付ピッカー */}
+      {(showWearDatePicker || showWashDatePicker) && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={selectedDate}
+          mode={datePickerMode}
+          is24Hour={true}
+          display="default"
+          onChange={onDateChange}
+          maximumDate={new Date()} // 未来の日付は選択できないように
+          locale="ja-JP"
+          themeVariant="light"
+        />
+      )}
+
+      {/* iOS用の着用記録モーダル */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showWearModal}
+        onRequestClose={() => setShowWearModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>着用日を選択</Text>
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display="spinner"
+              onChange={onDateChange}
+              maximumDate={new Date()} // 未来の日付は選択できないように
+              style={styles.datePicker}
+              locale="ja-JP"
+              themeVariant="light"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowWearModal(false);
+                  setSelectedItemId(null);
+                }}
+              >
+                <Text style={styles.modalButtonText}>キャンセル</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={confirmWearDate}
+              >
+                <Text style={styles.modalButtonText}>確定</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* iOS用の洗濯記録モーダル */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showWashModal}
+        onRequestClose={() => setShowWashModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>洗濯日を選択</Text>
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display="spinner"
+              onChange={onDateChange}
+              maximumDate={new Date()} // 未来の日付は選択できないように
+              style={styles.datePicker}
+              locale="ja-JP"
+              themeVariant="light"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowWashModal(false);
+                  setSelectedItemId(null);
+                }}
+              >
+                <Text style={styles.modalButtonText}>キャンセル</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={confirmWashDate}
+              >
+                <Text style={styles.modalButtonText}>確定</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <FlatList
         data={filteredAndSortedItems}
         renderItem={renderItem}
@@ -188,6 +403,60 @@ const styles = StyleSheet.create({
   listContainer: {
     padding: 12,
     paddingBottom: 80, // 追加ボタンの下にスペースを確保
+  },
+  // モーダル関連のスタイル
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  datePicker: {
+    width: 300,
+    height: 200,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 20,
+  },
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#ccc',
+  },
+  confirmButton: {
+    backgroundColor: '#3498db',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
   floatingButton: {
     position: 'absolute',

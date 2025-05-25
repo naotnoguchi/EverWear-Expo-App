@@ -1,55 +1,65 @@
 // app/_layout.tsx
 import React, { useState, useEffect } from 'react';
 import { Stack } from "expo-router";
+import { StatusBar } from 'expo-status-bar'; // StatusBarをインポート
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ClothingProvider } from '../contexts/ClothingContext';
 import { OnboardingProvider, useOnboarding } from '../contexts/OnboardingContext';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View, useColorScheme } from 'react-native';
 import Onboarding from '../components/Onboarding';
 
 // Main app component with navigation
 function MainApp() {
   const { isOnboardingComplete } = useOnboarding();
+  const colorScheme = useColorScheme(); // 現在のカラースキーム（ライト/ダーク）を取得
 
   // If onboarding is not complete, show the onboarding screen
   if (!isOnboardingComplete) {
-    return <Onboarding />;
+    return (
+      <>
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        <Onboarding />
+      </>
+    );
   }
 
   // Otherwise, show the main app
   return (
-    <Stack screenOptions={{
-      // ヘッダーの共通スタイル
-      headerTitleStyle: {
-        fontWeight: "600",
-      },
-    }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="item/[id]"
-        options={{
-          title: "アイテム詳細",
-          headerBackTitle: "戻る"
-        }}
-      />
-      <Stack.Screen
-        name="add"
-        options={{
-          title: "アイテム追加",
-          animation: "slide_from_bottom",
-          presentation: "modal", // モーダル表示にする
-          // Androidで戻るボタンを非表示に
-          headerLeft: () => null,
-          headerShown: true,
-          // Android固有の設定
-          ...Platform.select({
-            android: {
-              headerBackVisible: false,  // Androidで戻るボタンを非表示
-            },
-          }),
-        }}
-      />
-    </Stack>
+    <>
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <Stack screenOptions={{
+        // ヘッダーの共通スタイル
+        headerTitleStyle: {
+          fontWeight: "600",
+        },
+      }}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="item/[id]"
+          options={{
+            title: "アイテム詳細",
+            headerBackTitle: "戻る"
+          }}
+        />
+        <Stack.Screen
+          name="add"
+          options={{
+            title: "アイテム追加",
+            animation: "slide_from_bottom",
+            presentation: "modal", // モーダル表示にする
+            // Androidで戻るボタンを非表示に
+            headerLeft: () => null,
+            headerShown: true,
+            // Android固有の設定
+            ...Platform.select({
+              android: {
+                headerBackVisible: false,  // Androidで戻るボタンを非表示
+              },
+            }),
+          }}
+        />
+      </Stack>
+    </>
   );
 }
 

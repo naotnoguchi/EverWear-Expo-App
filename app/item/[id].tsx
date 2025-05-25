@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
 import ItemCalendar from "../../components/ItemCalendar";
+import { useClothing } from "../../contexts/ClothingContext";
 
 // インターフェース定義
 interface ClothingItem {
@@ -17,98 +18,46 @@ interface ClothingItem {
   washHistory: string[];
 }
 
-// Dummy data for clothing items (same as in index.tsx)
-const dummyClothingItems: ClothingItem[] = [
-  {
-    id: "1",
-    name: "お気に入りの白シャツ",
-    category: "トップス",
-    image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=776&q=80",
-    wearCount: 2,
-    washThreshold: 3,
-    lastWorn: "2023-10-15",
-    wearHistory: ["2023-10-10", "2023-10-15"],
-    washHistory: ["2023-10-05"],
-  },
-  {
-    id: "2",
-    name: "黒パンツ",
-    category: "ボトムス",
-    image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80",
-    wearCount: 3,
-    washThreshold: 3,
-    lastWorn: "2023-10-14",
-    wearHistory: ["2023-10-08", "2023-10-12", "2023-10-14"],
-    washHistory: ["2023-10-09"],
-  },
-  {
-    id: "3",
-    name: "デニムジャケット",
-    category: "アウター",
-    image: "https://images.unsplash.com/photo-1548126032-079a0fb0099d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80",
-    wearCount: 1,
-    washThreshold: 5,
-    lastWorn: "2023-10-10",
-    wearHistory: ["2023-10-10"],
-    washHistory: [],
-  },
-  {
-    id: "4",
-    name: "グレーのセーター",
-    category: "トップス",
-    image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=870&q=80",
-    wearCount: 2,
-    washThreshold: 4,
-    lastWorn: "2023-10-12",
-    wearHistory: ["2023-10-07", "2023-10-12"],
-    washHistory: ["2023-10-01"],
-  },
-  {
-    id: "5",
-    name: "チノパン",
-    category: "ボトムス",
-    image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=397&q=80",
-    wearCount: 4,
-    washThreshold: 4,
-    lastWorn: "2023-10-13",
-    wearHistory: ["2023-10-03", "2023-10-07", "2023-10-10", "2023-10-13"],
-    washHistory: ["2023-10-04", "2023-10-11"],
-  },
-];
 
 export default function ItemDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { clothingItems, wearItem, washItem, deleteItem } = useClothing();
   const [item, setItem] = useState<ClothingItem | null>(null);
 
   useEffect(() => {
-    // In a real app, this would fetch data from a database or API
-    // For now, we'll use the dummy data
-    const foundItem = dummyClothingItems.find(item => item.id === id);
+    const foundItem = clothingItems.find(item => item.id === id);
     setItem(foundItem || null);
-  }, [id]);
+  }, [id, clothingItems]);
 
   const handleWearItem = () => {
     if (item) {
-      const today = new Date().toISOString().split("T")[0];
-      setItem({
-        ...item,
-        wearCount: item.wearCount + 1,
-        lastWorn: today,
-        wearHistory: [...item.wearHistory, today],
-      });
+      wearItem(item.id);
     }
   };
 
   const handleWashItem = () => {
     if (item) {
-      const today = new Date().toISOString().split("T")[0];
-      setItem({
-        ...item,
-        wearCount: 0,
-        washHistory: [...item.washHistory, today],
-      });
+      washItem(item.id);
     }
+  };
+
+  const handleDeleteItem = () => {
+    Alert.alert(
+      "アイテムの削除",
+      "このアイテムを削除してもよろしいですか？\n\n※削除すると、このアイテムに関連する着用履歴や洗濯履歴などのデータもすべて削除されます。",
+      [
+        { text: "キャンセル", style: "cancel" },
+        { 
+          text: "削除", 
+          style: "destructive",
+          onPress: () => {
+            deleteItem(item!.id);
+            router.replace("/");
+          }
+        }
+      ]
+    );
   };
 
   if (!item) {
@@ -134,12 +83,12 @@ export default function ItemDetail() {
         <View style={styles.itemNameContainer}>
           <Text style={styles.itemName}>{item.name}</Text>
           <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => router.push(`/item/edit/${item.id}`)}
-          >
-            <Ionicons name="pencil" size={18} color="#fff" />
-            <Text style={styles.editButtonText}>編集</Text>
-          </TouchableOpacity>
+              style={styles.editButton}
+              onPress={() => router.push(`/item/edit/${item.id}`)}
+            >
+              <Ionicons name="pencil" size={18} color="#fff" />
+              <Text style={styles.editButtonText}>編集</Text>
+            </TouchableOpacity>
         </View>
         <View style={styles.categoryContainer}>
           <Text style={styles.categoryLabel}>カテゴリ:</Text>
@@ -207,6 +156,14 @@ export default function ItemDetail() {
             wearHistory={item.wearHistory}
             washHistory={item.washHistory}
         />
+
+        <TouchableOpacity
+          style={styles.deleteButtonBottom}
+          onPress={handleDeleteItem}
+        >
+          <Ionicons name="trash" size={24} color="#fff" />
+          <Text style={styles.deleteButtonBottomText}>このアイテムを削除</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -344,6 +301,22 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: "white",
     fontWeight: "bold",
+    marginLeft: 8,
+  },
+  deleteButtonBottom: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#e74c3c",
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  deleteButtonBottomText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
     marginLeft: 8,
   },
 });

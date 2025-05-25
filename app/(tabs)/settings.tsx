@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useOnboarding } from "../../contexts/OnboardingContext";
+import { useRouter } from "expo-router";
 
 export default function Settings() {
   // State for settings
@@ -18,8 +19,9 @@ export default function Settings() {
   const [darkMode, setDarkMode] = useState(false);
   const [autoBackup, setAutoBackup] = useState(false);
 
-  // Get onboarding functions
+  // Get onboarding functions and router
   const { resetOnboarding } = useOnboarding();
+  const router = useRouter();
 
   // Handle backup
   const handleBackup = () => {
@@ -182,6 +184,20 @@ export default function Settings() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>プレミアムプラン</Text>
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.premiumButton]} 
+          onPress={() => router.push("/subscription")}
+        >
+          <Ionicons name="star" size={24} color="#FFD700" />
+          <Text style={styles.actionButtonText}>プレミアムプランを見る</Text>
+        </TouchableOpacity>
+        <Text style={styles.premiumDescription}>
+          プレミアムプランでは、アイテム登録数の制限解除、高度な分析機能、広告非表示などの特典があります。
+        </Text>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>アプリ情報</Text>
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>バージョン</Text>
@@ -229,6 +245,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+  },
+  premiumButton: {
+    borderBottomWidth: 0,
+  },
+  premiumDescription: {
+    fontSize: 12,
+    color: "#7f8c8d",
+    paddingHorizontal: 12,
+    marginTop: 8,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 18,

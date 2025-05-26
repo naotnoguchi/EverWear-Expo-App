@@ -219,6 +219,7 @@ export default function Settings() {
         </TouchableOpacity>
       </View>
 
+
       <View style={styles.footer}>
         <Text style={styles.footerText}>
           © 2023 洋服管理アプリ All Rights Reserved

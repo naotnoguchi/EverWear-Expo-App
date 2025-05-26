@@ -74,12 +74,21 @@
 #### 4.3.1 履歴表示
 - リスト形式での「wear」「wash」イベント一覧表示
 - カレンダーを使用した日付指定フィルタリング
+- 履歴の追加・削除機能
+- 日付ごとの履歴管理
 
 #### 4.3.2 統計・分析
 - アイテムごとの着用頻度
 - 洗濯サイクルの平均期間
 - 最もよく着用するアイテム等の統計情報
 - ブランド別の着用頻度・洗濯頻度分析
+- カテゴリ別の使用状況分析
+
+### 4.3.3 データ管理
+- ブランド情報の管理（追加・検索）
+- 高級ブランドと一般ブランドの区分け
+- ブランド候補のサジェスト機能
+- データの永続化と同期
 
 ### 4.4 プッシュ通知
 
@@ -168,15 +177,111 @@
 
 - フレームワーク: Expo (React Native)
 - ルーティング: Expo Router
-- バックエンド: ローカルストレージ（Expo SecureStore/SQLite）
+- バックエンド: Supabase (PostgreSQL)
+- ローカルストレージ: AsyncStorage
 - 通知: Expo Notifications
 - 画像処理: Expo Image
 - ウィジェット: Expo Widget Extension (iOS)、Android App Widgets
 
-## 7. 開発スケジュール
+## 7. データベース設計とバックエンド連携
+
+### 7.1 データベーススキーマ
+
+#### 7.1.1 テーブル構成
+- `users`: ユーザー情報（Supabase Authと連携）
+- `clothing_items`: 衣類アイテム情報
+- `wear_history`: 着用履歴
+- `wash_history`: 洗濯履歴
+- `brands`: ブランド情報
+
+#### 7.1.2 テーブル詳細
+
+##### users テーブル
+- `id`: UUID (PRIMARY KEY, Supabase Authと連携)
+- `created_at`: タイムスタンプ
+- `updated_at`: タイムスタンプ
+
+##### clothing_items テーブル
+- `id`: UUID (PRIMARY KEY)
+- `user_id`: UUID (FOREIGN KEY, usersテーブルへの参照)
+- `name`: TEXT (アイテム名)
+- `category`: TEXT (カテゴリ)
+- `brand`: TEXT (ブランド名)
+- `image_url`: TEXT (画像URL)
+- `wear_count`: INTEGER (着用回数)
+- `wash_threshold`: INTEGER (洗濯閾値)
+- `last_worn`: DATE (最終着用日)
+- `created_at`: タイムスタンプ
+- `updated_at`: タイムスタンプ
+
+##### wear_history テーブル
+- `id`: UUID (PRIMARY KEY)
+- `clothing_item_id`: UUID (FOREIGN KEY, clothing_itemsテーブルへの参照)
+- `wear_date`: DATE (着用日)
+- `created_at`: タイムスタンプ
+
+##### wash_history テーブル
+- `id`: UUID (PRIMARY KEY)
+- `clothing_item_id`: UUID (FOREIGN KEY, clothing_itemsテーブルへの参照)
+- `wash_date`: DATE (洗濯日)
+- `created_at`: タイムスタンプ
+
+##### brands テーブル
+- `id`: UUID (PRIMARY KEY)
+- `name`: TEXT UNIQUE (ブランド名)
+- `created_at`: タイムスタンプ
+
+#### 7.1.3 セキュリティポリシー
+- Row Level Security (RLS) を使用して、ユーザーが自分のデータのみにアクセスできるように制限
+- 各テーブルに適切なポリシーを設定（SELECT, INSERT, UPDATE, DELETE操作に対して）
+- brandsテーブルは全ユーザーが閲覧可能だが、変更は管理者のみ可能
+
+#### 7.1.4 データベーストリガー
+- 着用記録追加時に着用回数を自動的にインクリメントし、最終着用日を更新するトリガー
+- 洗濯記録追加時に着用回数を自動的にリセットするトリガー
+- レコード更新時に更新日時を自動的に更新するトリガー
+
+### 7.2 データモデル
+
+#### 7.2.1 アプリケーションモデル
+- `AppClothingItem`: アプリ内で使用する衣類アイテムモデル
+  - id, name, category, brand, image, wearCount, washThreshold, lastWorn, wearHistory, washHistory
+
+#### 7.2.2 データベースモデル
+- `ClothingItem`: データベース上の衣類アイテムモデル
+- `WearHistory`: データベース上の着用履歴モデル
+- `WashHistory`: データベース上の洗濯履歴モデル
+- `Brand`: データベース上のブランドモデル
+
+#### 7.2.3 変換関数
+- データベースモデルとアプリケーションモデル間の変換関数を実装
+- 日付形式やプロパティ名の違いを適切に処理
+
+### 7.3 開発ワークフロー
+
+#### 7.3.1 モックデータ開発
+- 開発中はモックデータを使用して開発を進める
+- モックデータは本番環境と同じ構造を持ち、十分なテストデータを含む
+- 各カテゴリ（トップス、ボトムス、アウター、シューズ、アクセサリー）に少なくとも1つのアイテムを含む
+- 着用履歴と洗濯履歴は十分な量のデータを含み、月ごとの表示テストが可能
+
+#### 7.3.2 サービスレイヤー
+- モックサービスと実サービスを切り替え可能なファクトリーパターンを採用
+- すべてのデータアクセスはサービスレイヤーを通じて行い、UIとデータアクセスを分離
+- 非同期処理とエラーハンドリングを適切に実装
+
+#### 7.3.3 Supabase連携
+- 環境変数を使用してモックデータと実データの切り替えを制御
+- 認証機能実装後に実際のSupabase連携を行う
+- Row Level Security (RLS) を使用してデータセキュリティを確保
+
+## 8. 開発スケジュール
 
 ### フェーズ1（MVP）
 - Expoプロジェクト初期設定
+- データベーススキーマ設計
+- データモデルの実装
+- モックデータとモックサービスの実装
 - Expo Routerによる画面遷移の実装
 - アイテム管理（登録/編集/削除）
 - 着用・洗濯記録
@@ -185,9 +290,13 @@
 ### フェーズ2
 - Expo Notificationsによるプッシュ通知実装
 - 履歴閲覧・フィルタ機能
-- Expo SecureStoreによるデータ永続化
+- AsyncStorageによるデータ永続化
+- ユーザー認証機能の実装
 
 ### フェーズ3
+- Supabaseとの連携実装
+- Row Level Security (RLS) の設定
+- データ同期機能の実装
 - Expo Widget Extensionによるウィジェット実装
 - 統計・分析機能
 - UIポリッシュ
@@ -198,7 +307,10 @@
 ### 8.1 技術的拡張
 - Expo EAS Updateによるアプリの遠隔更新
 - Expo Dev Clientを活用したカスタムネイティブモジュールの統合
-- 複数デバイス間のクラウド同期（Expo Auth + Firebase/Supabase）
+- 複数デバイス間のリアルタイムデータ同期（Supabase Realtime機能）
+- オフライン対応とデータ同期の強化（Supabase + ローカルキャッシュ）
+- Supabase Storageを活用した画像管理の最適化
+- Supabase Edge Functionsを活用したサーバーレス処理
 - Expo Web対応によるクロスプラットフォーム展開
 
 ### 8.2 機能拡張

@@ -49,7 +49,7 @@ export default function ItemList({ category }: ItemListProps) {
   const [showWashModal, setShowWashModal] = useState(false);
 
 
-  // カテゴリでフィルタリングおよび残り着用可能回数が少ない順にソートを適用
+  // カテゴリでフィルタリングおよび着用メーターの長さが長い順にソートを適用
   const getFilteredAndSortedItems = () => {
     // カテゴリでフィルタリング
     let result = [...clothingItems];
@@ -59,17 +59,20 @@ export default function ItemList({ category }: ItemListProps) {
       result = result.filter(item => item.category === category);
     }
 
-    // 常に洗濯推奨が一番上、次に着用回数が多い順にソート
+    // 着用メーターの長さ（wearCount/washThreshold比率）が長い順にソート
+    // 同じ長さの場合は最終着用日が新しい順にソート
     result.sort((a, b) => {
-      // 洗濯推奨のアイテムを上位に
-      const needsWashA = a.wearCount >= a.washThreshold;
-      const needsWashB = b.wearCount >= b.washThreshold;
+      // 着用メーターの長さを計算（比率）
+      const wearMeterA = a.wearCount / a.washThreshold;
+      const wearMeterB = b.wearCount / b.washThreshold;
 
-      if (needsWashA && !needsWashB) return -1;
-      if (!needsWashA && needsWashB) return 1;
+      // 着用メーターの長さが異なる場合、長い順（降順）にソート
+      if (wearMeterA !== wearMeterB) {
+        return wearMeterB - wearMeterA;
+      }
 
-      // 同じ洗濯状態なら着用回数の多い順
-      return b.wearCount - a.wearCount;
+      // 着用メーターの長さが同じ場合、最終着用日が新しい順にソート
+      return a.lastWorn > b.lastWorn ? -1 : a.lastWorn < b.lastWorn ? 1 : 0;
     });
 
     return result;
@@ -212,11 +215,13 @@ export default function ItemList({ category }: ItemListProps) {
               {needsWash ? (
                 <View style={styles.washAlertContainer}>
                   <Ionicons name="warning" size={18} color="#e74c3c" />
-                  <Text style={styles.needsWashText}>洗濯しましょう</Text>
+                  <Text style={styles.needsWashText}>
+                    洗濯しましょう <Text style={styles.parenthesisText}>({item.wearCount}回着用)</Text>
+                  </Text>
                 </View>
               ) : (
                 <Text style={styles.remainingWears}>
-                  あと{remainingWears}回で洗濯
+                  あと{remainingWears}回で洗濯 <Text style={styles.parenthesisText}>({item.wearCount}回着用)</Text>
                 </Text>
               )}
               <View style={styles.progressContainer}>
@@ -406,6 +411,11 @@ const styles = StyleSheet.create({
   listContainer: {
     padding: 12,
     paddingBottom: 80, // 追加ボタンの下にスペースを確保
+  },
+  // カッコ書きのテキスト用スタイル
+  parenthesisText: {
+    fontSize: 12, // 一段階小さく
+    color: "#7f8c8d", // グレー
   },
   // モーダル関連のスタイル
   modalContainer: {

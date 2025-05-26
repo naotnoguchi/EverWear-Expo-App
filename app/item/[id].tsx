@@ -369,7 +369,15 @@ export default function ItemDetail() {
         {/* [id].tsx の一部を修正（プログレスバーの部分） */}
         <View style={styles.wearInfoContainer}>
           <Text style={styles.wearInfoLabel}>
-            {needsWash ? "洗濯しましょう" : `あと${remainingWears}回で洗濯`}
+            {needsWash ? (
+              <>
+                洗濯しましょう <Text style={styles.parenthesisText}>({item.wearCount}回着用)</Text>
+              </>
+            ) : (
+              <>
+                あと{remainingWears}回で洗濯 <Text style={styles.parenthesisText}>({item.wearCount}回着用)</Text>
+              </>
+            )}
           </Text>
           <View style={styles.progressContainer}>
             <View
@@ -384,7 +392,9 @@ export default function ItemDetail() {
             />
           </View>
           {needsWash && (
-            <Text style={styles.washAlert}>洗濯しましょう</Text>
+            <Text style={styles.washAlert}>
+              洗濯しましょう <Text style={styles.parenthesisText}>({item.wearCount}回着用)</Text>
+            </Text>
           )}
         </View>
 
@@ -411,6 +421,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  // カッコ書きのテキスト用スタイル
+  parenthesisText: {
+    fontSize: 14, // 一段階小さく
+    color: "#7f8c8d", // グレー
   },
   // モーダル関連のスタイル
   modalContainer: {

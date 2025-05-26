@@ -32,6 +32,7 @@ interface HistoryItem {
   itemId: string;
   itemName: string;
   category: string;
+  brand?: string; // ブランド情報を追加
   eventType: "wear" | "wash";
   date: string;
 }
@@ -56,6 +57,7 @@ const generateHistoryData = (clothingItems: any[]): HistoryItem[] => {
           itemId: item.id,
           itemName: item.name,
           category: item.category,
+          brand: item.brand, // ブランド情報を追加
           eventType: "wear",
           date: date
         });
@@ -70,6 +72,7 @@ const generateHistoryData = (clothingItems: any[]): HistoryItem[] => {
           itemId: item.id,
           itemName: item.name,
           category: item.category,
+          brand: item.brand, // ブランド情報を追加
           eventType: "wash",
           date: date
         });
@@ -288,9 +291,9 @@ export default function History() {
           </View>
         </View>
         <View style={styles.historyContent}>
-          <Text style={styles.historyTitle}>
-            {item.itemName}
-            <Text style={styles.historyCategory}> ({item.category})</Text>
+          <Text style={styles.historyTitle}>{item.itemName}</Text>
+          <Text style={styles.historyCategory}>
+            {item.brand ? `${item.brand} / ${item.category}` : item.category}
           </Text>
           <Text style={styles.historyAction}>
             {item.eventType === "wear" ? "着用しました" : "洗濯しました"}
@@ -549,6 +552,9 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginRight: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "stretch",
   },
   iconBackground: {
     width: 36,
@@ -567,12 +573,13 @@ const styles = StyleSheet.create({
   },
   historyTitle: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "bold",
     marginBottom: 2,
   },
   historyCategory: {
-    fontWeight: "normal",
+    fontSize: 12,
     color: "#7f8c8d",
+    marginBottom: 4,
   },
   historyAction: {
     fontSize: 14,

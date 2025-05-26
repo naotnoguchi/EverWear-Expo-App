@@ -19,6 +19,7 @@ interface ClothingItem {
   id: string;
   name: string;
   category: string;
+  brand: string; // ブランド情報
   image: string;
   wearCount: number;
   washThreshold: number;
@@ -204,7 +205,9 @@ export default function ItemList({ category }: ItemListProps) {
         <View style={styles.contentContainer}>
           <View style={styles.itemDetails}>
             <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemCategory}>{item.category}</Text>
+            <Text style={styles.itemCategory}>
+              {item.brand ? `${item.brand} / ${item.category}` : item.category}
+            </Text>
             <View style={styles.wearInfo}>
               {needsWash ? (
                 <View style={styles.washAlertContainer}>
@@ -512,7 +515,12 @@ const styles = StyleSheet.create({
   itemCategory: {
     fontSize: 12,
     color: "#7f8c8d",
-    marginBottom: 6,
+    marginBottom: 4,
+  },
+  itemBrand: {
+    fontSize: 12,
+    color: "#7f8c8d",
+    marginBottom: 4,
   },
   wearInfo: {
     marginBottom: 4,

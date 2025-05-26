@@ -15,6 +15,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
+import BrandSelector from "@/components/BrandSelector";
+import { useClothing } from "@/contexts/ClothingContext";
 
 // カテゴリ定義
 const categories = [
@@ -32,6 +34,7 @@ const dummyClothingItems = [
     id: "1",
     name: "お気に入りの白シャツ",
     category: "トップス",
+    brand: "ユニクロ",
     image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=776&q=80",
     wearCount: 2,
     washThreshold: 3,
@@ -43,6 +46,7 @@ const dummyClothingItems = [
     id: "2",
     name: "黒パンツ",
     category: "ボトムス",
+    brand: "GU",
     image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80",
     wearCount: 3,
     washThreshold: 3,
@@ -56,26 +60,29 @@ const dummyClothingItems = [
 export default function EditItem() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const { addBrand } = useClothing();
   const [name, setName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [brand, setBrand] = useState(""); // ブランド状態を追加
   const [washThreshold, setWashThreshold] = useState("3");
   const [imageUrl, setImageUrl] = useState("");
   const [imageSelected, setImageSelected] = useState(false);
-  
+
   // 初期データの読み込み
   useEffect(() => {
     // 実際のアプリではAPIやデータベースから取得
     const item = dummyClothingItems.find(item => item.id === id);
-    
+
     if (item) {
       setName(item.name);
       setSelectedCategory(item.category);
+      setBrand(item.brand || ""); // ブランド情報を設定
       setWashThreshold(String(item.washThreshold));
       setImageUrl(item.image);
       setImageSelected(true);
     }
   }, [id]);
-  
+
   // 触覚フィードバック
   const triggerHaptic = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -123,9 +130,14 @@ export default function EditItem() {
       return;
     }
 
+    // ブランド入力は必須ではないが、入力された場合はシステムに追加
+    if (brand) {
+      addBrand(brand); // 新しいブランドをシステムに追加
+    }
+
     // 実際のアプリではここでストレージにアイテムを更新
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    
+
     Alert.alert(
       "成功",
       "アイテムが更新されました",
@@ -170,7 +182,7 @@ export default function EditItem() {
           </TouchableOpacity>
         ),
       }} />
-      
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
@@ -256,11 +268,20 @@ export default function EditItem() {
               </View>
             </View>
 
+            {/* ブランド選択 */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>ブランド</Text>
+              <BrandSelector
+                value={brand}
+                onValueChange={setBrand}
+              />
+            </View>
+
             {/* 洗濯閾値設定 */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>洗濯閾値</Text>
               <Text style={styles.sublabel}>何回着用したら洗濯するか設定します</Text>
-              
+
               <View style={styles.thresholdContainer}>
                 <TouchableOpacity
                   style={[styles.thresholdButton, Number(washThreshold) <= 1 && styles.disabledButton]}
@@ -275,12 +296,12 @@ export default function EditItem() {
                 >
                   <Ionicons name="remove" size={24} color={Number(washThreshold) <= 1 ? "#bdc3c7" : "#3498db"} />
                 </TouchableOpacity>
-                
+
                 <View style={styles.thresholdValueContainer}>
                   <Text style={styles.thresholdValue}>{washThreshold}</Text>
                   <Text style={styles.thresholdUnit}>回</Text>
                 </View>
-                
+
                 <TouchableOpacity
                   style={styles.thresholdButton}
                   onPress={() => {

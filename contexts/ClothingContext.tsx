@@ -13,6 +13,7 @@ interface ClothingItem {
   id: string;
   name: string;
   category: string;
+  brand: string; // ブランド情報
   image: string;
   wearCount: number;
   washThreshold: number;
@@ -36,6 +37,11 @@ interface ClothingContextType {
     sortDirection: 'asc' | 'desc';
   };
   updateSortConfig: (config: {sortBy: string; sortDirection: 'asc' | 'desc'}) => void;
+
+  // ブランド管理機能
+  brands: string[]; // システムに登録されているブランドリスト
+  addBrand: (brand: string) => void; // 新しいブランドをシステムに追加
+  getBrandSuggestions: (query: string) => string[]; // 検索クエリに基づくブランド候補を取得
 }
 
 const ClothingContext = createContext<ClothingContextType | undefined>(undefined);
@@ -46,6 +52,7 @@ const initialItems: ClothingItem[] = [
     id: "1",
     name: "お気に入りの白シャツ",
     category: "トップス",
+    brand: "ユニクロ",
     image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=776&q=80",
     wearCount: 2,
     washThreshold: 3,
@@ -57,6 +64,7 @@ const initialItems: ClothingItem[] = [
     id: "2",
     name: "黒パンツ",
     category: "ボトムス",
+    brand: "GU",
     image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80",
     wearCount: 3,
     washThreshold: 3,
@@ -68,6 +76,7 @@ const initialItems: ClothingItem[] = [
     id: "3",
     name: "デニムジャケット",
     category: "アウター",
+    brand: "リーバイス",
     image: "https://images.unsplash.com/photo-1548126032-079a0fb0099d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80",
     wearCount: 1,
     washThreshold: 5,
@@ -79,6 +88,7 @@ const initialItems: ClothingItem[] = [
     id: "4",
     name: "グレーのセーター",
     category: "トップス",
+    brand: "無印良品",
     image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=870&q=80",
     wearCount: 2,
     washThreshold: 4,
@@ -90,6 +100,7 @@ const initialItems: ClothingItem[] = [
     id: "5",
     name: "チノパン",
     category: "ボトムス",
+    brand: "H&M",
     image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=397&q=80",
     wearCount: 4,
     washThreshold: 4,
@@ -107,9 +118,30 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     sortDirection: 'asc'
   });
 
+  // ブランド管理のための状態
+  const [brands, setBrands] = useState<string[]>([
+    "ユニクロ", "GU", "無印良品", "H&M", "ZARA", "GAP", "BEAMS", 
+    "ナイキ", "アディダス", "プーマ", "リーバイス", "ラコステ", "ポロ・ラルフローレン"
+  ]);
+
   // ソート設定を更新する関数
   const updateSortConfig = (config: {sortBy: string; sortDirection: 'asc' | 'desc'}) => {
     setSortConfig(config);
+  };
+
+  // 新しいブランドを追加する関数
+  const addBrand = (brand: string) => {
+    if (brand && !brands.includes(brand)) {
+      setBrands([...brands, brand]);
+    }
+  };
+
+  // ブランド候補を検索する関数
+  const getBrandSuggestions = (query: string): string[] => {
+    if (!query) return brands;
+    return brands.filter(brand => 
+      brand.toLowerCase().includes(query.toLowerCase())
+    );
   };
 
   // 着用ボタンクリック時の処理を修正
@@ -284,7 +316,11 @@ const washItem = (id: string, date?: string): boolean => {
         deleteWearHistory,
         deleteWashHistory,
         sortConfig,
-        updateSortConfig
+        updateSortConfig,
+        // ブランド管理機能
+        brands,
+        addBrand,
+        getBrandSuggestions
       }}
     >
       {children}

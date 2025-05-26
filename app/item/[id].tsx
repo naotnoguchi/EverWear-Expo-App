@@ -20,6 +20,7 @@ interface ClothingItem {
   id: string;
   name: string;
   category: string;
+  brand: string; // ブランド情報
   image: string;
   wearCount: number;
   washThreshold: number;
@@ -321,6 +322,14 @@ export default function ItemDetail() {
           <Text style={styles.categoryLabel}>カテゴリ:</Text>
           <Text style={styles.categoryValue}>{item.category}</Text>
         </View>
+
+        {/* ブランド情報 */}
+        {item.brand && (
+          <View style={styles.categoryContainer}>
+            <Text style={styles.categoryLabel}>ブランド:</Text>
+            <Text style={styles.categoryValue}>{item.brand}</Text>
+          </View>
+        )}
 
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity

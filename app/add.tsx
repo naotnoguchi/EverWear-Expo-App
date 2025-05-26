@@ -14,6 +14,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
+import BrandSelector from "../components/BrandSelector";
+import { useClothing } from "../contexts/ClothingContext";
 
 // カテゴリ定義
 const categories = [
@@ -27,11 +29,13 @@ const categories = [
 
 export default function AddItem() {
   const router = useRouter();
+  const { addBrand } = useClothing();
   const [name, setName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [brand, setBrand] = useState(""); // ブランド状態を追加
   const [washThreshold, setWashThreshold] = useState("3");
   const [imageSelected, setImageSelected] = useState(false);
-  
+
   // 触覚フィードバック
   const triggerHaptic = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -85,9 +89,14 @@ export default function AddItem() {
       return;
     }
 
+    // ブランド入力は必須ではないが、入力された場合はシステムに追加
+    if (brand) {
+      addBrand(brand); // 新しいブランドをシステムに追加
+    }
+
     // 実際のアプリではここでストレージにアイテムを保存
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    
+
     Alert.alert(
       "成功",
       "新しいアイテムが追加されました",
@@ -131,7 +140,7 @@ export default function AddItem() {
           </TouchableOpacity>
         ),
       }} />
-      
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
@@ -210,11 +219,20 @@ export default function AddItem() {
               </View>
             </View>
 
+            {/* ブランド選択 */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>ブランド</Text>
+              <BrandSelector
+                value={brand}
+                onValueChange={setBrand}
+              />
+            </View>
+
             {/* 洗濯閾値設定 */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>洗濯閾値</Text>
               <Text style={styles.sublabel}>何回着用したら洗濯するか設定します</Text>
-              
+
               <View style={styles.thresholdContainer}>
                 <TouchableOpacity
                   style={[styles.thresholdButton, Number(washThreshold) <= 1 && styles.disabledButton]}
@@ -229,12 +247,12 @@ export default function AddItem() {
                 >
                   <Ionicons name="remove" size={24} color={Number(washThreshold) <= 1 ? "#bdc3c7" : "#3498db"} />
                 </TouchableOpacity>
-                
+
                 <View style={styles.thresholdValueContainer}>
                   <Text style={styles.thresholdValue}>{washThreshold}</Text>
                   <Text style={styles.thresholdUnit}>回</Text>
                 </View>
-                
+
                 <TouchableOpacity
                   style={styles.thresholdButton}
                   onPress={() => {

@@ -1,5 +1,6 @@
 // contexts/ClothingContext.tsx
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
+import { clothingService, AppClothingItem } from '../services/clothingServiceFactory';
 
 // ヘルパー関数: 日付をローカルタイムゾーンでISO形式の文字列に変換
 function formatDateToLocalISOString(date: Date): string {
@@ -9,28 +10,20 @@ function formatDateToLocalISOString(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-interface ClothingItem {
-  id: string;
-  name: string;
-  category: string;
-  brand: string; // ブランド情報
-  image: string;
-  wearCount: number;
-  washThreshold: number;
-  lastWorn: string;
-  wearHistory: string[]; // 着用履歴の日付配列
-  washHistory: string[]; // 洗濯履歴の日付配列
-}
+// Use AppClothingItem from our database types
+type ClothingItem = AppClothingItem;
 
 interface ClothingContextType {
   clothingItems: ClothingItem[];
-  wearItem: (id: string, date?: string) => boolean; // 成功時はtrue、重複時はfalseを返す
-  washItem: (id: string, date?: string) => boolean; // 成功時はtrue、重複時はfalseを返す
-  addItem: (item: Omit<ClothingItem, 'id'>) => void;
-  updateItem: (item: ClothingItem) => void;
-  deleteItem: (id: string) => void;
-  deleteWearHistory: (itemId: string, date: string) => boolean; // 成功時はtrue、失敗時はfalseを返す
-  deleteWashHistory: (itemId: string, date: string) => boolean; // 成功時はtrue、失敗時はfalseを返す
+  loading: boolean;
+  error: string | null;
+  wearItem: (id: string, date?: string) => Promise<boolean>; // 成功時はtrue、重複時はfalseを返す
+  washItem: (id: string, date?: string) => Promise<boolean>; // 成功時はtrue、重複時はfalseを返す
+  addItem: (item: Omit<ClothingItem, 'id'>) => Promise<void>;
+  updateItem: (item: ClothingItem) => Promise<void>;
+  deleteItem: (id: string) => Promise<void>;
+  deleteWearHistory: (itemId: string, date: string) => Promise<boolean>; // 成功時はtrue、失敗時はfalseを返す
+  deleteWashHistory: (itemId: string, date: string) => Promise<boolean>; // 成功時はtrue、失敗時はfalseを返す
   // ソート関連の状態を追加
   sortConfig: {
     sortBy: string;
@@ -40,78 +33,20 @@ interface ClothingContextType {
 
   // ブランド管理機能
   brands: string[]; // システムに登録されているブランドリスト
-  addBrand: (brand: string) => void; // 新しいブランドをシステムに追加
+  addBrand: (brand: string) => Promise<void>; // 新しいブランドをシステムに追加
   getBrandSuggestions: (query: string) => string[]; // 検索クエリに基づくブランド候補を取得
+  refreshData: () => Promise<void>; // データを再読み込みする関数
 }
 
 const ClothingContext = createContext<ClothingContextType | undefined>(undefined);
 
-// ダミーデータ
-const initialItems: ClothingItem[] = [
-  {
-    id: "1",
-    name: "お気に入りの白シャツ",
-    category: "トップス",
-    brand: "ユニクロ",
-    image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=776&q=80",
-    wearCount: 2,
-    washThreshold: 3,
-    lastWorn: "2023-10-15",
-    wearHistory: ["2023-10-10", "2023-10-15"],
-    washHistory: ["2023-10-05"],
-  },
-  {
-    id: "2",
-    name: "黒パンツ",
-    category: "ボトムス",
-    brand: "GU",
-    image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80",
-    wearCount: 3,
-    washThreshold: 3,
-    lastWorn: "2023-10-14",
-    wearHistory: ["2023-10-08", "2023-10-12", "2023-10-14"],
-    washHistory: ["2023-10-09"],
-  },
-  {
-    id: "3",
-    name: "デニムジャケット",
-    category: "アウター",
-    brand: "リーバイス",
-    image: "https://images.unsplash.com/photo-1548126032-079a0fb0099d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80",
-    wearCount: 1,
-    washThreshold: 5,
-    lastWorn: "2023-10-10",
-    wearHistory: ["2023-10-10"],
-    washHistory: [],
-  },
-  {
-    id: "4",
-    name: "グレーのセーター",
-    category: "トップス",
-    brand: "無印良品",
-    image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=870&q=80",
-    wearCount: 2,
-    washThreshold: 4,
-    lastWorn: "2023-10-12",
-    wearHistory: ["2023-10-07", "2023-10-12"],
-    washHistory: ["2023-10-01"],
-  },
-  {
-    id: "5",
-    name: "チノパン",
-    category: "ボトムス",
-    brand: "H&M",
-    image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=397&q=80",
-    wearCount: 4,
-    washThreshold: 4,
-    lastWorn: "2023-10-13",
-    wearHistory: ["2023-10-03", "2023-10-07", "2023-10-10", "2023-10-13"],
-    washHistory: ["2023-10-04", "2023-10-11"],
-  },
-];
+// No longer need hardcoded initial data as we'll load from the service
 
 export function ClothingProvider({ children }: { children: ReactNode }) {
-  const [clothingItems, setClothingItems] = useState<ClothingItem[]>(initialItems);
+  const [clothingItems, setClothingItems] = useState<ClothingItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
   // ソート設定の状態を追加
   const [sortConfig, setSortConfig] = useState<{sortBy: string; sortDirection: 'asc' | 'desc'}>({
     sortBy: 'none',
@@ -119,10 +54,37 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
   });
 
   // ブランド管理のための状態
-  const [brands, setBrands] = useState<string[]>([
-    "ユニクロ", "GU", "無印良品", "H&M", "ZARA", "GAP", "BEAMS", 
-    "ナイキ", "アディダス", "プーマ", "リーバイス", "ラコステ", "ポロ・ラルフローレン"
-  ]);
+  const [brands, setBrands] = useState<string[]>([]);
+
+  // データを読み込む関数
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // 衣類アイテムを取得
+      const items = await clothingService.getClothingItems();
+      setClothingItems(items);
+
+      // ブランドを取得
+      const brandList = await clothingService.getBrands();
+      setBrands(brandList);
+    } catch (err) {
+      console.error('Failed to load data:', err);
+      setError('データの読み込みに失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // コンポーネントマウント時にデータを読み込む
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // データを再読み込みする関数
+  const refreshData = useCallback(async () => {
+    await loadData();
+  }, [loadData]);
 
   // ソート設定を更新する関数
   const updateSortConfig = (config: {sortBy: string; sortDirection: 'asc' | 'desc'}) => {
@@ -130,9 +92,17 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
   };
 
   // 新しいブランドを追加する関数
-  const addBrand = (brand: string) => {
-    if (brand && !brands.includes(brand)) {
-      setBrands([...brands, brand]);
+  const addBrand = async (brand: string) => {
+    if (!brand) return;
+
+    try {
+      await clothingService.addBrand(brand);
+      // ブランドリストを更新
+      const updatedBrands = await clothingService.getBrands();
+      setBrands(updatedBrands);
+    } catch (err) {
+      console.error('Failed to add brand:', err);
+      setError('ブランドの追加に失敗しました');
     }
   };
 
@@ -145,169 +115,113 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
   };
 
   // 着用ボタンクリック時の処理を修正
-  const wearItem = (id: string, date?: string): boolean => {
+  const wearItem = async (id: string, date?: string): Promise<boolean> => {
     // dateパラメータが提供されていない場合は今日の日付を使用
     const recordDate = date || formatDateToLocalISOString(new Date());
 
-    // 該当アイテムを検索
-    const targetItem = clothingItems.find(item => item.id === id);
-
-    // アイテムが見つからない場合はfalseを返す
-    if (!targetItem) return false;
-
-    // 既に同じ日付の記録が存在するかチェック
-    if (targetItem.wearHistory && targetItem.wearHistory.includes(recordDate)) {
-      // 重複している場合はfalseを返す
+    try {
+      const success = await clothingService.addWearRecord(id, recordDate);
+      if (success) {
+        // データを再読み込み
+        await loadData();
+      }
+      return success;
+    } catch (err) {
+      console.error('Failed to record wear:', err);
+      setError('着用記録の追加に失敗しました');
       return false;
     }
-
-    // 重複していない場合は記録を追加
-    setClothingItems(clothingItems.map(item => 
-      item.id === id
-        ? {
-            ...item,
-            wearCount: item.wearCount + 1,
-            lastWorn: recordDate,
-            // wearHistoryが存在しない場合は空の配列を初期値として使用
-            wearHistory: [...(item.wearHistory || []), recordDate]
-          }
-        : item
-    ));
-
-    // 成功したらtrueを返す
-    return true;
   };
 
-const washItem = (id: string, date?: string): boolean => {
-  // dateパラメータが提供されていない場合は今日の日付を使用
-  const recordDate = date || formatDateToLocalISOString(new Date());
+  const washItem = async (id: string, date?: string): Promise<boolean> => {
+    // dateパラメータが提供されていない場合は今日の日付を使用
+    const recordDate = date || formatDateToLocalISOString(new Date());
 
-  // 該当アイテムを検索
-  const targetItem = clothingItems.find(item => item.id === id);
-
-  // アイテムが見つからない場合はfalseを返す
-  if (!targetItem) return false;
-
-  // 既に同じ日付の記録が存在するかチェック
-  if (targetItem.washHistory && targetItem.washHistory.includes(recordDate)) {
-    // 重複している場合はfalseを返す
-    return false;
-  }
-
-  // 重複していない場合は記録を追加
-  setClothingItems(clothingItems.map(item => 
-    item.id === id
-      ? {
-          ...item,
-          wearCount: 0,
-          // washHistoryが存在しない場合は空の配列を初期値として使用
-          washHistory: [...(item.washHistory || []), recordDate]
-        }
-      : item
-  ));
-
-  // 成功したらtrueを返す
-  return true;
-};
-
-  const addItem = (item: Omit<ClothingItem, 'id'>) => {
-    const newItem = {
-      ...item,
-      id: Date.now().toString(), // 簡易的なID生成
-      wearHistory: item.wearHistory || [],
-      washHistory: item.washHistory || [],
-    };
-    setClothingItems([...clothingItems, newItem]);
+    try {
+      const success = await clothingService.addWashRecord(id, recordDate);
+      if (success) {
+        // データを再読み込み
+        await loadData();
+      }
+      return success;
+    } catch (err) {
+      console.error('Failed to record wash:', err);
+      setError('洗濯記録の追加に失敗しました');
+      return false;
+    }
   };
 
-  const updateItem = (updatedItem: ClothingItem) => {
-    setClothingItems(
-      clothingItems.map((item) =>
-        item.id === updatedItem.id ? updatedItem : item
-      )
-    );
+  const addItem = async (item: Omit<ClothingItem, 'id'>) => {
+    try {
+      await clothingService.addClothingItem(item);
+      // データを再読み込み
+      await loadData();
+    } catch (err) {
+      console.error('Failed to add item:', err);
+      setError('アイテムの追加に失敗しました');
+    }
   };
 
-  const deleteItem = (id: string) => {
-    setClothingItems(clothingItems.filter((item) => item.id !== id));
+  const updateItem = async (updatedItem: ClothingItem) => {
+    try {
+      await clothingService.updateClothingItem(updatedItem);
+      // データを再読み込み
+      await loadData();
+    } catch (err) {
+      console.error('Failed to update item:', err);
+      setError('アイテムの更新に失敗しました');
+    }
+  };
+
+  const deleteItem = async (id: string) => {
+    try {
+      await clothingService.deleteClothingItem(id);
+      // データを再読み込み
+      await loadData();
+    } catch (err) {
+      console.error('Failed to delete item:', err);
+      setError('アイテムの削除に失敗しました');
+    }
   };
 
   // 着用履歴を削除する関数
-  const deleteWearHistory = (itemId: string, date: string): boolean => {
-    // 該当アイテムを検索
-    const targetItem = clothingItems.find(item => item.id === itemId);
-
-    // アイテムが見つからない場合はfalseを返す
-    if (!targetItem) return false;
-
-    // 該当する日付の履歴が存在するかチェック
-    if (!targetItem.wearHistory || !targetItem.wearHistory.includes(date)) {
+  const deleteWearHistory = async (itemId: string, date: string): Promise<boolean> => {
+    try {
+      const success = await clothingService.deleteWearRecord(itemId, date);
+      if (success) {
+        // データを再読み込み
+        await loadData();
+      }
+      return success;
+    } catch (err) {
+      console.error('Failed to delete wear history:', err);
+      setError('着用履歴の削除に失敗しました');
       return false;
     }
-
-    // 履歴から該当する日付を削除
-    const updatedWearHistory = targetItem.wearHistory.filter(d => d !== date);
-
-    // 最終着用日の更新
-    let updatedLastWorn = targetItem.lastWorn;
-    if (targetItem.lastWorn === date) {
-      // 削除する日付が最終着用日の場合、残りの履歴から最新の日付を取得
-      updatedLastWorn = updatedWearHistory.length > 0 
-        ? updatedWearHistory.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
-        : "";
-    }
-
-    // 着用回数の更新（削除した分だけ減らす）
-    const updatedWearCount = Math.max(0, targetItem.wearCount - 1);
-
-    // アイテムを更新
-    setClothingItems(clothingItems.map(item => 
-      item.id === itemId
-        ? {
-            ...item,
-            wearCount: updatedWearCount,
-            lastWorn: updatedLastWorn,
-            wearHistory: updatedWearHistory
-          }
-        : item
-    ));
-
-    return true;
   };
 
   // 洗濯履歴を削除する関数
-  const deleteWashHistory = (itemId: string, date: string): boolean => {
-    // 該当アイテムを検索
-    const targetItem = clothingItems.find(item => item.id === itemId);
-
-    // アイテムが見つからない場合はfalseを返す
-    if (!targetItem) return false;
-
-    // 該当する日付の履歴が存在するかチェック
-    if (!targetItem.washHistory || !targetItem.washHistory.includes(date)) {
+  const deleteWashHistory = async (itemId: string, date: string): Promise<boolean> => {
+    try {
+      const success = await clothingService.deleteWashRecord(itemId, date);
+      if (success) {
+        // データを再読み込み
+        await loadData();
+      }
+      return success;
+    } catch (err) {
+      console.error('Failed to delete wash history:', err);
+      setError('洗濯履歴の削除に失敗しました');
       return false;
     }
-
-    // 履歴から該当する日付を削除
-    const updatedWashHistory = targetItem.washHistory.filter(d => d !== date);
-
-    // アイテムを更新
-    setClothingItems(clothingItems.map(item => 
-      item.id === itemId
-        ? {
-            ...item,
-            washHistory: updatedWashHistory
-          }
-        : item
-    ));
-
-    return true;
   };
 
   return (
     <ClothingContext.Provider
       value={{
         clothingItems,
+        loading,
+        error,
         wearItem,
         washItem,
         addItem,
@@ -320,7 +234,8 @@ const washItem = (id: string, date?: string): boolean => {
         // ブランド管理機能
         brands,
         addBrand,
-        getBrandSuggestions
+        getBrandSuggestions,
+        refreshData
       }}
     >
       {children}

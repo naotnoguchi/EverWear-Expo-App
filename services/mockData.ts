@@ -4,6 +4,19 @@ import { AppClothingItem, Brand } from '../types/database';
 // Mock user ID
 export const MOCK_USER_ID = 'mock-user-id';
 
+// Helper function to calculate wear count based on wear and wash histories
+const calculateWearCount = (wearHistory: string[], washHistory: string[]): number => {
+  if (washHistory.length === 0) {
+    return wearHistory.length;
+  }
+
+  // Get the latest wash date
+  const latestWashDate = washHistory.sort().slice(-1)[0];
+
+  // Count wear dates after the latest wash date
+  return wearHistory.filter(date => date > latestWashDate).length;
+};
+
 // Mock clothing items
 export const mockClothingItems: AppClothingItem[] = [
   {
@@ -12,7 +25,6 @@ export const mockClothingItems: AppClothingItem[] = [
     category: "トップス",
     brand: "Gucci",
     image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=776&q=80",
-    wearCount: 4,
     washThreshold: 3,
     lastWorn: "2025-05-20",
     wearHistory: [
@@ -28,6 +40,9 @@ export const mockClothingItems: AppClothingItem[] = [
       "2025-03-30",
       "2025-05-10"
     ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
   },
   {
     id: "2",
@@ -35,7 +50,6 @@ export const mockClothingItems: AppClothingItem[] = [
     category: "ボトムス",
     brand: "Prada",
     image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80",
-    wearCount: 3,
     washThreshold: 3,
     lastWorn: "2025-05-15",
     wearHistory: [
@@ -51,6 +65,9 @@ export const mockClothingItems: AppClothingItem[] = [
       "2025-03-25",
       "2025-04-30"
     ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
   },
   {
     id: "3",
@@ -58,7 +75,6 @@ export const mockClothingItems: AppClothingItem[] = [
     category: "アウター",
     brand: "Burberry",
     image: "https://images.unsplash.com/photo-1548126032-079a0fb0099d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80",
-    wearCount: 2,
     washThreshold: 5,
     lastWorn: "2025-05-18",
     wearHistory: [
@@ -72,6 +88,9 @@ export const mockClothingItems: AppClothingItem[] = [
       "2025-02-10",
       "2025-04-10"
     ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
   },
   {
     id: "4",
@@ -79,7 +98,6 @@ export const mockClothingItems: AppClothingItem[] = [
     category: "トップス",
     brand: "Dior",
     image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=870&q=80",
-    wearCount: 2,
     washThreshold: 4,
     lastWorn: "2025-05-12",
     wearHistory: [
@@ -95,6 +113,9 @@ export const mockClothingItems: AppClothingItem[] = [
       "2025-03-15",
       "2025-04-15"
     ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
   },
   {
     id: "5",
@@ -102,7 +123,6 @@ export const mockClothingItems: AppClothingItem[] = [
     category: "ボトムス",
     brand: "Louis Vuitton",
     image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=397&q=80",
-    wearCount: 3,
     washThreshold: 4,
     lastWorn: "2025-05-22",
     wearHistory: [
@@ -118,6 +138,9 @@ export const mockClothingItems: AppClothingItem[] = [
       "2025-04-05",
       "2025-05-10"
     ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
   },
   {
     id: "6",
@@ -125,7 +148,6 @@ export const mockClothingItems: AppClothingItem[] = [
     category: "シューズ",
     brand: "Balenciaga",
     image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1112&q=80",
-    wearCount: 2,
     washThreshold: 10,
     lastWorn: "2025-05-19",
     wearHistory: [
@@ -139,6 +161,9 @@ export const mockClothingItems: AppClothingItem[] = [
       "2025-02-01",
       "2025-04-15"
     ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
   },
   {
     id: "7",
@@ -146,7 +171,6 @@ export const mockClothingItems: AppClothingItem[] = [
     category: "アクセサリー",
     brand: "Hermès",
     image: "https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
-    wearCount: 1,
     washThreshold: 5,
     lastWorn: "2025-05-16",
     wearHistory: [
@@ -161,6 +185,9 @@ export const mockClothingItems: AppClothingItem[] = [
       "2025-03-05",
       "2025-05-05"
     ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
   },
   {
     id: "8",
@@ -168,7 +195,6 @@ export const mockClothingItems: AppClothingItem[] = [
     category: "アウター",
     brand: "Chanel",
     image: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
-    wearCount: 3,
     washThreshold: 6,
     lastWorn: "2025-05-21",
     wearHistory: [
@@ -182,6 +208,9 @@ export const mockClothingItems: AppClothingItem[] = [
       "2025-02-01",
       "2025-04-01"
     ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
   },
   {
     id: "9",
@@ -189,7 +218,6 @@ export const mockClothingItems: AppClothingItem[] = [
     category: "アクセサリー",
     brand: "Versace",
     image: "https://images.unsplash.com/photo-1589756823695-278bc923f962?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=735&q=80",
-    wearCount: 2,
     washThreshold: 5,
     lastWorn: "2025-05-23",
     wearHistory: [
@@ -204,6 +232,9 @@ export const mockClothingItems: AppClothingItem[] = [
       "2025-03-30",
       "2025-05-15"
     ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
   },
   {
     id: "10",
@@ -211,7 +242,6 @@ export const mockClothingItems: AppClothingItem[] = [
     category: "シューズ",
     brand: "Saint Laurent",
     image: "https://images.unsplash.com/photo-1605812860427-4024433a70fd?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=735&q=80",
-    wearCount: 4,
     washThreshold: 8,
     lastWorn: "2025-05-25",
     wearHistory: [
@@ -225,6 +255,9 @@ export const mockClothingItems: AppClothingItem[] = [
       "2025-02-05",
       "2025-04-05"
     ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
   },
 ];
 

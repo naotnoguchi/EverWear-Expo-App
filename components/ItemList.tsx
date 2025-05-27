@@ -6,14 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useClothing } from '../contexts/ClothingContext';
 import { useTheme } from '../contexts/ThemeContext';
-
-// ヘルパー関数: 日付をローカルタイムゾーンでISO形式の文字列に変換
-function formatDateToLocalISOString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+import { formatDateToLocalISOString, formatDateJapanese } from '../lib/dateUtils';
 
 // インターフェース定義
 interface ClothingItem {
@@ -100,22 +93,24 @@ export default function ItemList({ category }: ItemListProps) {
       // Androidの場合は日付選択後に直接アクションを実行
       if (showWearDatePicker && selectedDate && selectedItemId) {
         const formattedDate = formatDateToLocalISOString(currentDate);
+        const japaneseDate = formatDateJapanese(currentDate);
         const success = wearItem(selectedItemId, formattedDate);
 
         if (success) {
-          Alert.alert("着用記録", `${formattedDate}に着用記録を追加しました`);
+          Alert.alert("着用記録", `${japaneseDate}に着用記録を追加しました`);
         } else {
-          Alert.alert("エラー", `${formattedDate}の着用記録は既に存在します`);
+          Alert.alert("エラー", `${japaneseDate}の着用記録は既に存在します`);
         }
         setSelectedItemId(null);
       } else if (showWashDatePicker && selectedDate && selectedItemId) {
         const formattedDate = formatDateToLocalISOString(currentDate);
+        const japaneseDate = formatDateJapanese(currentDate);
         const success = washItem(selectedItemId, formattedDate);
 
         if (success) {
-          Alert.alert("洗濯記録", `${formattedDate}に洗濯記録を追加しました`);
+          Alert.alert("洗濯記録", `${japaneseDate}に洗濯記録を追加しました`);
         } else {
-          Alert.alert("エラー", `${formattedDate}の洗濯記録は既に存在します`);
+          Alert.alert("エラー", `${japaneseDate}の洗濯記録は既に存在します`);
         }
         setSelectedItemId(null);
       }
@@ -156,12 +151,13 @@ export default function ItemList({ category }: ItemListProps) {
   const confirmWearDate = () => {
     if (selectedItemId) {
       const formattedDate = formatDateToLocalISOString(selectedDate);
+      const japaneseDate = formatDateJapanese(selectedDate);
       const success = wearItem(selectedItemId, formattedDate);
 
       if (success) {
-        Alert.alert("着用記録", `${formattedDate}に着用記録を追加しました`);
+        Alert.alert("着用記録", `${japaneseDate}に着用記録を追加しました`);
       } else {
-        Alert.alert("エラー", `${formattedDate}の着用記録は既に存在します`);
+        Alert.alert("エラー", `${japaneseDate}の着用記録は既に存在します`);
       }
       setShowWearModal(false);
       setSelectedItemId(null);
@@ -172,12 +168,13 @@ export default function ItemList({ category }: ItemListProps) {
   const confirmWashDate = () => {
     if (selectedItemId) {
       const formattedDate = formatDateToLocalISOString(selectedDate);
+      const japaneseDate = formatDateJapanese(selectedDate);
       const success = washItem(selectedItemId, formattedDate);
 
       if (success) {
-        Alert.alert("洗濯記録", `${formattedDate}に洗濯記録を追加しました`);
+        Alert.alert("洗濯記録", `${japaneseDate}に洗濯記録を追加しました`);
       } else {
-        Alert.alert("エラー", `${formattedDate}の洗濯記録は既に存在します`);
+        Alert.alert("エラー", `${japaneseDate}の洗濯記録は既に存在します`);
       }
       setShowWashModal(false);
       setSelectedItemId(null);
@@ -240,7 +237,7 @@ export default function ItemList({ category }: ItemListProps) {
                 />
               </View>
             </View>
-            <Text style={styles.lastWorn}>最終着用日: {item.lastWorn}</Text>
+            <Text style={styles.lastWorn}>最終着用日: {item.lastWorn ? formatDateJapanese(item.lastWorn) : "なし"}</Text>
           </View>
           <View style={styles.actionsContainer}>
             <TouchableOpacity

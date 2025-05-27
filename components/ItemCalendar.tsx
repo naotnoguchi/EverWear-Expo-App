@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { formatDateJapanese } from '../lib/dateUtils';
 
 interface ItemCalendarProps {
   wearHistory: string[];
@@ -89,7 +90,7 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
     // 履歴削除のオプションを表示
     Alert.alert(
       "履歴の削除",
-      `${dayObj.date}の履歴を削除しますか？`,
+      `${formatDateJapanese(dayObj.date)}の履歴を削除しますか？`,
       [
         { text: "キャンセル", style: "cancel" },
         ...(isWorn ? [{

@@ -19,6 +19,7 @@ import { useClothing } from '../../contexts/ClothingContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { router } from "expo-router";
 import HistoryCalendar from "../../components/HistoryCalendar";
+import { formatDateJapanese } from '../../lib/dateUtils';
 
 // React Native の LayoutAnimation を有効化（Android用）
 if (Platform.OS === 'android') {
@@ -84,13 +85,7 @@ const generateHistoryData = (clothingItems: any[]): HistoryItem[] => {
   return historyItems;
 };
 
-// 曜日付きの日付フォーマット
-const formatDateWithDay = (dateString: string): string => {
-  const date = new Date(dateString);
-  const days = ["日", "月", "火", "水", "木", "金", "土"];
-  const dayOfWeek = days[date.getDay()];
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日(${dayOfWeek})`;
-};
+// 日付フォーマットはlib/dateUtils.tsから使用
 
 export default function History() {
   const { clothingItems, deleteWearHistory, deleteWashHistory } = useClothing();
@@ -162,7 +157,7 @@ export default function History() {
     const sections = Object.keys(groupedByDate)
       .map(date => ({
         date,
-        title: formatDateWithDay(date),
+        title: formatDateJapanese(date),
         data: groupedByDate[date]
       }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

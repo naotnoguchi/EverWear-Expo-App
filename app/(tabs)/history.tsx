@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useClothing } from '../../contexts/ClothingContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { router } from "expo-router";
 import HistoryCalendar from "../../components/HistoryCalendar";
 
@@ -93,6 +94,7 @@ const formatDateWithDay = (dateString: string): string => {
 
 export default function History() {
   const { clothingItems, deleteWearHistory, deleteWashHistory } = useClothing();
+  const theme = useTheme();
   const [selectedDate, setSelectedDate] = useState<string | null>(null); // 選択された日付
   const [isCalendarMinimized, setIsCalendarMinimized] = useState(false); // カレンダーが最小化されているかどうか
   const [showHint, setShowHint] = useState(true); // ヒントを表示するかどうか
@@ -398,13 +400,13 @@ export default function History() {
     height: interpolatedHeight,
     overflow: 'hidden',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: theme.border,
   };
 
   // カスタムカレンダースタイル
   const calendarCustomStyle = {
     container: {
-      backgroundColor: 'white',
+      backgroundColor: theme.card,
       padding: 16,
       paddingBottom: 6, // 下部のパディングをさらに減らす
     },
@@ -417,6 +419,173 @@ export default function History() {
       marginBottom: 0, // グリッドの下マージンをなくす
     }
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    listContainer: {
+      padding: 16,
+      paddingTop: 8,
+      // フローティングボタンが削除されたので余白を減らす
+      paddingBottom: 30,
+    },
+    sectionHeader: {
+      backgroundColor: theme.background,
+      paddingVertical: 8,
+      paddingHorizontal: 4,
+      marginBottom: 8,
+      marginTop: 8,
+      borderRadius: 4,
+    },
+    sectionHeaderText: {
+      fontSize: 14,
+      fontWeight: "bold",
+      color: theme.text,
+    },
+    historyItem: {
+      backgroundColor: theme.card,
+      borderRadius: 8,
+      padding: 12,
+      marginBottom: 8,
+      flexDirection: "row",
+      shadowColor: theme.text,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    iconContainer: {
+      marginRight: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      alignSelf: "stretch",
+    },
+    iconBackground: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    historyContent: {
+      flex: 1,
+    },
+    historyDate: {
+      fontSize: 12,
+      color: theme.text + "99", // with transparency
+      marginBottom: 4,
+    },
+    historyTitle: {
+      fontSize: 16,
+      fontWeight: "bold",
+      marginBottom: 2,
+      color: theme.text,
+    },
+    historyCategory: {
+      fontSize: 12,
+      color: theme.text + "99", // with transparency
+      marginBottom: 4,
+    },
+    historyAction: {
+      fontSize: 14,
+      color: theme.text,
+    },
+    calendarContainer: {
+      zIndex: 10,
+      backgroundColor: theme.card,
+      shadowColor: theme.text,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 3,
+      overflow: 'hidden', // 内容がはみ出ないようにする
+    },
+    expandButton: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      paddingBottom: 5,
+    },
+    expandButtonTouchable: {
+      backgroundColor: theme.card,
+      borderRadius: 20,
+      paddingHorizontal: 15,
+      height: 40,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: theme.text,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    expandButtonText: {
+      fontSize: 12,
+      marginLeft: 5,
+      color: theme.text,
+      fontWeight: '500',
+    },
+    minimizedHeader: {
+      height: 60,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    // フローティングボタンのスタイルを削除
+    selectedDateHistoryContainer: {
+      flex: 1,
+      marginTop: 16,
+    },
+    selectedDateTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      marginBottom: 12,
+      color: theme.text,
+    },
+    placeholderText: {
+      marginTop: 12,
+      fontSize: 16,
+      color: theme.text + "99", // with transparency
+      textAlign: "center",
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingVertical: 30,
+    },
+    hintContainer: {
+      backgroundColor: theme.card,
+      padding: 12,
+      marginHorizontal: 16,
+      marginTop: 8,
+      borderRadius: 8,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderLeftWidth: 3,
+      borderLeftColor: '#3498db',
+    },
+    hintText: {
+      fontSize: 14,
+      color: theme.text,
+      flex: 1,
+    },
+    hintCloseText: {
+      fontSize: 14,
+      color: '#3498db',
+      fontWeight: '500',
+      marginLeft: 8,
+    },
+  });
 
   return (
     <View style={styles.container}>
@@ -459,7 +628,7 @@ export default function History() {
                 style={styles.expandButtonTouchable}
                 activeOpacity={0.7}
               >
-                <Ionicons name="chevron-down" size={20} color="#333" />
+                <Ionicons name="chevron-down" size={20} color={theme.text} />
                 <Text style={styles.expandButtonText}>カレンダーを表示</Text>
               </TouchableOpacity>
             </Animated.View>
@@ -505,7 +674,7 @@ export default function History() {
         }}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="document-text-outline" size={60} color="#bdc3c7" />
+            <Ionicons name="document-text-outline" size={60} color={theme.text + "66"} /* with more transparency */ />
             <Text style={styles.placeholderText}>履歴がありません</Text>
           </View>
         }
@@ -513,169 +682,3 @@ export default function History() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  listContainer: {
-    padding: 16,
-    paddingTop: 8,
-    // フローティングボタンが削除されたので余白を減らす
-    paddingBottom: 30,
-  },
-  sectionHeader: {
-    backgroundColor: "#f5f5f5",
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    marginBottom: 8,
-    marginTop: 8,
-    borderRadius: 4,
-  },
-  sectionHeaderText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#34495e",
-  },
-  historyItem: {
-    backgroundColor: "white",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    flexDirection: "row",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  iconContainer: {
-    marginRight: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "stretch",
-  },
-  iconBackground: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  historyContent: {
-    flex: 1,
-  },
-  historyDate: {
-    fontSize: 12,
-    color: "#7f8c8d",
-    marginBottom: 4,
-  },
-  historyTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 2,
-  },
-  historyCategory: {
-    fontSize: 12,
-    color: "#7f8c8d",
-    marginBottom: 4,
-  },
-  historyAction: {
-    fontSize: 14,
-    color: "#34495e",
-  },
-  calendarContainer: {
-    zIndex: 10,
-    backgroundColor: 'white',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-    overflow: 'hidden', // 内容がはみ出ないようにする
-  },
-  expandButton: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    paddingBottom: 5,
-  },
-  expandButtonTouchable: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    height: 40,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  expandButtonText: {
-    fontSize: 12,
-    marginLeft: 5,
-    color: '#333',
-    fontWeight: '500',
-  },
-  minimizedHeader: {
-    height: 60,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  // フローティングボタンのスタイルを削除
-  selectedDateHistoryContainer: {
-    flex: 1,
-    marginTop: 16,
-  },
-  selectedDateTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 12,
-    color: "#34495e",
-  },
-  placeholderText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#7f8c8d",
-    textAlign: "center",
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 30,
-  },
-  hintContainer: {
-    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-    padding: 12,
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderLeftWidth: 3,
-    borderLeftColor: '#3498db',
-  },
-  hintText: {
-    fontSize: 14,
-    color: '#2c3e50',
-    flex: 1,
-  },
-  hintCloseText: {
-    fontSize: 14,
-    color: '#3498db',
-    fontWeight: '500',
-    marginLeft: 8,
-  },
-});

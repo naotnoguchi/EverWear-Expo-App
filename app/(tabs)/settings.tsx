@@ -11,17 +11,20 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useOnboarding } from "../../contexts/OnboardingContext";
 import { useRouter } from "expo-router";
+import { useTheme } from "../../contexts/ThemeContext";
 
 export default function Settings() {
   // State for settings
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [reminderNotifications, setReminderNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [autoBackup, setAutoBackup] = useState(false);
 
   // Get onboarding functions and router
   const { resetOnboarding } = useOnboarding();
   const router = useRouter();
+
+  // Get theme
+  const theme = useTheme();
 
   // Handle backup
   const handleBackup = () => {
@@ -92,6 +95,111 @@ export default function Settings() {
     );
   };
 
+  // Define styles with theme colors
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    section: {
+      backgroundColor: theme.card,
+      marginBottom: 16,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      marginHorizontal: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    premiumButton: {
+      borderBottomWidth: 0,
+    },
+    premiumDescription: {
+      fontSize: 12,
+      color: theme.text + "99", // Adding transparency for secondary text
+      paddingHorizontal: 12,
+      marginTop: 8,
+      marginBottom: 8,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      marginBottom: 16,
+      color: theme.text,
+    },
+    settingItem: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    settingTextContainer: {
+      flex: 1,
+      paddingRight: 16,
+    },
+    settingLabel: {
+      fontSize: 16,
+      color: theme.text,
+      marginBottom: 4,
+    },
+    settingDescription: {
+      fontSize: 12,
+      color: theme.text + "99", // Adding transparency for secondary text
+    },
+    actionButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    actionButtonText: {
+      fontSize: 16,
+      color: theme.text,
+      marginLeft: 12,
+    },
+    infoItem: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    infoLabel: {
+      fontSize: 16,
+      color: theme.text,
+    },
+    infoValue: {
+      fontSize: 16,
+      color: theme.text + "99", // Adding transparency for secondary text
+    },
+    dangerButton: {
+      backgroundColor: "#e74c3c",
+      borderRadius: 8,
+      padding: 16,
+      alignItems: "center",
+    },
+    dangerButtonText: {
+      color: "white",
+      fontSize: 16,
+      fontWeight: "bold",
+    },
+    footer: {
+      padding: 24,
+      alignItems: "center",
+    },
+    footerText: {
+      fontSize: 12,
+      color: theme.text + "77", // Adding more transparency for footer text
+      textAlign: "center",
+    },
+  });
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.section}>
@@ -129,20 +237,6 @@ export default function Settings() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>アプリ設定</Text>
-        <View style={styles.settingItem}>
-          <View style={styles.settingTextContainer}>
-            <Text style={styles.settingLabel}>ダークモード</Text>
-            <Text style={styles.settingDescription}>
-              ダークテーマに切り替えます
-            </Text>
-          </View>
-          <Switch
-            value={darkMode}
-            onValueChange={setDarkMode}
-            trackColor={{ false: "#767577", true: "#81b0ff" }}
-            thumbColor={darkMode ? "#3498db" : "#f4f3f4"}
-          />
-        </View>
 
         <View style={styles.settingItem}>
           <View style={styles.settingTextContainer}>
@@ -228,107 +322,3 @@ export default function Settings() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  section: {
-    backgroundColor: "white",
-    marginBottom: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginHorizontal: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  premiumButton: {
-    borderBottomWidth: 0,
-  },
-  premiumDescription: {
-    fontSize: 12,
-    color: "#7f8c8d",
-    paddingHorizontal: 12,
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 16,
-    color: "#2c3e50",
-  },
-  settingItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  settingTextContainer: {
-    flex: 1,
-    paddingRight: 16,
-  },
-  settingLabel: {
-    fontSize: 16,
-    color: "#2c3e50",
-    marginBottom: 4,
-  },
-  settingDescription: {
-    fontSize: 12,
-    color: "#7f8c8d",
-  },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  actionButtonText: {
-    fontSize: 16,
-    color: "#2c3e50",
-    marginLeft: 12,
-  },
-  infoItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  infoLabel: {
-    fontSize: 16,
-    color: "#2c3e50",
-  },
-  infoValue: {
-    fontSize: 16,
-    color: "#7f8c8d",
-  },
-  dangerButton: {
-    backgroundColor: "#e74c3c",
-    borderRadius: 8,
-    padding: 16,
-    alignItems: "center",
-  },
-  dangerButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  footer: {
-    padding: 24,
-    alignItems: "center",
-  },
-  footerText: {
-    fontSize: 12,
-    color: "#95a5a6",
-    textAlign: "center",
-  },
-});

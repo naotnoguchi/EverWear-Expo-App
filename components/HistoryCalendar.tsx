@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface HistoryItem {
   id: string;
@@ -46,6 +47,7 @@ export default function HistoryCalendar({
   onResetToToday,
   customStyle = {}
 }: HistoryCalendarProps) {
+  const theme = useTheme();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState<Array<{ day: number; date: string } | null>>([]);
 
@@ -251,11 +253,168 @@ export default function HistoryCalendar({
     );
   };
 
+  // Define styles with theme colors
+  const styles = StyleSheet.create({
+    container: {
+      backgroundColor: theme.card,
+      padding: 16,
+      minHeight: 330, // 最小高さを少し減らす
+    },
+    header: {
+      marginBottom: 16,
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: theme.text,
+    },
+    calendarHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16, // 16pxから12pxに縮小
+    },
+    monthText: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: theme.text,
+    },
+    headerCenter: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    todayButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    todayButtonText: {
+      color: '#3498db',
+      fontSize: 12,
+      marginLeft: 2,
+    },
+    disabledButton: {
+      opacity: 0.5,
+      width: 24,
+      height: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    daysHeader: {
+      flexDirection: 'row',
+      marginBottom: 6, // 8pxから6pxに縮小
+    },
+    dayName: {
+      flex: 1,
+      textAlign: 'center',
+      fontWeight: 'bold',
+      fontSize: 14,
+      color: theme.text,
+    },
+    sundayText: {
+      color: '#e74c3c', // Keep red for Sunday
+    },
+    saturdayText: {
+      color: '#3498db', // Keep blue for Saturday
+    },
+    calendarGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      maxHeight: 220,
+    },
+    emptyDay: {
+      width: `${100 / 7}%`,
+      aspectRatio: 1,
+    },
+    dayCell: {
+      width: `${100 / 7}%`,
+      aspectRatio: 1,
+      padding: 2, // 4pxから2pxに縮小
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    hasEventsDay: {
+      backgroundColor: theme.card === '#ffffff' ? '#f8f9fa' : '#2a2a2a',
+    },
+    selectedDay: {
+      backgroundColor: theme.card === '#ffffff' ? '#e3f2fd' : '#1a3f5f',
+      borderRadius: 20,
+    },
+    todayDay: {
+      backgroundColor: theme.card === '#ffffff' ? '#fff8e1' : '#3a3000', // Adjust for dark mode
+      borderWidth: 1.5,
+      borderColor: '#ffc107', // Keep yellow border for today
+      borderRadius: 20,
+    },
+    futureDay: {
+      opacity: 0.3,
+    },
+    dayNumber: {
+      fontSize: 14,
+      marginBottom: 2, // 4pxから2pxに縮小
+      color: theme.text,
+    },
+    selectedDayText: {
+      fontWeight: 'bold',
+      color: theme.card === '#ffffff' ? '#1976d2' : '#64b5f6', // Lighter blue for dark mode
+    },
+    todayDayText: {
+      fontWeight: 'bold',
+      color: '#ff8f00', // Keep orange for today
+    },
+    futureDayText: {
+      color: theme.text + '55', // with high transparency
+    },
+    eventIndicators: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+    },
+    wearIndicator: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: '#3498db', // Keep blue for wear indicator
+      marginHorizontal: 2,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    washIndicator: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: '#2ecc71', // Keep green for wash indicator
+      marginHorizontal: 2,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    eventCount: {
+      fontSize: 6,
+      color: 'white', // Keep white for contrast
+      fontWeight: 'bold',
+    },
+    legend: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end', // 中央揃えから右寄せに変更
+      paddingRight: 8, // 右側に少し余白を追加
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginHorizontal: 4, // さらに縮小して密集させる
+      marginLeft: 8, // 左側の間隔を広げる
+    },
+    legendText: {
+      marginLeft: 3, // 4pxから3pxに縮小
+      fontSize: 11, // 12pxから11pxに縮小
+      color: theme.text,
+    },
+  });
+
   return (
     <View style={[styles.container, customStyle.container]}>
       <View style={styles.calendarHeader}>
         <TouchableOpacity onPress={goToPreviousMonth}>
-          <Ionicons name="chevron-back" size={24} color="#333" />
+          <Ionicons name="chevron-back" size={24} color={theme.text} />
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
@@ -277,11 +436,11 @@ export default function HistoryCalendar({
         {/* 当月を表示している場合は次の月ボタンを非表示または無効化 */}
         {isCurrentMonthToday ? (
           <View style={styles.disabledButton}>
-            <Ionicons name="chevron-forward" size={24} color="#ccc" />
+            <Ionicons name="chevron-forward" size={24} color={theme.text + "44"} />
           </View>
         ) : (
           <TouchableOpacity onPress={goToNextMonth}>
-            <Ionicons name="chevron-forward" size={24} color="#333" />
+            <Ionicons name="chevron-forward" size={24} color={theme.text} />
           </TouchableOpacity>
         )}
       </View>
@@ -304,153 +463,3 @@ export default function HistoryCalendar({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: 'white',
-    padding: 16,
-    minHeight: 330, // 最小高さを少し減らす
-  },
-  header: {
-    marginBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  calendarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16, // 16pxから12pxに縮小
-  },
-  monthText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  todayButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  todayButtonText: {
-    color: '#3498db',
-    fontSize: 12,
-    marginLeft: 2,
-  },
-  disabledButton: {
-    opacity: 0.5,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  daysHeader: {
-    flexDirection: 'row',
-    marginBottom: 6, // 8pxから6pxに縮小
-  },
-  dayName: {
-    flex: 1,
-    textAlign: 'center',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  sundayText: {
-    color: '#e74c3c',
-  },
-  saturdayText: {
-    color: '#3498db',
-  },
-  calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    maxHeight: 220,
-  },
-  emptyDay: {
-    width: `${100 / 7}%`,
-    aspectRatio: 1,
-  },
-  dayCell: {
-    width: `${100 / 7}%`,
-    aspectRatio: 1,
-    padding: 2, // 4pxから2pxに縮小
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  hasEventsDay: {
-    backgroundColor: '#f8f9fa',
-  },
-  selectedDay: {
-    backgroundColor: '#e3f2fd',
-    borderRadius: 20,
-  },
-  todayDay: {
-    backgroundColor: '#fff8e1', // 薄い黄色の背景
-    borderWidth: 1.5,
-    borderColor: '#ffc107', // 黄色の枠線
-    borderRadius: 20,
-  },
-  futureDay: {
-    opacity: 0.3,
-  },
-  dayNumber: {
-    fontSize: 14,
-    marginBottom: 2, // 4pxから2pxに縮小
-  },
-  selectedDayText: {
-    fontWeight: 'bold',
-    color: '#1976d2',
-  },
-  todayDayText: {
-    fontWeight: 'bold',
-    color: '#ff8f00', // オレンジ色のテキスト
-  },
-  futureDayText: {
-    color: '#999',
-  },
-  eventIndicators: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  wearIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#3498db',
-    marginHorizontal: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  washIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#2ecc71',
-    marginHorizontal: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  eventCount: {
-    fontSize: 6,
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  legend: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end', // 中央揃えから右寄せに変更
-    paddingRight: 8, // 右側に少し余白を追加
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 4, // さらに縮小して密集させる
-    marginLeft: 8, // 左側の間隔を広げる
-  },
-  legendText: {
-    marginLeft: 3, // 4pxから3pxに縮小
-    fontSize: 11, // 12pxから11pxに縮小
-  },
-});

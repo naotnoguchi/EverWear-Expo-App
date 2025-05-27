@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from 'expo-status-bar';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useClothing } from '../contexts/ClothingContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 // ヘルパー関数: 日付をローカルタイムゾーンでISO形式の文字列に変換
 function formatDateToLocalISOString(date: Date): string {
@@ -36,6 +37,7 @@ export default function ItemList({ category }: ItemListProps) {
   const { clothingItems, wearItem, washItem } = useClothing();
   const router = useRouter();
   const colorScheme = useColorScheme(); // 現在のカラースキーム（ライト/ダーク）を取得
+  const theme = useTheme(); // テーマの取得
 
   // 日付選択用の状態
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -285,6 +287,223 @@ export default function ItemList({ category }: ItemListProps) {
   // Get filtered and sorted items
   const filteredAndSortedItems = getFilteredAndSortedItems();
 
+  // Define styles with theme colors
+  const styles = StyleSheet.create({
+    // リストのスタイル
+    listContainer: {
+      padding: 12,
+      paddingBottom: 80, // 追加ボタンの下にスペースを確保
+    },
+    // カッコ書きのテキスト用スタイル
+    parenthesisText: {
+      fontSize: 12, // 一段階小さく
+      color: theme.text + "99", // グレー with transparency
+    },
+    // モーダル関連のスタイル
+    modalContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+      width: '80%',
+      backgroundColor: theme.background,
+      borderRadius: 10,
+      padding: 20,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 15,
+      color: theme.text,
+    },
+    datePicker: {
+      width: 300,
+      height: 200,
+    },
+    modalButtons: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+      marginTop: 20,
+    },
+    modalButton: {
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 5,
+      minWidth: 100,
+      alignItems: 'center',
+    },
+    cancelButton: {
+      backgroundColor: '#ccc',
+    },
+    confirmButton: {
+      backgroundColor: '#3498db',
+    },
+    modalButtonText: {
+      color: 'white',
+      fontWeight: 'bold',
+    },
+    floatingButton: {
+      position: 'absolute',
+      bottom: 20,
+      right: 20,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: '#3498db',
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+    },
+    itemContainer: {
+      backgroundColor: theme.card,
+      borderRadius: 8,
+      marginBottom: 12,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+      flexDirection: "row",
+      overflow: "hidden",
+      position: "relative", // バッジ表示のため
+    },
+    needsWashContainer: {
+      borderLeftWidth: 4,
+      borderLeftColor: "#e74c3c",
+      backgroundColor: theme.card === "#ffffff" ? "#fff8f8" : "#3a1a1a", // 薄い赤色の背景に変更（ダークモード対応）
+    },
+    itemImage: {
+      width: 80,
+      height: 80,
+    },
+    contentContainer: {
+      flex: 1,
+      flexDirection: "row",
+    },
+    itemDetails: {
+      flex: 1,
+      padding: 10,
+    },
+    itemName: {
+      fontSize: 16,
+      fontWeight: "bold",
+      marginBottom: 2,
+      color: theme.text,
+    },
+    itemCategory: {
+      fontSize: 12,
+      color: theme.text + "99", // with transparency
+      marginBottom: 4,
+    },
+    itemBrand: {
+      fontSize: 12,
+      color: theme.text + "99", // with transparency
+      marginBottom: 4,
+    },
+    wearInfo: {
+      marginBottom: 4,
+    },
+    remainingWears: {
+      fontSize: 14,
+      fontWeight: "500",
+      marginBottom: 2,
+      color: theme.text,
+    },
+    needsWashText: {
+      color: "#e74c3c",
+      fontWeight: "bold",
+      fontSize: 15,
+      marginLeft: 4,
+    },
+    washAlertContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 2,
+    },
+    progressContainer: {
+      height: 4,
+      backgroundColor: theme.border,
+      borderRadius: 2,
+      overflow: "hidden",
+    },
+    progressBar: {
+      height: "100%",
+      borderRadius: 2,
+    },
+    lastWorn: {
+      fontSize: 12,
+      color: theme.text + "99", // with transparency
+      marginTop: 4,
+    },
+    actionsContainer: {
+      width: 60,
+      borderLeftWidth: 1,
+      borderLeftColor: theme.border,
+      justifyContent: "space-around",
+    },
+    actionButton: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 8,
+    },
+    washActionHighlight: {
+      backgroundColor: theme.card === "#ffffff" ? "#fff0f0" : "#3a1a1a", // 洗濯ボタンの背景色を変更（ダークモード対応）
+      borderRadius: 4,
+    },
+    actionText: {
+      fontSize: 10,
+      color: "#3498db",
+      fontWeight: "500",
+    },
+    washActionText: {
+      color: "#e74c3c", // 洗濯テキストの色を変更
+      fontWeight: "bold",
+    },
+    // 洗濯バッジを追加
+    washBadge: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      backgroundColor: "#e74c3c",
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 10,
+    },
+    // 空の状態用のスタイル
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+      backgroundColor: theme.background,
+    },
+    emptyText: {
+      fontSize: 16,
+      color: theme.text + "99", // with transparency
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+  });
+
   // データがない場合のフォールバック表示
   if (filteredAndSortedItems.length === 0) {
     return (
@@ -310,7 +529,7 @@ export default function ItemList({ category }: ItemListProps) {
           onChange={onDateChange}
           maximumDate={new Date()} // 未来の日付は選択できないように
           locale="ja-JP"
-          themeVariant="light"
+          themeVariant={colorScheme}
         />
       )}
 
@@ -332,7 +551,7 @@ export default function ItemList({ category }: ItemListProps) {
               maximumDate={new Date()} // 未来の日付は選択できないように
               style={styles.datePicker}
               locale="ja-JP"
-              themeVariant="light"
+              themeVariant={colorScheme}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -373,7 +592,7 @@ export default function ItemList({ category }: ItemListProps) {
               maximumDate={new Date()} // 未来の日付は選択できないように
               style={styles.datePicker}
               locale="ja-JP"
-              themeVariant="light"
+              themeVariant={colorScheme}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -405,215 +624,3 @@ export default function ItemList({ category }: ItemListProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  // リストのスタイル
-  listContainer: {
-    padding: 12,
-    paddingBottom: 80, // 追加ボタンの下にスペースを確保
-  },
-  // カッコ書きのテキスト用スタイル
-  parenthesisText: {
-    fontSize: 12, // 一段階小さく
-    color: "#7f8c8d", // グレー
-  },
-  // モーダル関連のスタイル
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    width: '80%',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-  },
-  datePicker: {
-    width: 300,
-    height: 200,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginTop: 20,
-  },
-  modalButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#ccc',
-  },
-  confirmButton: {
-    backgroundColor: '#3498db',
-  },
-  modalButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  floatingButton: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#3498db',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  itemContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    flexDirection: "row",
-    overflow: "hidden",
-    position: "relative", // バッジ表示のため
-  },
-  needsWashContainer: {
-    borderLeftWidth: 4,
-    borderLeftColor: "#e74c3c",
-    backgroundColor: "#fff8f8", // 薄い赤色の背景に変更
-  },
-  itemImage: {
-    width: 80,
-    height: 80,
-  },
-  contentContainer: {
-    flex: 1,
-    flexDirection: "row",
-  },
-  itemDetails: {
-    flex: 1,
-    padding: 10,
-  },
-  itemName: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 2,
-  },
-  itemCategory: {
-    fontSize: 12,
-    color: "#7f8c8d",
-    marginBottom: 4,
-  },
-  itemBrand: {
-    fontSize: 12,
-    color: "#7f8c8d",
-    marginBottom: 4,
-  },
-  wearInfo: {
-    marginBottom: 4,
-  },
-  remainingWears: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 2,
-  },
-  needsWashText: {
-    color: "#e74c3c",
-    fontWeight: "bold",
-    fontSize: 15,
-    marginLeft: 4,
-  },
-  washAlertContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 2,
-  },
-  progressContainer: {
-    height: 4,
-    backgroundColor: "#ecf0f1",
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  progressBar: {
-    height: "100%",
-    borderRadius: 2,
-  },
-  lastWorn: {
-    fontSize: 12,
-    color: "#7f8c8d",
-    marginTop: 4,
-  },
-  actionsContainer: {
-    width: 60,
-    borderLeftWidth: 1,
-    borderLeftColor: "#ecf0f1",
-    justifyContent: "space-around",
-  },
-  actionButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-  },
-  washActionHighlight: {
-    backgroundColor: "#fff0f0", // 洗濯ボタンの背景色を変更
-    borderRadius: 4,
-  },
-  actionText: {
-    fontSize: 10,
-    color: "#3498db",
-    fontWeight: "500",
-  },
-  washActionText: {
-    color: "#e74c3c", // 洗濯テキストの色を変更
-    fontWeight: "bold",
-  },
-  // 洗濯バッジを追加
-  washBadge: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    backgroundColor: "#e74c3c",
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
-  },
-  // 空の状態用のスタイル
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#7f8c8d',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-});

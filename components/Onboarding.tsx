@@ -11,20 +11,24 @@ import {
   Platform,
 } from 'react-native';
 import { useOnboarding } from '../contexts/OnboardingContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
 // Placeholder component for images
 const PlaceholderImage = ({ iconName, color }: { iconName: keyof typeof Ionicons.glyphMap, color: string }) => {
+  const theme = useTheme();
   return (
     <View style={{
       width: width * 0.8,
       height: height * 0.3,
-      backgroundColor: '#f0f0f0',
+      backgroundColor: theme.card,
       borderRadius: 10,
       justifyContent: 'center',
       alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.border,
     }}>
       <Ionicons name={iconName} size={80} color={color} />
     </View>
@@ -98,7 +102,96 @@ const onboardingSteps = [
 export default function Onboarding() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const { completeOnboarding } = useOnboarding();
+  const theme = useTheme();
   const flatListRef = useRef<FlatList>(null);
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      padding: 16,
+    },
+    skipButton: {
+      padding: 8,
+    },
+    skipText: {
+      color: '#3498db', // Keep blue for brand consistency
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    slide: {
+      width,
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20,
+    },
+    imageContainer: {
+      flex: 2,
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: '100%',
+    },
+    image: {
+      width: width * 0.8,
+      height: height * 0.3,
+    },
+    textContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%',
+      paddingHorizontal: 20,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 20,
+      textAlign: 'center',
+      color: theme.text,
+    },
+    description: {
+      fontSize: 16,
+      textAlign: 'left',
+      color: theme.text + "99", // with transparency
+      marginBottom: 8,
+      alignSelf: 'flex-start',
+    },
+    footer: {
+      fontSize: 14,
+      color: theme.text + "77", // with more transparency
+      marginTop: 20,
+      textAlign: 'center',
+    },
+    button: {
+      backgroundColor: '#3498db', // Keep blue for brand consistency
+      paddingVertical: 15,
+      paddingHorizontal: 40,
+      borderRadius: 30,
+      marginTop: 30,
+      marginBottom: Platform.OS === 'ios' ? 40 : 20,
+    },
+    buttonText: {
+      color: 'white', // Keep white for contrast on blue background
+      fontSize: 18,
+      fontWeight: '600',
+    },
+    dotsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginBottom: 30,
+    },
+    dot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      marginHorizontal: 5,
+    },
+  });
 
   const renderItem = ({ item, index }: { item: typeof onboardingSteps[0], index: number }) => {
     return (
@@ -152,7 +245,7 @@ export default function Onboarding() {
             key={index}
             style={[
               styles.dot,
-              { backgroundColor: index === currentIndex ? '#3498db' : '#e0e0e0' }
+              { backgroundColor: index === currentIndex ? '#3498db' : theme.border }
             ]}
           />
         ))}
@@ -191,90 +284,3 @@ export default function Onboarding() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    padding: 16,
-  },
-  skipButton: {
-    padding: 8,
-  },
-  skipText: {
-    color: '#3498db',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  slide: {
-    width,
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  imageContainer: {
-    flex: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-  },
-  image: {
-    width: width * 0.8,
-    height: height * 0.3,
-  },
-  textContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    paddingHorizontal: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-    color: '#333',
-  },
-  description: {
-    fontSize: 16,
-    textAlign: 'left',
-    color: '#666',
-    marginBottom: 8,
-    alignSelf: 'flex-start',
-  },
-  footer: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 20,
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: '#3498db',
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 30,
-    marginTop: 30,
-    marginBottom: Platform.OS === 'ios' ? 40 : 20,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 30,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginHorizontal: 5,
-  },
-});

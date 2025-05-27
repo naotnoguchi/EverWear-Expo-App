@@ -582,6 +582,11 @@ export default function ItemDetail() {
             <Text style={styles.statLabel}>最終着用日:</Text>
             <Text style={styles.statValue}>{item.lastWorn}</Text>
           </View>
+
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>最終洗濯日:</Text>
+            <Text style={styles.statValue}>{item.washHistory.length > 0 ? item.washHistory[item.washHistory.length - 1] : "なし"}</Text>
+          </View>
         </View>
 
         {/* [id].tsx の一部を修正（プログレスバーの部分） */}

@@ -17,6 +17,7 @@ import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import BrandSelector from "@/components/BrandSelector";
 import { useClothing } from "@/contexts/ClothingContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // カテゴリ定義
 const categories = [
@@ -61,6 +62,7 @@ export default function EditItem() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { addBrand } = useClothing();
+  const theme = useTheme();
   const [name, setName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [brand, setBrand] = useState(""); // ブランド状態を追加
@@ -165,6 +167,186 @@ export default function EditItem() {
     triggerHaptic();
   };
 
+  // Define styles with theme colors
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    scrollContainer: {
+      flexGrow: 1,
+      padding: 16,
+    },
+    formContainer: {
+      backgroundColor: theme.card,
+      borderRadius: 16,
+      padding: 20,
+      shadowColor: theme.text,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      elevation: 3,
+    },
+    closeButton: {
+      padding: 8,
+      borderRadius: 20,
+    },
+    imageSelector: {
+      alignItems: "center",
+      marginBottom: 24,
+    },
+    imagePlaceholder: {
+      width: 200,
+      height: 200,
+      borderRadius: 16,
+      backgroundColor: theme.card,
+      justifyContent: "center",
+      alignItems: "center",
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderStyle: "dashed",
+    },
+    selectedImage: {
+      width: "100%",
+      height: "100%",
+      position: "absolute",
+    },
+    blurContainer: {
+      position: "absolute",
+      width: "100%",
+      height: "100%",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    imageText: {
+      marginTop: 12,
+      color: theme.text + "99", // with transparency
+      fontSize: 14,
+    },
+    imageSelectedText: {
+      marginTop: 12,
+      color: "#fff",
+      fontSize: 14,
+      fontWeight: "500",
+    },
+    inputGroup: {
+      marginBottom: 24,
+    },
+    label: {
+      fontSize: 16,
+      fontWeight: "600",
+      marginBottom: 8,
+      color: theme.text,
+    },
+    sublabel: {
+      fontSize: 14,
+      color: theme.text + "99", // with transparency
+      marginBottom: 12,
+    },
+    inputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      backgroundColor: theme.card,
+    },
+    inputIcon: {
+      marginRight: 8,
+    },
+    input: {
+      flex: 1,
+      paddingVertical: 12,
+      fontSize: 16,
+      color: theme.text,
+    },
+    categoryContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      marginHorizontal: -4,
+    },
+    categoryButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.card,
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      marginHorizontal: 4,
+      marginBottom: 8,
+    },
+    selectedCategory: {
+      backgroundColor: "#3498db",
+      borderColor: "#3498db",
+    },
+    categoryIcon: {
+      marginRight: 6,
+    },
+    categoryText: {
+      fontSize: 14,
+      color: theme.text + "99", // with transparency
+    },
+    selectedCategoryText: {
+      color: "#fff",
+      fontWeight: "500",
+    },
+    thresholdContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    thresholdButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: theme.card,
+      justifyContent: "center",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    disabledButton: {
+      backgroundColor: theme.background,
+      borderColor: theme.border,
+    },
+    thresholdValueContainer: {
+      flexDirection: "row",
+      alignItems: "baseline",
+      marginHorizontal: 20,
+    },
+    thresholdValue: {
+      fontSize: 32,
+      fontWeight: "600",
+      color: theme.text,
+    },
+    thresholdUnit: {
+      fontSize: 18,
+      color: theme.text + "99", // with transparency
+      marginLeft: 4,
+    },
+    addButton: {
+      backgroundColor: "#3498db",
+      borderRadius: 8,
+      paddingVertical: 14,
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: 8,
+    },
+    addButtonIcon: {
+      marginRight: 8,
+    },
+    addButtonText: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "600",
+    },
+  });
+
   return (
     <>
       {/* ヘッダータイトルの設定と閉じるボタンの追加 */}
@@ -172,13 +354,17 @@ export default function EditItem() {
         title: "アイテム編集",
         headerTitleStyle: {
           fontWeight: "600",
+          color: theme.text,
+        },
+        headerStyle: {
+          backgroundColor: theme.background,
         },
         headerRight: () => (
           <TouchableOpacity 
             onPress={handleClose}
             style={styles.closeButton}
           >
-            <Ionicons name="close" size={24} color="#2c3e50" />
+            <Ionicons name="close" size={24} color={theme.text} />
           </TouchableOpacity>
         ),
       }} />
@@ -224,13 +410,13 @@ export default function EditItem() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>アイテム名</Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="text-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
+                <Ionicons name="text-outline" size={20} color={theme.text + "99"} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   value={name}
                   onChangeText={setName}
                   placeholder="例: お気に入りの白シャツ"
-                  placeholderTextColor="#95a5a6"
+                  placeholderTextColor={theme.text + "77"}
                 />
               </View>
             </View>
@@ -252,7 +438,7 @@ export default function EditItem() {
                     <Ionicons 
                       name={category.icon as any} 
                       size={20} 
-                      color={selectedCategory === category.name ? "#fff" : "#7f8c8d"} 
+                      color={selectedCategory === category.name ? "#fff" : theme.text + "99"} 
                       style={styles.categoryIcon}
                     />
                     <Text
@@ -294,7 +480,7 @@ export default function EditItem() {
                   }}
                   disabled={Number(washThreshold) <= 1}
                 >
-                  <Ionicons name="remove" size={24} color={Number(washThreshold) <= 1 ? "#bdc3c7" : "#3498db"} />
+                  <Ionicons name="remove" size={24} color={Number(washThreshold) <= 1 ? theme.text + "33" : "#3498db"} />
                 </TouchableOpacity>
 
                 <View style={styles.thresholdValueContainer}>
@@ -310,7 +496,7 @@ export default function EditItem() {
                     setWashThreshold(String(currentValue + 1));
                   }}
                 >
-                  <Ionicons name="add" size={24} color="#3498db" />
+                  <Ionicons name="add" size={24} color="#3498db" /* Keep blue for brand consistency */ />
                 </TouchableOpacity>
               </View>
             </View>
@@ -321,7 +507,7 @@ export default function EditItem() {
               onPress={handleUpdateItem}
               activeOpacity={0.8}
             >
-              <Ionicons name="save-outline" size={20} color="#fff" style={styles.addButtonIcon} />
+              <Ionicons name="save-outline" size={20} color="#fff" /* Keep white for contrast on blue background */ style={styles.addButtonIcon} />
               <Text style={styles.addButtonText}>変更を保存</Text>
             </TouchableOpacity>
           </View>
@@ -330,182 +516,3 @@ export default function EditItem() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    padding: 16,
-  },
-  formContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  closeButton: {
-    padding: 8,
-    borderRadius: 20,
-  },
-  imageSelector: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  imagePlaceholder: {
-    width: 200,
-    height: 200,
-    borderRadius: 16,
-    backgroundColor: "#f0f5f9",
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#e1e8ed",
-    borderStyle: "dashed",
-  },
-  selectedImage: {
-    width: "100%",
-    height: "100%",
-    position: "absolute",
-  },
-  blurContainer: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  imageText: {
-    marginTop: 12,
-    color: "#7f8c8d",
-    fontSize: 14,
-  },
-  imageSelectedText: {
-    marginTop: 12,
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  inputGroup: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-    color: "#2c3e50",
-  },
-  sublabel: {
-    fontSize: 14,
-    color: "#7f8c8d",
-    marginBottom: 12,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#e1e8ed",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "#f8f9fa",
-  },
-  inputIcon: {
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: "#2c3e50",
-  },
-  categoryContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginHorizontal: -4,
-  },
-  categoryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f8f9fa",
-    borderWidth: 1,
-    borderColor: "#e1e8ed",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginHorizontal: 4,
-    marginBottom: 8,
-  },
-  selectedCategory: {
-    backgroundColor: "#3498db",
-    borderColor: "#3498db",
-  },
-  categoryIcon: {
-    marginRight: 6,
-  },
-  categoryText: {
-    fontSize: 14,
-    color: "#7f8c8d",
-  },
-  selectedCategoryText: {
-    color: "#fff",
-    fontWeight: "500",
-  },
-  thresholdContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  thresholdButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#f0f5f9",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#e1e8ed",
-  },
-  disabledButton: {
-    backgroundColor: "#f8f9fa",
-    borderColor: "#f0f5f9",
-  },
-  thresholdValueContainer: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    marginHorizontal: 20,
-  },
-  thresholdValue: {
-    fontSize: 32,
-    fontWeight: "600",
-    color: "#2c3e50",
-  },
-  thresholdUnit: {
-    fontSize: 18,
-    color: "#7f8c8d",
-    marginLeft: 4,
-  },
-  addButton: {
-    backgroundColor: "#3498db",
-    borderRadius: 8,
-    paddingVertical: 14,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 8,
-  },
-  addButtonIcon: {
-    marginRight: 8,
-  },
-  addButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

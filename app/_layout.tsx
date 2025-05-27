@@ -5,13 +5,16 @@ import { StatusBar } from 'expo-status-bar'; // StatusBarをインポート
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ClothingProvider } from '../contexts/ClothingContext';
 import { OnboardingProvider, useOnboarding } from '../contexts/OnboardingContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Platform, StyleSheet, View, useColorScheme } from 'react-native';
 import Onboarding from '../components/Onboarding';
+import { useTheme } from "@/contexts/ThemeContext";
 
 // Main app component with navigation
 function MainApp() {
   const { isOnboardingComplete } = useOnboarding();
   const colorScheme = useColorScheme(); // 現在のカラースキーム（ライト/ダーク）を取得
+  const theme = useTheme(); // テーマの取得
 
   // If onboarding is not complete, show the onboarding screen
   if (!isOnboardingComplete) {
@@ -31,7 +34,18 @@ function MainApp() {
         // ヘッダーの共通スタイル
         headerTitleStyle: {
           fontWeight: "600",
+          color: theme.text,
         },
+        headerStyle: {
+          backgroundColor: theme.background,
+        },
+        headerBackTitleStyle: {
+          color: theme.text,
+        },
+        headerTintColor: Platform.select({
+          android: colorScheme === 'dark' ? 'white' : theme.text,
+          ios: undefined, // iOSはデフォルトの青色を使用
+        }),
       }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
@@ -68,7 +82,9 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.container}>
       <OnboardingProvider>
         <ClothingProvider>
-          <MainApp />
+          <ThemeProvider>
+            <MainApp />
+          </ThemeProvider>
         </ClothingProvider>
       </OnboardingProvider>
     </GestureHandlerRootView>

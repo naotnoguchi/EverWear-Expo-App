@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import ItemCalendar from "../../components/ItemCalendar";
 import { useClothing } from "../../contexts/ClothingContext";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // ヘルパー関数: 日付をローカルタイムゾーンでISO形式の文字列に変換
 function formatDateToLocalISOString(date: Date): string {
@@ -36,6 +37,7 @@ export default function ItemDetail() {
   const { clothingItems, wearItem, washItem, deleteItem, deleteWearHistory, deleteWashHistory } = useClothing();
   const [item, setItem] = useState<ClothingItem | null>(null);
   const colorScheme = useColorScheme(); // 現在のカラースキーム（ライト/ダーク）を取得
+  const theme = useTheme(); // テーマの取得
 
   // 日付選択用の状態
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -196,11 +198,229 @@ export default function ItemDetail() {
     }
   };
 
+  // Define styles with theme colors
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    // カッコ書きのテキスト用スタイル
+    parenthesisText: {
+      fontSize: 14, // 一段階小さく
+      color: theme.text + "99", // グレー with transparency
+    },
+    // モーダル関連のスタイル
+    modalContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+      width: '80%',
+      backgroundColor: theme.background,
+      borderRadius: 10,
+      padding: 20,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 15,
+      color: theme.text,
+    },
+    datePicker: {
+      width: 300,
+      height: 200,
+    },
+    modalButtons: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+      marginTop: 20,
+    },
+    modalButton: {
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 5,
+      minWidth: 100,
+      alignItems: 'center',
+    },
+    cancelButton: {
+      backgroundColor: '#ccc',
+    },
+    confirmButton: {
+      backgroundColor: '#3498db',
+    },
+    modalButtonText: {
+      color: 'white',
+      fontWeight: 'bold',
+    },
+    itemImage: {
+      width: "100%",
+      height: 300,
+    },
+    detailsContainer: {
+      padding: 16,
+    },
+    itemNameContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    itemName: {
+      fontSize: 24,
+      fontWeight: "bold",
+      flex: 1,
+      color: theme.text,
+    },
+    editButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#3498db",
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 16,
+      marginLeft: 10,
+    },
+    editButtonText: {
+      color: "#fff",
+      fontWeight: "500",
+      fontSize: 14,
+      marginLeft: 4,
+    },
+    categoryContainer: {
+      flexDirection: "row",
+      marginBottom: 16,
+      alignItems: "center",
+    },
+    categoryLabel: {
+      fontSize: 16,
+      fontWeight: "bold",
+      marginRight: 8,
+      color: theme.text,
+    },
+    categoryValue: {
+      fontSize: 16,
+      backgroundColor: theme.card,
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      borderRadius: 16,
+      color: theme.text,
+    },
+    statsContainer: {
+      backgroundColor: theme.card,
+      borderRadius: 8,
+      padding: 16,
+      marginBottom: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    statItem: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 8,
+    },
+    statLabel: {
+      fontSize: 16,
+      color: theme.text + "99", // with transparency
+    },
+    statValue: {
+      fontSize: 16,
+      fontWeight: "bold",
+      color: theme.text,
+    },
+    wearInfoContainer: {
+      backgroundColor: theme.card,
+      borderRadius: 8,
+      padding: 16,
+      marginBottom: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    wearInfoLabel: {
+      fontSize: 16,
+      marginBottom: 8,
+      color: theme.text,
+    },
+    progressContainer: {
+      height: 10,
+      backgroundColor: theme.border,
+      borderRadius: 5,
+      marginBottom: 8,
+      overflow: "hidden",
+    },
+    progressBar: {
+      height: "100%",
+    },
+    washAlert: {
+      color: "#e74c3c",
+      fontWeight: "bold",
+      fontSize: 16,
+    },
+    actionButtonsContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 16,
+    },
+    actionButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 12,
+      borderRadius: 8,
+      flex: 1,
+      marginHorizontal: 8,
+    },
+    wearButton: {
+      backgroundColor: "#3498db",
+    },
+    washButton: {
+      backgroundColor: "#2ecc71",
+    },
+    actionButtonText: {
+      color: "white",
+      fontWeight: "bold",
+      marginLeft: 8,
+    },
+    deleteButtonBottom: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#e74c3c",
+      padding: 16,
+      borderRadius: 8,
+      marginTop: 24,
+      marginBottom: 16,
+    },
+    deleteButtonBottomText: {
+      color: "white",
+      fontWeight: "bold",
+      fontSize: 16,
+      marginLeft: 8,
+    },
+  });
+
   if (!item) {
     return (
-      <View style={styles.container}>
-        <Text>アイテムが見つかりません</Text>
-      </View>
+        <View style={styles.container}>
+          <Text>アイテムが見つかりません</Text>
+        </View>
     );
   }
 
@@ -209,8 +429,6 @@ export default function ItemDetail() {
 
   return (
     <ScrollView style={styles.container}>
-      {/* StatusBarコンポーネントを条件付きでレンダリング */}
-      <StatusBar style={(showWearModal || showWashModal) ? 'dark' : (colorScheme === 'dark' ? 'light' : 'dark')} />
       {/* Android用の日付ピッカー */}
       {(showWearDatePicker || showWashDatePicker) && Platform.OS === 'android' && (
         <DateTimePicker
@@ -221,7 +439,7 @@ export default function ItemDetail() {
           onChange={onDateChange}
           maximumDate={new Date()} // 未来の日付は選択できないように
           locale="ja-JP"
-          themeVariant="light"
+          themeVariant={colorScheme}
         />
       )}
 
@@ -243,7 +461,7 @@ export default function ItemDetail() {
               maximumDate={new Date()} // 未来の日付は選択できないように
               style={styles.datePicker}
               locale="ja-JP"
-              themeVariant="light"
+              themeVariant={colorScheme}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -281,7 +499,7 @@ export default function ItemDetail() {
               maximumDate={new Date()} // 未来の日付は選択できないように
               style={styles.datePicker}
               locale="ja-JP"
-              themeVariant="light"
+              themeVariant={colorScheme}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -416,214 +634,3 @@ export default function ItemDetail() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  // カッコ書きのテキスト用スタイル
-  parenthesisText: {
-    fontSize: 14, // 一段階小さく
-    color: "#7f8c8d", // グレー
-  },
-  // モーダル関連のスタイル
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    width: '80%',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-  },
-  datePicker: {
-    width: 300,
-    height: 200,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginTop: 20,
-  },
-  modalButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#ccc',
-  },
-  confirmButton: {
-    backgroundColor: '#3498db',
-  },
-  modalButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  itemImage: {
-    width: "100%",
-    height: 300,
-  },
-  detailsContainer: {
-    padding: 16,
-  },
-  itemNameContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  itemName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    flex: 1,
-  },
-  editButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#3498db",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    marginLeft: 10,
-  },
-  editButtonText: {
-    color: "#fff",
-    fontWeight: "500",
-    fontSize: 14,
-    marginLeft: 4,
-  },
-  categoryContainer: {
-    flexDirection: "row",
-    marginBottom: 16,
-    alignItems: "center",
-  },
-  categoryLabel: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginRight: 8,
-  },
-  categoryValue: {
-    fontSize: 16,
-    backgroundColor: "#ecf0f1",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
-  },
-  statsContainer: {
-    backgroundColor: "white",
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  statLabel: {
-    fontSize: 16,
-    color: "#7f8c8d",
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  wearInfoContainer: {
-    backgroundColor: "white",
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  wearInfoLabel: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  progressContainer: {
-    height: 10,
-    backgroundColor: "#ecf0f1",
-    borderRadius: 5,
-    marginBottom: 8,
-    overflow: "hidden",
-  },
-  progressBar: {
-    height: "100%",
-  },
-  washAlert: {
-    color: "#e74c3c",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  actionButtonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 12,
-    borderRadius: 8,
-    flex: 1,
-    marginHorizontal: 8,
-  },
-  wearButton: {
-    backgroundColor: "#3498db",
-  },
-  washButton: {
-    backgroundColor: "#2ecc71",
-  },
-  actionButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    marginLeft: 8,
-  },
-  deleteButtonBottom: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#e74c3c",
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 24,
-    marginBottom: 16,
-  },
-  deleteButtonBottomText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 16,
-    marginLeft: 8,
-  },
-});

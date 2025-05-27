@@ -14,6 +14,7 @@ import BottomsItems from "./categories/BottomsItems";
 import OuterwearItems from "./categories/OuterwearItems";
 import AccessoriesItems from "./categories/AccessoriesItems";
 import ShoesItems from "./categories/ShoesItems";
+import {useTheme} from "@/contexts/ThemeContext";
 
 // カテゴリリスト定義
 const categories = [
@@ -32,16 +33,18 @@ export default function HomeTabView() {
   const tabScrollViewRef = useRef<ScrollView>(null);
   const contentScrollViewRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  
+
   // ソートモーダルの表示状態（他の場所でも使用される可能性があるため維持）
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const { sortConfig } = useClothing();
-  
+
+  const theme = useTheme();
+
   // タブが変更されたときのハンドラー
   const handleTabChange = (index: number) => {
     if (index >= 0 && index < categories.length && index !== activeIndex) {
       setActiveIndex(index);
-      
+
       // タブスクロールビューの位置を調整
       if (tabScrollViewRef.current) {
         tabScrollViewRef.current.scrollTo({
@@ -49,7 +52,7 @@ export default function HomeTabView() {
           animated: true,
         });
       }
-      
+
       // コンテンツスクロールビューを対応する位置にスクロール
       if (contentScrollViewRef.current) {
         contentScrollViewRef.current.scrollTo({
@@ -59,24 +62,24 @@ export default function HomeTabView() {
       }
     }
   };
-  
+
   // スクロールハンドラー - 通常のScrollView用
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     // ここでスクロール位置を使用する処理を行う場合
     // const scrollX = event.nativeEvent.contentOffset.x;
   };
-  
+
   // スクロール終了時のハンドラー
   const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollX = event.nativeEvent.contentOffset.x;
     const pageIndex = Math.round(scrollX / width);
-    
+
     if (pageIndex !== activeIndex) {
       setActiveIndex(pageIndex);
       syncTabPosition(pageIndex);
     }
   };
-  
+
   // タブの位置を同期
   const syncTabPosition = (index: number) => {
     if (tabScrollViewRef.current) {
@@ -86,6 +89,76 @@ export default function HomeTabView() {
       });
     }
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      position: 'relative',
+    },
+    tabBarContainer: {
+      backgroundColor: theme.background,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+      zIndex: 10,
+    },
+    tabsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    scrollView: {
+      flex: 1,
+    },
+    tabsScrollContainer: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    tabButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      marginRight: 8,
+      borderRadius: 20,
+      backgroundColor: theme.card,
+    },
+    activeTabButton: {
+      backgroundColor: "#3498db",
+    },
+    tabText: {
+      fontSize: 14,
+      color: theme.text + "99", // with transparency
+    },
+    activeTabText: {
+      color: "#fff", // Keep white for contrast on blue background
+      fontWeight: "bold",
+    },
+    contentWrapper: {
+      flex: 1,
+      overflow: 'hidden',
+    },
+    horizontalScroller: {
+      flex: 1,
+    },
+    pageContainer: {
+      flex: 1,
+    },
+    // sortButton関連のスタイルを削除
+    floatingButton: {
+      position: 'absolute',
+      bottom: 20,
+      right: 20,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: '#3498db', // Keep blue for brand consistency
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 5,
+      shadowColor: theme.text,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      zIndex: 100,
+    },
+  });
 
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -119,7 +192,7 @@ export default function HomeTabView() {
               </TouchableOpacity>
             ))}
           </ScrollView>
-          
+
           {/* ソートボタンを削除 */}
         </View>
       </View>
@@ -147,15 +220,15 @@ export default function HomeTabView() {
           })}
         </ScrollView>
       </View>
-      
+
       {/* 固定位置に追加ボタンを配置 */}
       <TouchableOpacity
         style={styles.floatingButton}
         onPress={() => router.push("/add")}
       >
-        <Ionicons name="add" size={24} color="#fff" />
+        <Ionicons name="add" size={24} color="#fff" /* Keep white for contrast on blue background */ />
       </TouchableOpacity>
-      
+
       {/* ソートモーダル（他の場所から開く可能性があるので維持） */}
       <SortModal
         visible={sortModalVisible}
@@ -164,73 +237,3 @@ export default function HomeTabView() {
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    position: 'relative',
-  },
-  tabBarContainer: {
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-    zIndex: 10,
-  },
-  tabsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  tabsScrollContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  tabButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 20,
-    backgroundColor: "#f0f0f0",
-  },
-  activeTabButton: {
-    backgroundColor: "#3498db",
-  },
-  tabText: {
-    fontSize: 14,
-    color: "#7f8c8d",
-  },
-  activeTabText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  contentWrapper: {
-    flex: 1,
-    overflow: 'hidden',
-  },
-  horizontalScroller: {
-    flex: 1,
-  },
-  pageContainer: {
-    flex: 1,
-  },
-  // sortButton関連のスタイルを削除
-  floatingButton: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#3498db',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    zIndex: 100,
-  },
-});

@@ -9,18 +9,182 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function SubscriptionScreen() {
   const router = useRouter();
+  const theme = useTheme();
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    header: {
+      alignItems: "center",
+      padding: 24,
+      backgroundColor: theme.card,
+      borderRadius: 8,
+      margin: 16,
+      shadowColor: theme.text,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    headerTitle: {
+      fontSize: 22,
+      fontWeight: "bold",
+      color: theme.text,
+      marginTop: 16,
+      textAlign: "center",
+    },
+    headerSubtitle: {
+      fontSize: 16,
+      color: theme.text + "99", // with transparency
+      marginTop: 8,
+      textAlign: "center",
+    },
+    planSection: {
+      backgroundColor: theme.card,
+      borderRadius: 8,
+      margin: 16,
+      padding: 16,
+      shadowColor: theme.text,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    section: {
+      backgroundColor: theme.card,
+      borderRadius: 8,
+      margin: 16,
+      padding: 16,
+      shadowColor: theme.text,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      marginBottom: 16,
+      color: theme.text,
+    },
+    planCard: {
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 8,
+      marginBottom: 16,
+      overflow: "hidden",
+    },
+    premiumCard: {
+      borderColor: "#FFD700",
+      borderWidth: 2,
+    },
+    planHeader: {
+      padding: 16,
+      backgroundColor: theme.background,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    planTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      color: theme.text,
+      marginBottom: 8,
+    },
+    premiumTitle: {
+      color: "#FFD700",
+    },
+    planPrice: {
+      fontSize: 24,
+      fontWeight: "bold",
+      color: theme.text,
+    },
+    yearlyPrice: {
+      fontSize: 14,
+      color: theme.text + "99", // with transparency
+      marginTop: 4,
+    },
+    planFeatures: {
+      padding: 16,
+    },
+    featureItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    featureText: {
+      marginLeft: 8,
+      fontSize: 14,
+      color: theme.text,
+    },
+    referralCard: {
+      padding: 16,
+      backgroundColor: theme.background,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    referralText: {
+      fontSize: 16,
+      fontWeight: "bold",
+      color: theme.text,
+      marginBottom: 16,
+    },
+    referralFeature: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    referralFeatureText: {
+      marginLeft: 8,
+      fontSize: 14,
+      color: theme.text,
+    },
+    ctaSection: {
+      alignItems: "center",
+      padding: 24,
+      margin: 16,
+    },
+    ctaButton: {
+      backgroundColor: "#3498db",
+      borderRadius: 8,
+      paddingVertical: 16,
+      paddingHorizontal: 32,
+      width: "100%",
+      alignItems: "center",
+    },
+    ctaButtonText: {
+      color: "white",
+      fontSize: 18,
+      fontWeight: "bold",
+    },
+    ctaNote: {
+      marginTop: 16,
+      fontSize: 12,
+      color: theme.text + "99", // with transparency
+      textAlign: "center",
+    },
+  });
 
   return (
     <>
       <Stack.Screen
         options={{
           title: "プレミアムプラン",
+          headerTitleStyle: {
+            color: theme.text,
+          },
+          headerStyle: {
+            backgroundColor: theme.background,
+          },
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color="#3498db" />
+              <Ionicons name="arrow-back" size={24} color={theme.text} />
             </TouchableOpacity>
           ),
         }}
@@ -36,7 +200,7 @@ export default function SubscriptionScreen() {
 
         <View style={styles.planSection}>
           <Text style={styles.sectionTitle}>プラン比較</Text>
-          
+
           <View style={styles.planCard}>
             <View style={styles.planHeader}>
               <Text style={styles.planTitle}>無料プラン</Text>
@@ -132,159 +296,3 @@ export default function SubscriptionScreen() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  header: {
-    alignItems: "center",
-    padding: 24,
-    backgroundColor: "white",
-    borderRadius: 8,
-    margin: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#2c3e50",
-    marginTop: 16,
-    textAlign: "center",
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: "#7f8c8d",
-    marginTop: 8,
-    textAlign: "center",
-  },
-  planSection: {
-    backgroundColor: "white",
-    borderRadius: 8,
-    margin: 16,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  section: {
-    backgroundColor: "white",
-    borderRadius: 8,
-    margin: 16,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 16,
-    color: "#2c3e50",
-  },
-  planCard: {
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-    borderRadius: 8,
-    marginBottom: 16,
-    overflow: "hidden",
-  },
-  premiumCard: {
-    borderColor: "#FFD700",
-    borderWidth: 2,
-  },
-  planHeader: {
-    padding: 16,
-    backgroundColor: "#f8f9fa",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
-  planTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#2c3e50",
-    marginBottom: 8,
-  },
-  premiumTitle: {
-    color: "#FFD700",
-  },
-  planPrice: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2c3e50",
-  },
-  yearlyPrice: {
-    fontSize: 14,
-    color: "#7f8c8d",
-    marginTop: 4,
-  },
-  planFeatures: {
-    padding: 16,
-  },
-  featureItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  featureText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: "#2c3e50",
-  },
-  referralCard: {
-    padding: 16,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-  },
-  referralText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#2c3e50",
-    marginBottom: 16,
-  },
-  referralFeature: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  referralFeatureText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: "#2c3e50",
-  },
-  ctaSection: {
-    alignItems: "center",
-    padding: 24,
-    margin: 16,
-  },
-  ctaButton: {
-    backgroundColor: "#3498db",
-    borderRadius: 8,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    width: "100%",
-    alignItems: "center",
-  },
-  ctaButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  ctaNote: {
-    marginTop: 16,
-    fontSize: 12,
-    color: "#7f8c8d",
-    textAlign: "center",
-  },
-});

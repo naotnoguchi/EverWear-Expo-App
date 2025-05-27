@@ -1,7 +1,10 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../../contexts/ThemeContext";
 
 export default function TabsLayout() {
+  const theme = useTheme();
+
   return (
     <Tabs
       screenOptions={{
@@ -10,7 +13,15 @@ export default function TabsLayout() {
         headerShown: true,
         headerStyle: {
           borderBottomWidth: 1,
-          borderBottomColor: "#e0e0e0",
+          borderBottomColor: theme.border,
+          backgroundColor: theme.header,
+        },
+        headerTitleStyle: {
+          color: theme.text,
+        },
+        tabBarStyle: {
+          backgroundColor: theme.header,
+          borderTopColor: theme.border,
         },
       }}
     >

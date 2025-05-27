@@ -1,4 +1,5 @@
 // Database type definitions for ClothesManagerApp
+import { CategoryValue } from './categories';
 
 // User type (matches Supabase auth user)
 export interface User {
@@ -12,7 +13,7 @@ export interface ClothingItem {
   id: string;
   user_id: string;
   name: string;
-  category: string;
+  category: CategoryValue;
   brand: string | null;
   image_url: string | null;
   wear_count: number;
@@ -82,7 +83,7 @@ export interface Database {
 export interface AppClothingItem {
   id: string;
   name: string;
-  category: string;
+  category: CategoryValue;
   brand: string;
   image: string;
   wearCount: number;
@@ -112,7 +113,7 @@ export const toDbClothingItem = (appItem: Partial<AppClothingItem>, userId: stri
   return {
     user_id: userId,
     name: appItem.name || '',
-    category: appItem.category || '',
+    category: appItem.category || null,
     brand: appItem.brand || null,
     image_url: appItem.image || null,
     wear_count: appItem.wearCount || 0,

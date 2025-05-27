@@ -2,6 +2,6 @@ import React from "react";
 import ItemList from "../ItemList";
 import { getCategoryValueById, CategoryId } from "../../types/categories";
 
-export default function BottomsItems() {
-    return <ItemList category={getCategoryValueById(CategoryId.BOTTOMS)} />;
+export default function OthersItems() {
+    return <ItemList category={getCategoryValueById(CategoryId.OTHERS)} />;
 }

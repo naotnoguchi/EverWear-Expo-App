@@ -14,17 +14,22 @@ import BottomsItems from "./categories/BottomsItems";
 import OuterwearItems from "./categories/OuterwearItems";
 import AccessoriesItems from "./categories/AccessoriesItems";
 import ShoesItems from "./categories/ShoesItems";
+import OthersItems from "./categories/OthersItems";
 import {useTheme} from "@/contexts/ThemeContext";
 
-// カテゴリリスト定義
-const categories = [
-  { id: "all", name: "すべて", component: AllItems },
-  { id: "tops", name: "トップス", component: TopsItems },
-  { id: "bottoms", name: "ボトムス", component: BottomsItems },
-  { id: "outerwear", name: "アウター", component: OuterwearItems },
-  { id: "accessories", name: "小物", component: AccessoriesItems },
-  { id: "shoes", name: "シューズ", component: ShoesItems },
-];
+// カテゴリ定義のインポート
+import { CATEGORIES, CategoryId, getCategoryValueById } from "../types/categories";
+
+// カテゴリとコンポーネントのマッピング
+const categoryComponents = {
+  [CategoryId.ALL]: AllItems,
+  [CategoryId.TOPS]: TopsItems,
+  [CategoryId.BOTTOMS]: BottomsItems,
+  [CategoryId.OUTERWEAR]: OuterwearItems,
+  [CategoryId.ACCESSORIES]: AccessoriesItems,
+  [CategoryId.SHOES]: ShoesItems,
+  [CategoryId.OTHERS]: OthersItems,
+};
 
 const { width } = Dimensions.get("window");
 
@@ -36,13 +41,22 @@ export default function HomeTabView() {
 
   // ソートモーダルの表示状態（他の場所でも使用される可能性があるため維持）
   const [sortModalVisible, setSortModalVisible] = useState(false);
-  const { sortConfig } = useClothing();
+  const { sortConfig, clothingItems } = useClothing();
+
+  // カテゴリごとのアイテム数を計算する関数
+  const getCategoryItemCount = (categoryId: CategoryId): number => {
+    if (categoryId === CategoryId.ALL) {
+      return clothingItems.length;
+    }
+    const categoryValue = getCategoryValueById(categoryId);
+    return clothingItems.filter(item => item.category === categoryValue).length;
+  };
 
   const theme = useTheme();
 
   // タブが変更されたときのハンドラー
   const handleTabChange = (index: number) => {
-    if (index >= 0 && index < categories.length && index !== activeIndex) {
+    if (index >= 0 && index < CATEGORIES.length && index !== activeIndex) {
       setActiveIndex(index);
 
       // タブスクロールビューの位置を調整
@@ -130,6 +144,30 @@ export default function HomeTabView() {
       color: "#fff", // Keep white for contrast on blue background
       fontWeight: "bold",
     },
+    tabContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    countBadge: {
+      marginLeft: 4,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 10,
+      backgroundColor: theme.text + "20", // with high transparency
+      minWidth: 20,
+      alignItems: 'center',
+    },
+    activeCountBadge: {
+      backgroundColor: "#ffffff40", // white with transparency
+    },
+    countText: {
+      fontSize: 12,
+      color: theme.text + "99", // with transparency
+      textAlign: 'center',
+    },
+    activeCountText: {
+      color: "#fff", // white for contrast on blue background
+    },
     contentWrapper: {
       flex: 1,
       overflow: 'hidden',
@@ -172,7 +210,7 @@ export default function HomeTabView() {
             contentContainerStyle={styles.tabsScrollContainer}
             style={styles.scrollView}
           >
-            {categories.map((category, index) => (
+            {CATEGORIES.map((category, index) => (
               <TouchableOpacity
                 key={category.id}
                 style={[
@@ -181,14 +219,27 @@ export default function HomeTabView() {
                 ]}
                 onPress={() => handleTabChange(index)}
               >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeIndex === index && styles.activeTabText,
-                  ]}
-                >
-                  {category.name}
-                </Text>
+                <View style={styles.tabContent}>
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeIndex === index && styles.activeTabText,
+                    ]}
+                  >
+                    {category.name}
+                  </Text>
+                  <View style={[
+                    styles.countBadge,
+                    activeIndex === index && styles.activeCountBadge,
+                  ]}>
+                    <Text style={[
+                      styles.countText,
+                      activeIndex === index && styles.activeCountText,
+                    ]}>
+                      {getCategoryItemCount(category.id)}
+                    </Text>
+                  </View>
+                </View>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -210,8 +261,8 @@ export default function HomeTabView() {
           decelerationRate="fast"
           style={styles.horizontalScroller}
         >
-          {categories.map((category, index) => {
-            const CategoryComponent = category.component;
+          {CATEGORIES.map((category, index) => {
+            const CategoryComponent = categoryComponents[category.id];
             return (
               <View key={category.id} style={[styles.pageContainer, { width }]}>
                 <CategoryComponent />

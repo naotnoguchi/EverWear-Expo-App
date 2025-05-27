@@ -7,12 +7,13 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useClothing } from '../contexts/ClothingContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { formatDateToLocalISOString, formatDateJapanese } from '../lib/dateUtils';
+import { CategoryValue } from '../types/categories';
 
 // インターフェース定義
 interface ClothingItem {
   id: string;
   name: string;
-  category: string;
+  category: CategoryValue;
   brand: string; // ブランド情報
   image: string;
   wearCount: number;
@@ -23,7 +24,7 @@ interface ClothingItem {
 }
 
 interface ItemListProps {
-  category: string | null;
+  category: CategoryValue;
 }
 
 export default function ItemList({ category }: ItemListProps) {

@@ -168,7 +168,7 @@ export const mockClothingItems: AppClothingItem[] = [
   {
     id: "7",
     name: "カシミアマフラー",
-    category: "アクセサリー",
+    category: "小物",
     brand: "Hermès",
     image: "https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
     washThreshold: 5,
@@ -215,7 +215,7 @@ export const mockClothingItems: AppClothingItem[] = [
   {
     id: "9",
     name: "シルクネクタイ",
-    category: "アクセサリー",
+    category: "小物",
     brand: "Versace",
     image: "https://images.unsplash.com/photo-1589756823695-278bc923f962?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=735&q=80",
     washThreshold: 5,

@@ -30,7 +30,7 @@ const categories = [
 
 export default function AddItem() {
   const router = useRouter();
-  const { addBrand } = useClothing();
+  const { addBrand, addItem } = useClothing();
   const theme = useTheme();
   const [name, setName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -69,7 +69,7 @@ export default function AddItem() {
     }
   };
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     // 入力検証
     if (!name.trim()) {
       Alert.alert("エラー", "アイテム名を入力してください");
@@ -93,25 +93,46 @@ export default function AddItem() {
 
     // ブランド入力は必須ではないが、入力された場合はシステムに追加
     if (brand) {
-      addBrand(brand); // 新しいブランドをシステムに追加
+      await addBrand(brand); // 新しいブランドをシステムに追加
     }
 
-    // 実際のアプリではここでストレージにアイテムを保存
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // 新しいアイテムオブジェクトを作成
+    const newItem = {
+      name: name,
+      category: selectedCategory,
+      brand: brand,
+      image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=776&q=80", // ダミー画像URL
+      washThreshold: Number(washThreshold),
+      lastWorn: "",
+      wearCount: 0,
+      wearHistory: [],
+      washHistory: []
+    };
 
-    Alert.alert(
-      "成功",
-      "新しいアイテムが追加されました",
-      [
-        {
-          text: "OK",
-          onPress: () => {
-            // 追加後は画面を閉じる
-            router.back();
+    try {
+      // アイテムをデータストアに追加
+      await addItem(newItem);
+
+      // 成功通知
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      Alert.alert(
+        "成功",
+        "新しいアイテムが追加されました",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // 追加後は画面を閉じる
+              router.back();
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    } catch (error) {
+      // エラー処理
+      Alert.alert("エラー", "アイテムの追加に失敗しました");
+    }
   };
 
   const handleSelectImage = () => {

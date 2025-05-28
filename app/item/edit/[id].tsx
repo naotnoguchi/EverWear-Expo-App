@@ -393,7 +393,8 @@ export default function EditItem() {
         headerStyle: {
           backgroundColor: theme.background,
         },
-        headerBackTitle: "戻る", // iOSの戻るボタンのテキストを「戻る」に設定
+        // 戻るボタンを非表示にする
+        headerBackVisible: false,
         headerRight: () => (
           <TouchableOpacity 
             onPress={handleClose}

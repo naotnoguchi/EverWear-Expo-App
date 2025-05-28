@@ -29,39 +29,11 @@ const categories = [
   { id: "others", name: "その他", icon: "ellipsis-horizontal-circle-outline" },
 ];
 
-// Dummy data for clothing items (same as in [id].tsx)
-const dummyClothingItems = [
-  {
-    id: "1",
-    name: "お気に入りの白シャツ",
-    category: "トップス",
-    brand: "ユニクロ",
-    image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=776&q=80",
-    wearCount: 2,
-    washThreshold: 3,
-    lastWorn: "2023-10-15",
-    wearHistory: ["2023-10-10", "2023-10-15"],
-    washHistory: ["2023-10-05"],
-  },
-  {
-    id: "2",
-    name: "黒パンツ",
-    category: "ボトムス",
-    brand: "GU",
-    image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80",
-    wearCount: 3,
-    washThreshold: 3,
-    lastWorn: "2023-10-14",
-    wearHistory: ["2023-10-08", "2023-10-12", "2023-10-14"],
-    washHistory: ["2023-10-09"],
-  },
-  // ... other items
-];
 
 export default function EditItem() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { addBrand } = useClothing();
+  const { clothingItems, updateItem, addBrand } = useClothing();
   const theme = useTheme();
   const [name, setName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -70,47 +42,85 @@ export default function EditItem() {
   const [imageUrl, setImageUrl] = useState("");
   const [imageSelected, setImageSelected] = useState(false);
 
+  // 初期値を保存するための状態
+  const [initialValues, setInitialValues] = useState({
+    name: "",
+    category: "",
+    brand: "",
+    washThreshold: "",
+    imageUrl: "",
+    imageSelected: false
+  });
+
   // 初期データの読み込み
   useEffect(() => {
-    // 実際のアプリではAPIやデータベースから取得
-    const item = dummyClothingItems.find(item => item.id === id);
+    // ClothingContextから実際のアイテムを取得
+    const item = clothingItems.find(item => item.id === id);
 
     if (item) {
+      // フォーム状態を設定
       setName(item.name);
       setSelectedCategory(item.category);
       setBrand(item.brand || ""); // ブランド情報を設定
       setWashThreshold(String(item.washThreshold));
       setImageUrl(item.image);
       setImageSelected(true);
+
+      // 初期値を保存
+      setInitialValues({
+        name: item.name,
+        category: item.category,
+        brand: item.brand || "",
+        washThreshold: String(item.washThreshold),
+        imageUrl: item.image,
+        imageSelected: true
+      });
     }
-  }, [id]);
+  }, [id, clothingItems]);
 
   // 触覚フィードバック
   const triggerHaptic = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  // 閉じるボタンのハンドラ
-  const handleClose = () => {
-    // 入力内容があれば確認ダイアログを表示
-    Alert.alert(
-      "編集内容の破棄",
-      "変更した内容は保存されません。よろしいですか？",
-      [
-        { text: "キャンセル", style: "cancel" },
-        { 
-          text: "破棄", 
-          style: "destructive",
-          onPress: () => {
-            triggerHaptic();
-            router.back();
-          }
-        }
-      ]
+  // 変更があるかどうかをチェック
+  const hasChanges = () => {
+    return (
+      name !== initialValues.name ||
+      selectedCategory !== initialValues.category ||
+      brand !== initialValues.brand ||
+      washThreshold !== initialValues.washThreshold ||
+      imageUrl !== initialValues.imageUrl ||
+      imageSelected !== initialValues.imageSelected
     );
   };
 
-  const handleUpdateItem = () => {
+  // 閉じるボタンのハンドラ
+  const handleClose = () => {
+    // 変更がある場合のみ確認ダイアログを表示
+    if (hasChanges()) {
+      Alert.alert(
+        "編集内容の破棄",
+        "変更した内容は保存されません。よろしいですか？",
+        [
+          { text: "キャンセル", style: "cancel" },
+          { 
+            text: "破棄", 
+            style: "destructive",
+            onPress: () => {
+              triggerHaptic();
+              router.back();
+            }
+          }
+        ]
+      );
+    } else {
+      // 変更がない場合は直接戻る
+      router.back();
+    }
+  };
+
+  const handleUpdateItem = async () => {
     // 入力検証
     if (!name.trim()) {
       Alert.alert("エラー", "アイテム名を入力してください");
@@ -134,25 +144,49 @@ export default function EditItem() {
 
     // ブランド入力は必須ではないが、入力された場合はシステムに追加
     if (brand) {
-      addBrand(brand); // 新しいブランドをシステムに追加
+      await addBrand(brand);
     }
 
-    // 実際のアプリではここでストレージにアイテムを更新
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // 現在のアイテムを取得
+    const currentItem = clothingItems.find(item => item.id === id);
 
-    Alert.alert(
-      "成功",
-      "アイテムが更新されました",
-      [
-        {
-          text: "OK",
-          onPress: () => {
-            // 更新後は画面を閉じる
-            router.back();
+    if (!currentItem) {
+      Alert.alert("エラー", "アイテムが見つかりません");
+      return;
+    }
+
+    // 更新するアイテムデータを作成
+    const updatedItem = {
+      ...currentItem,
+      name,
+      category: selectedCategory,
+      brand,
+      washThreshold: Number(washThreshold),
+      image: imageUrl
+    };
+
+    try {
+      // ClothingContextのupdateItem関数を呼び出してアイテムを更新
+      await updateItem(updatedItem);
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      Alert.alert(
+        "成功",
+        "アイテムが更新されました",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // 更新後は画面を閉じる
+              router.back();
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    } catch (error) {
+      Alert.alert("エラー", "アイテムの更新に失敗しました");
+    }
   };
 
   const handleSelectImage = () => {
@@ -359,6 +393,7 @@ export default function EditItem() {
         headerStyle: {
           backgroundColor: theme.background,
         },
+        headerBackTitle: "戻る", // iOSの戻るボタンのテキストを「戻る」に設定
         headerRight: () => (
           <TouchableOpacity 
             onPress={handleClose}

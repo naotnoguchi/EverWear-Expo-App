@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { FlatList, TouchableOpacity, Text, View, Image, Alert, StyleSheet, Modal, Platform, useColorScheme } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -8,6 +8,11 @@ import { useClothing } from '../contexts/ClothingContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { formatDateToLocalISOString, formatDateJapanese } from '../lib/dateUtils';
 import { CategoryValue } from '../types/categories';
+
+// 公開するメソッドの型定義
+export type ItemListRefType = {
+  scrollToTop: () => void;
+};
 
 // インターフェース定義
 interface ClothingItem {
@@ -27,11 +32,23 @@ interface ItemListProps {
   category: CategoryValue;
 }
 
-export default function ItemList({ category }: ItemListProps) {
+const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) => {
   const { clothingItems, wearItem, washItem } = useClothing();
   const router = useRouter();
   const colorScheme = useColorScheme(); // 現在のカラースキーム（ライト/ダーク）を取得
   const theme = useTheme(); // テーマの取得
+
+  // FlatListへの参照
+  const flatListRef = useRef<FlatList>(null);
+
+  // 親コンポーネントに公開するメソッド
+  useImperativeHandle(ref, () => ({
+    scrollToTop: () => {
+      if (flatListRef.current) {
+        flatListRef.current.scrollToOffset({ offset: 0, animated: true });
+      }
+    }
+  }));
 
   // 日付選択用の状態
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -614,6 +631,7 @@ export default function ItemList({ category }: ItemListProps) {
       </Modal>
 
       <FlatList
+        ref={flatListRef}
         data={filteredAndSortedItems}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
@@ -621,4 +639,6 @@ export default function ItemList({ category }: ItemListProps) {
       />
     </View>
   );
-}
+});
+
+export default ItemList;

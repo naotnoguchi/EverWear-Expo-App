@@ -1,6 +1,8 @@
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useTabReset } from "../../contexts/TabResetContext";
+import { useRef, useEffect } from "react";
 
 // Dummy data for statistics
 const dummyStats = {
@@ -34,6 +36,18 @@ const dummyStats = {
 
 export default function Stats() {
   const theme = useTheme();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const { registerResetFunction } = useTabReset();
+
+  // Register the reset function with the TabResetContext
+  useEffect(() => {
+    registerResetFunction("stats", () => {
+      // Scroll to the top
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: 0, animated: true });
+      }
+    });
+  }, [registerResetFunction]);
 
   const styles = StyleSheet.create({
     container: {
@@ -236,7 +250,9 @@ export default function Stats() {
   });
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      ref={scrollViewRef}
+      style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>統計情報</Text>
         <Text style={styles.headerSubtitle}>

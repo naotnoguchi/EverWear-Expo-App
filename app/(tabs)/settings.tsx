@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useOnboarding } from "../../contexts/OnboardingContext";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useTabReset } from "../../contexts/TabResetContext";
 
 export default function Settings() {
   // State for settings
@@ -25,6 +26,20 @@ export default function Settings() {
 
   // Get theme
   const theme = useTheme();
+
+  // Create a ref for the ScrollView
+  const scrollViewRef = useRef<ScrollView>(null);
+  const { registerResetFunction } = useTabReset();
+
+  // Register the reset function with the TabResetContext
+  useEffect(() => {
+    registerResetFunction("settings", () => {
+      // Scroll to the top
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: 0, animated: true });
+      }
+    });
+  }, [registerResetFunction]);
 
   // Handle backup
   const handleBackup = () => {
@@ -201,7 +216,9 @@ export default function Settings() {
   });
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      ref={scrollViewRef}
+      style={styles.container}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>通知設定</Text>
         <View style={styles.settingItem}>

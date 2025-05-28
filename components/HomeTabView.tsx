@@ -1,5 +1,5 @@
 // components/HomeTabView.tsx
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import { useRouter } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -19,6 +19,7 @@ import {useTheme} from "@/contexts/ThemeContext";
 
 // カテゴリ定義のインポート
 import { CATEGORIES, CategoryId, getCategoryValueById } from "../types/categories";
+import { ItemListRefType } from "./ItemList";
 
 // カテゴリとコンポーネントのマッピング
 const categoryComponents = {
@@ -33,11 +34,21 @@ const categoryComponents = {
 
 const { width } = Dimensions.get("window");
 
-export default function HomeTabView() {
+// Define the ref type
+export type HomeTabViewRefType = {
+  resetTab: () => void;
+};
+
+export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
   const router = useRouter();
   const tabScrollViewRef = useRef<ScrollView>(null);
   const contentScrollViewRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // カテゴリコンポーネントへの参照を保持する配列
+  const categoryRefs = useRef<Array<ItemListRefType | null>>(
+    Array(CATEGORIES.length).fill(null)
+  );
 
   // ソートモーダルの表示状態（他の場所でも使用される可能性があるため維持）
   const [sortModalVisible, setSortModalVisible] = useState(false);
@@ -53,6 +64,35 @@ export default function HomeTabView() {
   };
 
   const theme = useTheme();
+
+  // Expose the resetTab function to the parent component
+  useImperativeHandle(ref, () => ({
+    resetTab: () => {
+      // Reset to the "All" category (index 0)
+      setActiveIndex(0);
+
+      // Scroll the tab bar to the beginning
+      if (tabScrollViewRef.current) {
+        tabScrollViewRef.current.scrollTo({
+          x: 0,
+          animated: true,
+        });
+      }
+
+      // Scroll the content to the beginning
+      if (contentScrollViewRef.current) {
+        contentScrollViewRef.current.scrollTo({
+          x: 0,
+          animated: true,
+        });
+      }
+
+      // Scroll the active category's FlatList to the top
+      if (categoryRefs.current[0]) {
+        categoryRefs.current[0].scrollToTop();
+      }
+    }
+  }));
 
   // タブが変更されたときのハンドラー
   const handleTabChange = (index: number) => {
@@ -265,7 +305,9 @@ export default function HomeTabView() {
             const CategoryComponent = categoryComponents[category.id];
             return (
               <View key={category.id} style={[styles.pageContainer, { width }]}>
-                <CategoryComponent />
+                <CategoryComponent 
+                  ref={(el) => (categoryRefs.current[index] = el)}
+                />
               </View>
             );
           })}
@@ -287,4 +329,4 @@ export default function HomeTabView() {
       />
     </GestureHandlerRootView>
   );
-}
+});

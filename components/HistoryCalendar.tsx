@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -25,6 +25,11 @@ interface HistoryCalendarProps {
   };
 }
 
+// 公開するメソッドの型定義
+export type HistoryCalendarRefType = {
+  resetCalendarToToday: () => void;
+};
+
 // 月の日数を取得する関数
 const getDaysInMonth = (year: number, month: number) => {
   return new Date(year, month + 1, 0).getDate();
@@ -40,13 +45,13 @@ const formatDate = (year: number, month: number, day: number) => {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 };
 
-export default function HistoryCalendar({
+const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>(({
   historyData,
   onDateSelect,
   selectedDate,
   onResetToToday,
   customStyle = {}
-}: HistoryCalendarProps) {
+}, ref) => {
   const theme = useTheme();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState<Array<{ day: number; date: string } | null>>([]);
@@ -55,6 +60,11 @@ export default function HistoryCalendar({
   const resetCalendarToToday = () => {
     setCurrentDate(new Date());
   };
+  
+  // 親コンポーネントに公開するメソッド
+  useImperativeHandle(ref, () => ({
+    resetCalendarToToday
+  }));
 
   // 現在の年と月
   const currentYear = currentDate.getFullYear();
@@ -461,5 +471,6 @@ export default function HistoryCalendar({
       </View>
     </View>
   );
-}
+});
 
+export default HistoryCalendar;

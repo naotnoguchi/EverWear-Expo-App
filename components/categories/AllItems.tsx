@@ -1,7 +1,8 @@
-import React from "react";
-import { View, Text } from "react-native";
-import ItemList from "../ItemList"; // 既存のアイテムリストコンポーネント
+import React, { forwardRef } from "react";
+import ItemList, { ItemListRefType } from "../ItemList"; // 既存のアイテムリストコンポーネント
 
-export default function AllItems() {
-    return <ItemList category={null} />;
-}
+const AllItems = forwardRef<ItemListRefType, {}>((props, ref) => {
+    return <ItemList ref={ref} category={null} />;
+});
+
+export default AllItems;

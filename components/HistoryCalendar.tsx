@@ -60,7 +60,7 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
   const resetCalendarToToday = () => {
     setCurrentDate(new Date());
   };
-  
+
   // 親コンポーネントに公開するメソッド
   useImperativeHandle(ref, () => ({
     resetCalendarToToday
@@ -429,7 +429,7 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
 
         <View style={styles.headerCenter}>
           <Text style={styles.monthText}>{currentYear}年 {monthNames[currentMonth]}</Text>
-          {onResetToToday && selectedDate && (
+          {onResetToToday && (selectedDate || !isCurrentMonthToday) && (
             <TouchableOpacity
               style={styles.todayButton}
               onPress={() => {

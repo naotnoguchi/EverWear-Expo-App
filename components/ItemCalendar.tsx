@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTheme } from '../contexts/ThemeContext';
 import { formatDateJapanese } from '../lib/dateUtils';
 
@@ -43,6 +44,11 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
   // 現在表示中の月が今月かどうかをチェック
   const isCurrentMonthToday = currentYear === todayYear && currentMonth === todayMonth;
 
+  // カレンダーを今日の日付にリセットする関数
+  const resetCalendarToToday = () => {
+    setCurrentDate(new Date());
+  };
+
   // 月の名前
   const monthNames = [
     '1月', '2月', '3月', '4月', '5月', '6月',
@@ -79,6 +85,22 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
 
     setCurrentDate(newDate);
   };
+
+  // 横スワイプのジェスチャーを設定
+  const panGesture = Gesture.Pan()
+    .runOnJS(true)
+    .activeOffsetX([-20, 20])  // 横方向に20px以上動いたらジェスチャー開始
+    .onEnd((e) => {
+      if (Math.abs(e.translationX) > 50) {
+        if (e.translationX > 0) {
+          // 右にスワイプ -> 前の月へ
+          goToPreviousMonth();
+        } else if (!isCurrentMonthToday) {
+          // 左にスワイプ -> 次の月へ (今月でない場合のみ)
+          goToNextMonth();
+        }
+      }
+    });
 
   // 日付タップ時のハンドラー
   const handleDayPress = (dayObj: { day: number; date: string }) => {
@@ -162,6 +184,20 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
       fontSize: 16,
       fontWeight: 'bold',
       color: theme.text,
+    },
+    headerCenter: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    todayButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    todayButtonText: {
+      color: '#3498db',
+      fontSize: 12,
+      marginLeft: 2,
     },
     disabledButton: {
       opacity: 0.5,
@@ -263,7 +299,18 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
           <Ionicons name="chevron-back" size={24} color={theme.text} />
         </TouchableOpacity>
 
-        <Text style={styles.monthText}>{currentYear}年 {monthNames[currentMonth]}</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.monthText}>{currentYear}年 {monthNames[currentMonth]}</Text>
+          {!isCurrentMonthToday && (
+            <TouchableOpacity
+              style={styles.todayButton}
+              onPress={resetCalendarToToday}
+            >
+              <Ionicons name="refresh-outline" size={16} color="#3498db" />
+              <Text style={styles.todayButtonText}>今月に戻る</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* 当月を表示している場合は次の月ボタンを非表示または無効化 */}
         {isCurrentMonthToday ? (
@@ -277,59 +324,63 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
         )}
       </View>
 
-      <View style={styles.daysHeader}>
-        {dayNames.map((day, index) => (
-          <Text key={index} style={[
-            styles.dayName,
-            index === 0 ? styles.sundayText : null,
-            index === 6 ? styles.saturdayText : null
-          ]}>
-            {day}
-          </Text>
-        ))}
-      </View>
-
-      <View style={styles.calendarGrid}>
-        {calendarDays.map((dayObj, index) => {
-          if (!dayObj) {
-            return <View key={`empty-${index}`} style={styles.emptyDay} />;
-          }
-
-          const isWorn = wearHistory.includes(dayObj.date);
-          const isWashed = washHistory.includes(dayObj.date);
-
-          // 当月のカレンダーで、今日より後の日付かどうかをチェック
-          const isDateInFuture = isCurrentMonthToday && dayObj.day > today.getDate();
-
-          return (
-            <TouchableOpacity
-              key={dayObj.day}
-              style={[
-                styles.dayCell,
-                isDateInFuture ? styles.futureDay : null
-              ]}
-              onPress={() => !isDateInFuture && handleDayPress(dayObj)}
-              disabled={isDateInFuture || (!isWorn && !isWashed)}
-              activeOpacity={isWorn || isWashed ? 0.7 : 1}
-            >
-              <Text
-                style={[
-                  styles.dayNumber,
-                  isDateInFuture ? styles.futureDayText : null
-                ]}
-              >
-                {dayObj.day}
+      <GestureDetector gesture={panGesture}>
+        <View>
+          <View style={styles.daysHeader}>
+            {dayNames.map((day, index) => (
+              <Text key={index} style={[
+                styles.dayName,
+                index === 0 ? styles.sundayText : null,
+                index === 6 ? styles.saturdayText : null
+              ]}>
+                {day}
               </Text>
-              {!isDateInFuture && (
-                <View style={styles.eventIndicators}>
-                  {isWorn && <View style={styles.wearIndicator} />}
-                  {isWashed && <View style={styles.washIndicator} />}
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+            ))}
+          </View>
+
+          <View style={styles.calendarGrid}>
+            {calendarDays.map((dayObj, index) => {
+              if (!dayObj) {
+                return <View key={`empty-${index}`} style={styles.emptyDay} />;
+              }
+
+              const isWorn = wearHistory.includes(dayObj.date);
+              const isWashed = washHistory.includes(dayObj.date);
+
+              // 当月のカレンダーで、今日より後の日付かどうかをチェック
+              const isDateInFuture = isCurrentMonthToday && dayObj.day > today.getDate();
+
+              return (
+                <TouchableOpacity
+                  key={dayObj.day}
+                  style={[
+                    styles.dayCell,
+                    isDateInFuture ? styles.futureDay : null
+                  ]}
+                  onPress={() => !isDateInFuture && handleDayPress(dayObj)}
+                  disabled={isDateInFuture || (!isWorn && !isWashed)}
+                  activeOpacity={isWorn || isWashed ? 0.7 : 1}
+                >
+                  <Text
+                    style={[
+                      styles.dayNumber,
+                      isDateInFuture ? styles.futureDayText : null
+                    ]}
+                  >
+                    {dayObj.day}
+                  </Text>
+                  {!isDateInFuture && (
+                    <View style={styles.eventIndicators}>
+                      {isWorn && <View style={styles.wearIndicator} />}
+                      {isWashed && <View style={styles.washIndicator} />}
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      </GestureDetector>
 
       <View style={styles.legend}>
         <View style={styles.legendItem}>

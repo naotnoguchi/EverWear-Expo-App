@@ -61,6 +61,8 @@ function MainApp() {
             title: "アイテム追加",
             animation: "slide_from_bottom",
             presentation: "modal", // モーダル表示にする
+            // iOSでのスワイプジェスチャーを無効化
+            gestureEnabled: false,
             // Androidで戻るボタンを非表示に
             headerLeft: () => null,
             headerShown: true,

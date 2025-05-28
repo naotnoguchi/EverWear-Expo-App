@@ -17,8 +17,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useClothing } from '../../contexts/ClothingContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useTabReset } from '../../contexts/TabResetContext';
 import { router } from "expo-router";
-import HistoryCalendar from "../../components/HistoryCalendar";
+import HistoryCalendar, { HistoryCalendarRefType } from "../../components/HistoryCalendar";
 import { formatDateJapanese } from '../../lib/dateUtils';
 
 // React Native の LayoutAnimation を有効化（Android用）
@@ -90,10 +91,12 @@ const generateHistoryData = (clothingItems: any[]): HistoryItem[] => {
 export default function History() {
   const { clothingItems, deleteWearHistory, deleteWashHistory } = useClothing();
   const theme = useTheme();
+  const { registerResetFunction } = useTabReset();
   const [selectedDate, setSelectedDate] = useState<string | null>(null); // 選択された日付
   const [isCalendarMinimized, setIsCalendarMinimized] = useState(false); // カレンダーが最小化されているかどうか
   const [showHint, setShowHint] = useState(true); // ヒントを表示するかどうか
   const sectionListRef = useRef<SectionList>(null);
+  const calendarRef = useRef<HistoryCalendarRefType>(null);
   const lastScrollY = useRef(0); // 前回のスクロール位置を記録
   const scrollDirection = useRef<'up' | 'down'>('down'); // スクロール方向
   const isScrolling = useRef(false); // スクロール中かどうか
@@ -120,6 +123,19 @@ export default function History() {
       // クリーンアップ
     };
   }, []);
+
+  // Register the reset function with the TabResetContext
+  useEffect(() => {
+    registerResetFunction("history", () => {
+      // Maximize the calendar if it's minimized
+      if (isCalendarMinimized) {
+        animateCalendar(false);
+      }
+
+      // Reset to today and scroll to top
+      resetToToday();
+    });
+  }, [registerResetFunction, isCalendarMinimized]);
 
   // 測定されたカレンダーの元の高さ
   const [fullCalendarHeight, setFullCalendarHeight] = useState(350); // デフォルト値を大きめに設定
@@ -341,6 +357,11 @@ export default function History() {
         itemIndex: 0,
         animated: true,
       });
+    }
+
+    // カレンダーの表示月を今月にリセット
+    if (calendarRef.current) {
+      calendarRef.current.resetCalendarToToday();
     }
 
     // 選択状態のリセットは最後に行う
@@ -600,6 +621,7 @@ export default function History() {
           }}
         >
           <HistoryCalendar
+            ref={calendarRef}
             historyData={historyData}
             onDateSelect={handleDateSelect}
             selectedDate={selectedDate}

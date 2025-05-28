@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ClothingProvider } from '../contexts/ClothingContext';
 import { OnboardingProvider, useOnboarding } from '../contexts/OnboardingContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { TabResetProvider } from '../contexts/TabResetContext';
 import { Platform, StyleSheet, View, useColorScheme } from 'react-native';
 import Onboarding from '../components/Onboarding';
 import { useTheme } from "@/contexts/ThemeContext";
@@ -85,7 +86,9 @@ export default function RootLayout() {
       <OnboardingProvider>
         <ClothingProvider>
           <ThemeProvider>
-            <MainApp />
+            <TabResetProvider>
+              <MainApp />
+            </TabResetProvider>
           </ThemeProvider>
         </ClothingProvider>
       </OnboardingProvider>

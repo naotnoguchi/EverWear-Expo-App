@@ -1,7 +1,9 @@
-import React from "react";
-import ItemList from "../ItemList";
+import React, { forwardRef } from "react";
+import ItemList, { ItemListRefType } from "../ItemList";
 import { getCategoryValueById, CategoryId } from "../../types/categories";
 
-export default function BottomsItems() {
-    return <ItemList category={getCategoryValueById(CategoryId.BOTTOMS)} />;
-}
+const BottomsItems = forwardRef<ItemListRefType, {}>((props, ref) => {
+    return <ItemList ref={ref} category={getCategoryValueById(CategoryId.BOTTOMS)} />;
+});
+
+export default BottomsItems;

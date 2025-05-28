@@ -1,7 +1,9 @@
-import React from "react";
-import ItemList from "../ItemList";
+import React, { forwardRef } from "react";
+import ItemList, { ItemListRefType } from "../ItemList";
 import { getCategoryValueById, CategoryId } from "../../types/categories";
 
-export default function OuterwearItems() {
-    return <ItemList category={getCategoryValueById(CategoryId.OUTERWEAR)} />;
-}
+const OuterwearItems = forwardRef<ItemListRefType, {}>((props, ref) => {
+    return <ItemList ref={ref} category={getCategoryValueById(CategoryId.OUTERWEAR)} />;
+});
+
+export default OuterwearItems;

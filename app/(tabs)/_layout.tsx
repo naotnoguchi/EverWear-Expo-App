@@ -1,9 +1,27 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useTabReset } from "../../contexts/TabResetContext";
+import { useEffect } from "react";
 
 export default function TabsLayout() {
   const theme = useTheme();
+  const { lastTabName, setLastTabName, resetTab } = useTabReset();
+
+  // Set initial tab name on component mount
+  useEffect(() => {
+    setLastTabName("(home)");
+  }, []);
+
+  // Handle tab press
+  const handleTabPress = (tabName: string) => {
+    // If the tab is already active, reset it
+    if (lastTabName === tabName) {
+      resetTab(tabName);
+    }
+    // Update the last active tab
+    setLastTabName(tabName);
+  };
 
   return (
     <Tabs
@@ -34,6 +52,9 @@ export default function TabsLayout() {
                     <Ionicons name="home" size={size} color={color} />
                 ),
             }}
+            listeners={{
+              tabPress: () => handleTabPress("(home)"),
+            }}
         />
       <Tabs.Screen
         name="history"
@@ -42,6 +63,9 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar" size={size} color={color} />
           ),
+        }}
+        listeners={{
+          tabPress: () => handleTabPress("history"),
         }}
       />
       <Tabs.Screen
@@ -52,6 +76,9 @@ export default function TabsLayout() {
             <Ionicons name="stats-chart" size={size} color={color} />
           ),
         }}
+        listeners={{
+          tabPress: () => handleTabPress("stats"),
+        }}
       />
       <Tabs.Screen
         name="settings"
@@ -60,6 +87,9 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings" size={size} color={color} />
           ),
+        }}
+        listeners={{
+          tabPress: () => handleTabPress("settings"),
         }}
       />
     </Tabs>

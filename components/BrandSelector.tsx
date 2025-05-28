@@ -26,6 +26,11 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
     }
   }, [inputValue, brands]);
 
+  // value propが変更されたときにinputValueを更新
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
+
   // ブランドを選択または追加
   const handleSelectBrand = (brand: string) => {
     setInputValue(brand);
@@ -83,6 +88,17 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
       shadowOpacity: 0.1,
       shadowRadius: 4,
     },
+    closeButton: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      padding: 4,
+      zIndex: 1001,
+    },
+    closeButtonText: {
+      fontSize: 16,
+      color: theme.text + "99",
+    },
     suggestionItem: {
       padding: 12,
       borderBottomWidth: 1,
@@ -102,6 +118,17 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
       marginLeft: 8,
       fontSize: 14,
       color: '#3498db',
+    },
+    closeOption: {
+      padding: 12,
+      alignItems: 'center',
+      backgroundColor: theme.background,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+    },
+    closeOptionText: {
+      fontSize: 14,
+      color: theme.text + "99",
     },
   });
 
@@ -124,6 +151,14 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
 
       {showSuggestions && (
         <View style={styles.suggestionsContainer}>
+          {/* 閉じるボタンを追加 */}
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setShowSuggestions(false)}
+          >
+            <Ionicons name="close" size={20} color={theme.text + "99"} />
+          </TouchableOpacity>
+
           <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 200 }}>
             {suggestions.map((item) => (
               <TouchableOpacity
@@ -144,10 +179,17 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
                 <Text style={styles.addNewBrandText}>「{inputValue}」を新しいブランドとして追加</Text>
               </TouchableOpacity>
             )}
+
+            {/* 閉じるオプションを追加 */}
+            <TouchableOpacity
+              style={styles.closeOption}
+              onPress={() => setShowSuggestions(false)}
+            >
+              <Text style={styles.closeOptionText}>閉じる</Text>
+            </TouchableOpacity>
           </ScrollView>
         </View>
       )}
     </View>
   );
 }
-

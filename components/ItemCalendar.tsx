@@ -243,6 +243,12 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
     futureDay: {
       opacity: 0.3, // 未来の日付は薄く表示
     },
+    todayDay: {
+      backgroundColor: theme.card === '#ffffff' ? '#fff8e1' : '#3a3000', // Adjust for dark mode
+      borderWidth: 1.5,
+      borderColor: '#ffc107', // Keep yellow border for today
+      borderRadius: 20,
+    },
     dayNumber: {
       fontSize: 14,
       marginBottom: 2, // 4pxから2pxに縮小
@@ -250,6 +256,10 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
     },
     futureDayText: {
       color: theme.text + "55", // 未来の日付のテキストを薄く
+    },
+    todayDayText: {
+      fontWeight: 'bold',
+      color: '#ff8f00', // Keep orange for today
     },
     eventIndicators: {
       flexDirection: 'row',
@@ -350,12 +360,16 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
               // 当月のカレンダーで、今日より後の日付かどうかをチェック
               const isDateInFuture = isCurrentMonthToday && dayObj.day > today.getDate();
 
+              // 本日の日付かどうかをチェック
+              const isToday = isCurrentMonthToday && dayObj.day === today.getDate();
+
               return (
                 <TouchableOpacity
                   key={dayObj.day}
                   style={[
                     styles.dayCell,
-                    isDateInFuture ? styles.futureDay : null
+                    isDateInFuture ? styles.futureDay : null,
+                    isToday ? styles.todayDay : null
                   ]}
                   onPress={() => !isDateInFuture && handleDayPress(dayObj)}
                   disabled={isDateInFuture || (!isWorn && !isWashed)}
@@ -364,7 +378,8 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
                   <Text
                     style={[
                       styles.dayNumber,
-                      isDateInFuture ? styles.futureDayText : null
+                      isDateInFuture ? styles.futureDayText : null,
+                      isToday ? styles.todayDayText : null
                     ]}
                   >
                     {dayObj.day}

@@ -137,14 +137,8 @@ export default function History() {
     });
   }, [registerResetFunction, isCalendarMinimized]);
 
-  // 測定されたカレンダーの元の高さ
-  const [fullCalendarHeight, setFullCalendarHeight] = useState(350); // デフォルト値を大きめに設定
-
   // デバイスの画面高さを取得
   const { height: windowHeight } = useWindowDimensions();
-
-  // 画面の高さに応じてカレンダーの最大高さを設定
-  const maxCalendarHeight = Math.min(windowHeight * 0.4, 350); // 画面の60%または500pxのいずれか小さい方
 
   // 履歴データを取得
   const historyData = useMemo(() => generateHistoryData(clothingItems), [clothingItems]);
@@ -222,11 +216,6 @@ export default function History() {
       // 最大化時は、アニメーション完了後に状態を更新
       if (!minimize) {
         setIsCalendarMinimized(false);
-
-        // 測定を再実行して正確な高さを取得
-        setTimeout(() => {
-          setFullCalendarHeight(prev => Math.max(prev, 350));
-        }, 50);
       }
 
       // アニメーション進行中フラグをリセット
@@ -240,20 +229,11 @@ export default function History() {
     });
   };
 
-  // カレンダーコンテナのサイズを測定
+  // カレンダーコンテナのサイズを測定（高さの自動調整のため、測定は不要になりました）
   const measureCalendarContainer = (event: any) => {
-    const { height } = event.nativeEvent.layout;
-    if (height > 0 && !isCalendarMinimized) {
-      // 最小値を設定して、常に十分な高さを確保する
-      setFullCalendarHeight(Math.max(height, 350));
-    }
+    // 高さの自動調整のため、測定は不要になりました
   };
 
-  // コンポーネントマウント時に一度だけ初期高さを設定
-  useEffect(() => {
-    // デフォルトの最低高さを設定
-    setFullCalendarHeight(350);
-  }, []);
 
   const handleItemPress = (itemId: string) => {
     // アイテム詳細へのナビゲーション
@@ -407,16 +387,15 @@ export default function History() {
   // アニメーション用の補間値
   const interpolatedHeight = calendarHeight.interpolate({
     inputRange: [0, 0.3, 1],
-    outputRange: [60, 100, Math.max(fullCalendarHeight, maxCalendarHeight)], // 中間値を追加してスムーズに
+    outputRange: [60, 100, 'auto'], // 最大化時は 'auto' を使用
     extrapolate: 'clamp', // 範囲外の値をクランプ
   });
 
   // カレンダー最小化時のスタイル
   const minimizedCalendarStyle = {
-    height: interpolatedHeight,
+    height: isCalendarMinimized ? interpolatedHeight : 'auto', // 最大化時は auto
     overflow: 'hidden',
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
+    borderBottomWidth: 0, // 下部の境界線を削除（カード形式のため）
   };
 
   // カスタムカレンダースタイル
@@ -424,15 +403,16 @@ export default function History() {
     container: {
       backgroundColor: theme.card,
       padding: 16,
-      paddingBottom: 6, // 下部のパディングをさらに減らす
+      paddingBottom: 8, // ItemCalendarと同じ値に
+      // borderRadiusなどはcalendarContainerで設定するため不要
     },
     legend: {
-      marginTop: 2, // 8pxから2pxに縮小
-      justifyContent: 'flex-end', // 右寄せにする
-      paddingRight: 8, // 右側の余白を追加
+      marginTop: 4, // ItemCalendarと同じ値に
+      justifyContent: 'flex-end',
+      paddingRight: 8,
     },
     calendarGrid: {
-      marginBottom: 0, // グリッドの下マージンをなくす
+      marginBottom: 2, // ItemCalendarと同じ値に
     }
   };
 
@@ -511,11 +491,14 @@ export default function History() {
     calendarContainer: {
       zIndex: 10,
       backgroundColor: theme.card,
+      borderRadius: 8, // カード形式に変更
+      margin: 16, // 周囲に余白を追加
+      marginBottom: 8, // 下部の余白を調整
       shadowColor: theme.text,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
-      shadowRadius: 3,
-      elevation: 3,
+      shadowRadius: 4,
+      elevation: 2,
       overflow: 'hidden', // 内容がはみ出ないようにする
     },
     expandButton: {
@@ -525,6 +508,8 @@ export default function History() {
       right: 0,
       alignItems: 'center',
       paddingBottom: 5,
+      borderBottomLeftRadius: 8, // カード形式の角丸に合わせる
+      borderBottomRightRadius: 8, // カード形式の角丸に合わせる
     },
     expandButtonTouchable: {
       backgroundColor: theme.card,
@@ -552,8 +537,7 @@ export default function History() {
       justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.border,
+      borderRadius: 8, // カード形式に合わせる
     },
     // フローティングボタンのスタイルを削除
     selectedDateHistoryContainer: {

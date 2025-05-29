@@ -220,7 +220,6 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
                 style={[
                   styles.dayCell,
                   isDateInFuture ? styles.futureDay : null,
-                  hasEvents ? styles.hasEventsDay : null,
                   isSelected ? styles.selectedDay : null,
                   isToday ? styles.todayDay : null // 本日の日付用スタイル
                 ]}
@@ -268,7 +267,7 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
     container: {
       backgroundColor: theme.card,
       padding: 16,
-      minHeight: 330, // 最小高さを少し減らす
+      // minHeightは不要
     },
     header: {
       marginBottom: 16,
@@ -282,7 +281,7 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 16, // 16pxから12pxに縮小
+      marginBottom: 16,
     },
     monthText: {
       fontSize: 16,
@@ -312,7 +311,7 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
     },
     daysHeader: {
       flexDirection: 'row',
-      marginBottom: 6, // 8pxから6pxに縮小
+      marginBottom: 8,
     },
     dayName: {
       flex: 1,
@@ -330,7 +329,7 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
     calendarGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      maxHeight: 220,
+      maxHeight: undefined, // 固定高さ制限を削除
     },
     emptyDay: {
       width: `${100 / 7}%`,
@@ -339,8 +338,8 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
     dayCell: {
       width: `${100 / 7}%`,
       aspectRatio: 1,
-      padding: 2, // 4pxから2pxに縮小
-      justifyContent: 'center',
+      padding: 4, // ItemCalendarと同じ値に
+      justifyContent: 'center', // ItemCalendarと同様にcenterに戻す
       alignItems: 'center',
     },
     hasEventsDay: {
@@ -361,7 +360,7 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
     },
     dayNumber: {
       fontSize: 14,
-      marginBottom: 2, // 4pxから2pxに縮小
+      marginBottom: 2, // ItemCalendarと同じ値に
       color: theme.text,
     },
     selectedDayText: {
@@ -378,6 +377,7 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
     eventIndicators: {
       flexDirection: 'row',
       justifyContent: 'center',
+      // position: 'absolute'とbottomを削除
     },
     wearIndicator: {
       width: 8,
@@ -404,21 +404,37 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
     },
     legend: {
       flexDirection: 'row',
-      justifyContent: 'flex-end', // 中央揃えから右寄せに変更
-      paddingRight: 8, // 右側に少し余白を追加
+      justifyContent: 'flex-end',
+      marginTop: 0, // 0pxのまま維持
     },
     legendItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginHorizontal: 4, // さらに縮小して密集させる
+      marginHorizontal: 4,
       marginLeft: 8, // 左側の間隔を広げる
     },
     legendText: {
-      marginLeft: 3, // 4pxから3pxに縮小
-      fontSize: 11, // 12pxから11pxに縮小
+      marginLeft: 3,
+      fontSize: 11,
       color: theme.text,
     },
   });
+
+  // レジェンドをレンダリングする関数
+  const renderLegend = () => {
+    return (
+      <View style={[styles.legend, customStyle.legend]}>
+        <View style={styles.legendItem}>
+          <View style={styles.wearIndicator} />
+          <Text style={styles.legendText}>着用</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={styles.washIndicator} />
+          <Text style={styles.legendText}>洗濯</Text>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <View style={[styles.container, customStyle.container]}>
@@ -459,16 +475,7 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
         {renderCalendarContent()}
       </GestureDetector>
 
-      <View style={[styles.legend, customStyle.legend]}>
-        <View style={styles.legendItem}>
-          <View style={styles.wearIndicator} />
-          <Text style={styles.legendText}>着用</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={styles.washIndicator} />
-          <Text style={styles.legendText}>洗濯</Text>
-        </View>
-      </View>
+      {renderLegend()}
     </View>
   );
 });

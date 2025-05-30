@@ -117,11 +117,19 @@ export const generateBasicStats = (period: Period = '3months'): BasicStats => {
     return months.indexOf(a.month) - months.indexOf(b.month);
   });
 
+  // 平均洗濯閾値の計算
+  // 各アイテムの洗濯閾値の平均値を計算
+  const totalThreshold = filteredItems.reduce((sum, item) => sum + (item.washThreshold || 0), 0);
+  const averageWashThreshold = filteredItems.length > 0
+      ? parseFloat((totalThreshold / filteredItems.length).toFixed(1))
+      : 3; // デフォルト値として3を設定（一般的な衣類の平均的な洗濯頻度）
+
   return {
     totalItems,
     totalWears,
     totalWashes,
     averageWearsBetweenWashes,
+    averageWashThreshold,
     mostWornCategory,
     mostWornItem,
     leastWornItem,
@@ -188,9 +196,9 @@ export const generateEfficiencyData = (period: Period = '3months'): EfficiencyIt
     if (efficiency >= lowerThreshold && efficiency <= upperThreshold) {
       status = 'good'; // 最適範囲内
     } else if (efficiency < lowerThreshold) {
-      status = 'underwashed'; // 洗濯頻度が低すぎる
-    } else {
       status = 'overwashed'; // 洗濯頻度が高すぎる
+    } else {
+      status = 'underwashed'; // 洗濯頻度が低すぎる
     }
 
     return {

@@ -181,13 +181,16 @@ export const generateEfficiencyData = (period: Period = '3months'): EfficiencyIt
     const efficiency = item.washThreshold > 0 ? actualWearsBetweenWashes / item.washThreshold : 0;
 
     // Determine status based on efficiency
-    let status: 'good' | 'warning' | 'bad';
-    if (efficiency >= 1) {
-      status = 'good';
-    } else if (efficiency >= 0.7) {
-      status = 'warning';
+    const lowerThreshold = 0.8; // 閾値の80%
+    const upperThreshold = 1.2; // 閾値の120%
+    let status: 'good' | 'underwashed' | 'overwashed';
+
+    if (efficiency >= lowerThreshold && efficiency <= upperThreshold) {
+      status = 'good'; // 最適範囲内
+    } else if (efficiency < lowerThreshold) {
+      status = 'underwashed'; // 洗濯頻度が低すぎる
     } else {
-      status = 'bad';
+      status = 'overwashed'; // 洗濯頻度が高すぎる
     }
 
     return {

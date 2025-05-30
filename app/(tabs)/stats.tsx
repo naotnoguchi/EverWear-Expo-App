@@ -18,6 +18,16 @@ export default function Stats() {
   const [impactData, setImpactData] = useState<ImpactData | null>(null);
   const [recentBadge, setRecentBadge] = useState<Badge | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Get efficiency status color
+  const getEfficiencyStatusColor = (status: string) => {
+    switch (status) {
+      case '良好': return '#27ae60'; // Green
+      case '洗濯不足': return '#f39c12'; // Orange
+      case '洗いすぎ': return '#e74c3c'; // Red
+      default: return '#3498db'; // Blue
+    }
+  };
   const [period, setPeriod] = useState<Period>('3months');
   const [error, setError] = useState<string | null>(null);
 
@@ -272,7 +282,6 @@ export default function Stats() {
       lineHeight: 24,
     },
     efficiencyHighlight: {
-      color: "#27ae60", // Keep green for positive feedback
       fontWeight: "bold",
     },
     efficiencyTip: {
@@ -677,14 +686,23 @@ export default function Stats() {
         <View style={styles.efficiencyContainer}>
           <Text style={styles.efficiencyText}>
             あなたの洗濯効率は
-            <Text style={styles.efficiencyHighlight}>
-              {stats && stats.averageWearsBetweenWashes >= 3 ? '良好' : '要改善'}
-            </Text>
+            {stats && (
+              (() => {
+                const status = stats.averageWearsBetweenWashes >= stats.averageWashThreshold * 0.8 && 
+                  stats.averageWearsBetweenWashes <= stats.averageWashThreshold * 1.2 ? '良好' : 
+                  stats.averageWearsBetweenWashes < stats.averageWashThreshold * 0.8 ? '洗濯不足' : '洗いすぎ';
+                return (
+                  <Text style={[styles.efficiencyHighlight, { color: getEfficiencyStatusColor(status) }]}>
+                    {status}
+                  </Text>
+                );
+              })()
+            )}
             です。平均して{stats?.averageWearsBetweenWashes || 0}回着用ごとに洗濯しています。
           </Text>
           <Text style={styles.efficiencyTip}>
             <Ionicons name="bulb" size={16} color="#f39c12" /> ヒント:
-            デニムは5-10回着用ごとに洗濯するのが理想的です。
+            最適な洗濯頻度は衣類の種類によって異なります。洗いすぎも洗わなさすぎも避けましょう。
           </Text>
         </View>
       </View>

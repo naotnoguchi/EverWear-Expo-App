@@ -41,22 +41,36 @@ export default function EfficiencyScreen() {
   };
 
   // Get status color
-  const getStatusColor = (status: 'good' | 'warning' | 'bad') => {
+  const getStatusColor = (status: 'good' | 'underwashed' | 'overwashed') => {
     switch (status) {
       case 'good': return '#27ae60'; // Green
-      case 'warning': return '#f39c12'; // Orange
-      case 'bad': return '#e74c3c'; // Red
+      case 'underwashed': return '#f39c12'; // Orange
+      case 'overwashed': return '#e74c3c'; // Red
       default: return '#3498db'; // Blue
     }
   };
 
   // Get status text
-  const getStatusText = (status: 'good' | 'warning' | 'bad') => {
+  const getStatusText = (status: 'good' | 'underwashed' | 'overwashed') => {
     switch (status) {
       case 'good': return '良好';
-      case 'warning': return '注意';
-      case 'bad': return '要改善';
+      case 'underwashed': return '洗濯不足';
+      case 'overwashed': return '洗いすぎ';
       default: return '不明';
+    }
+  };
+
+  // Get efficiency message
+  const getEfficiencyMessage = (status: 'good' | 'underwashed' | 'overwashed') => {
+    switch (status) {
+      case 'good':
+        return '最適な洗濯頻度で使用されています。このまま続けましょう！';
+      case 'underwashed':
+        return '洗濯頻度が低すぎる可能性があります。衣類の清潔さを保つため、もう少し頻繁に洗濯することを検討してください。';
+      case 'overwashed':
+        return '洗濯頻度が高すぎる可能性があります。洗濯の間にもっと着用することで、衣類の寿命を延ばし、環境への影響を減らせます。';
+      default:
+        return '洗濯データが不足しています。';
     }
   };
 
@@ -114,10 +128,10 @@ export default function EfficiencyScreen() {
 
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: getStatusColor(item.status) }]}>
-              {item.washCount > 0 ? (item.wearCount / item.washCount).toFixed(1) : item.wearCount.toFixed(1)}
+              {getStatusText(item.status)}
             </Text>
             <Text style={[styles.statLabel, { color: theme.text + "99" }]}>
-              平均着用/洗濯
+              効率
             </Text>
           </View>
         </View>
@@ -144,11 +158,7 @@ export default function EfficiencyScreen() {
           </View>
 
           <Text style={[styles.efficiencyText, { color: theme.text + "99" }]}>
-            {item.efficiency >= 1 
-              ? '最適な洗濯頻度で使用されています' 
-              : item.efficiency >= 0.7 
-                ? 'もう少し着用回数を増やせる可能性があります' 
-                : '洗濯頻度が高すぎる可能性があります'}
+            {getEfficiencyMessage(item.status)}
           </Text>
         </View>
       </View>
@@ -454,29 +464,29 @@ export default function EfficiencyScreen() {
             <View style={styles.summaryItem}>
               <View style={[styles.summaryBadge, { backgroundColor: '#f39c12' }]}>
                 <Text style={styles.summaryBadgeText}>
-                  {items.filter(item => item.status === 'warning').length}
+                  {items.filter(item => item.status === 'underwashed').length}
                 </Text>
               </View>
               <Text style={[styles.summaryItemText, { color: theme.text }]}>
-                注意
+                洗濯不足
               </Text>
             </View>
 
             <View style={styles.summaryItem}>
               <View style={[styles.summaryBadge, { backgroundColor: '#e74c3c' }]}>
                 <Text style={styles.summaryBadgeText}>
-                  {items.filter(item => item.status === 'bad').length}
+                  {items.filter(item => item.status === 'overwashed').length}
                 </Text>
               </View>
               <Text style={[styles.summaryItemText, { color: theme.text }]}>
-                要改善
+                洗いすぎ
               </Text>
             </View>
           </View>
 
           <Text style={[styles.summaryTip, { color: theme.text + "99" }]}>
             <Ionicons name="bulb" size={16} color={theme.warning} /> ヒント: 
-            洗濯効率を高めるには、設定した閾値に近づくまで着用してから洗濯しましょう。
+            洗濯効率を高めるには、設定した閾値に近い頻度で洗濯しましょう。洗いすぎも洗わなさすぎも避けることが大切です。
           </Text>
         </View>
 

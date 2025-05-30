@@ -10,6 +10,7 @@ export interface BasicStats {
   totalWears: number;
   totalWashes: number;
   averageWearsBetweenWashes: number;
+  averageWashThreshold: number;
   mostWornCategory: CategoryValue;
   mostWornItem: {
     id: string;

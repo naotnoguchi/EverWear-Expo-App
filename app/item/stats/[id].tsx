@@ -278,7 +278,7 @@ export default function ItemDetailScreen() {
 
     if (itemStats.efficiency >= lowerThreshold && itemStats.efficiency <= upperThreshold) {
       return { text: '良好', color: '#27ae60' }; // 最適範囲内
-    } else if (itemStats.efficiency < lowerThreshold) {
+    } else if (itemStats.efficiency > upperThreshold) {
       return { text: '洗濯不足', color: '#f39c12' }; // 洗濯頻度が低すぎる
     } else {
       return { text: '洗いすぎ', color: '#e74c3c' }; // 洗濯頻度が高すぎる
@@ -413,45 +413,45 @@ export default function ItemDetailScreen() {
 
           <View style={styles.efficiencyContainer}>
             <View style={styles.efficiencyMeter}>
-              {/* 洗いすぎ範囲を示す背景 (左側) */}
-              <View 
+              {/* 洗濯不足範囲を示す背景 (左側) */}
+              <View
                 style={[
-                  styles.overwashedRange, 
-                  { 
+                  styles.underwashedRange,
+                  {
                     left: `0%`,
                     width: `${40}%`  // 0.8 / 2.0 * 100 = 40%
                   }
-                ]} 
+                ]}
               />
               {/* 最適範囲を示す背景 (中央) */}
-              <View 
+              <View
                 style={[
-                  styles.optimalRange, 
-                  { 
+                  styles.optimalRange,
+                  {
                     left: `${40}%`,  // 0.8 / 2.0 * 100 = 40%
                     width: `${20}%`  // (1.2 - 0.8) / 2.0 * 100 = 20%
                   }
-                ]} 
+                ]}
               />
-              {/* 洗濯不足範囲を示す背景 (右側) */}
-              <View 
+              {/* 洗いすぎ範囲を示す背景 (右側) */}
+              <View
                 style={[
-                  styles.underwashedRange, 
-                  { 
+                  styles.overwashedRange,
+                  {
                     left: `${60}%`,  // (0.8 + 0.4) / 2.0 * 100 = 60%
                     width: `${40}%`  // (2.0 - 1.2) / 2.0 * 100 = 40%
                   }
-                ]} 
+                ]}
               />
               {/* 現在の効率を示すインジケーター */}
-              <View 
+              <View
                 style={[
-                  styles.efficiencyIndicator, 
-                  { 
-                    left: `${Math.min(itemStats.efficiency * 50, 100)}%`,  // 効率値 * 50 (2.0で100%になるようにスケーリング)
-                    backgroundColor: efficiencyStatus.color 
+                  styles.efficiencyIndicator,
+                  {
+                    left: `${100 - Math.min(itemStats.efficiency * 50, 100)}%`,  // 反転させた位置計算
+                    backgroundColor: efficiencyStatus.color
                   }
-                ]} 
+                ]}
               />
               <View style={styles.efficiencyScale}>
                 <Text style={styles.efficiencyScaleText}>洗濯不足</Text>
@@ -464,8 +464,8 @@ export default function ItemDetailScreen() {
               {itemStats.efficiency >= 0.8 && itemStats.efficiency <= 1.2
                 ? 'このアイテムは最適な頻度で洗濯されています。このまま続けましょう！' 
                 : itemStats.efficiency < 0.8
-                  ? '洗濯頻度が低すぎる可能性があります。衣類の清潔さを保つため、もう少し頻繁に洗濯することを検討してください。' 
-                  : '洗濯頻度が高すぎる可能性があります。洗濯の間にもっと着用することで、衣類の寿命を延ばし、環境への影響を減らせます。'}
+                  ? '洗濯頻度が高すぎる可能性があります。洗濯の間にもっと着用することで、衣類の寿命を延ばし、環境への影響を減らせます。'
+                  : '洗濯頻度が低すぎる可能性があります。衣類の清潔さを保つため、もう少し頻繁に洗濯することを検討してください。'}
             </Text>
 
             <View style={styles.efficiencyTip}>
@@ -475,7 +475,7 @@ export default function ItemDetailScreen() {
                   ? 'デニムは5-10回着用ごとに洗濯するのが理想的です。洗いすぎも洗わなさすぎも避けましょう。' 
                   : itemStats.category === 'アウター' 
                     ? 'アウターは汚れた場合を除き、シーズンに1-2回の洗濯で十分です。ただし、汚れが目立つ場合は適宜洗濯しましょう。' 
-                    : '一般的な衣類は2-3回着用ごとに洗濯するのが理想的です。衣類の種類や使用状況に応じて調整しましょう。'}
+                    : '一般的な衣類は2-3回着用ごとに洗濯するのが理想的です。衣類の種類や着用状況に応じて調整しましょう。'}
               </Text>
             </View>
           </View>
@@ -486,7 +486,7 @@ export default function ItemDetailScreen() {
           <View style={styles.cardHeader}>
             <Ionicons name="calendar" size={24} color="#3498db" />
             <Text style={styles.cardTitle}>
-              使用パターン
+              着用パターン
             </Text>
           </View>
 

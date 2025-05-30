@@ -690,7 +690,7 @@ export default function Stats() {
               (() => {
                 const status = stats.averageWearsBetweenWashes >= stats.averageWashThreshold * 0.8 && 
                   stats.averageWearsBetweenWashes <= stats.averageWashThreshold * 1.2 ? '良好' : 
-                  stats.averageWearsBetweenWashes < stats.averageWashThreshold * 0.8 ? '洗濯不足' : '洗いすぎ';
+                  stats.averageWearsBetweenWashes < stats.averageWashThreshold * 0.8 ? '洗いすぎ' : '洗濯不足';
                 return (
                   <Text style={[styles.efficiencyHighlight, { color: getEfficiencyStatusColor(status) }]}>
                     {status}

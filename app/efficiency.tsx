@@ -76,7 +76,7 @@ export default function EfficiencyScreen() {
 
   // Render item
   const renderItem = ({ item }: { item: EfficiencyItem }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.itemCard}
       onPress={() => router.push({
         pathname: '/item/stats/[id]',
@@ -148,13 +148,52 @@ export default function EfficiencyScreen() {
             </View>
           </View>
 
-          <View style={styles.progressBarContainer}>
-            <View 
+          <View style={styles.efficiencyMeter}>
+            {/* 洗濯不足範囲を示す背景 (左側) */}
+            <View
               style={[
-                styles.progressBar, 
-                { width: `${Math.min(item.efficiency * 100, 100)}%`, backgroundColor: getStatusColor(item.status) }
-              ]} 
+                styles.underwashedRange,
+                {
+                  left: `0%`,
+                  width: `${40}%`  // 0.8 / 2.0 * 100 = 40%
+                }
+              ]}
             />
+            {/* 最適範囲を示す背景 (中央) */}
+            <View
+              style={[
+                styles.optimalRange,
+                {
+                  left: `${40}%`,  // 0.8 / 2.0 * 100 = 40%
+                  width: `${20}%`  // (1.2 - 0.8) / 2.0 * 100 = 20%
+                }
+              ]}
+            />
+            {/* 洗いすぎ範囲を示す背景 (右側) */}
+            <View
+              style={[
+                styles.overwashedRange,
+                {
+                  left: `${60}%`,  // (0.8 + 0.4) / 2.0 * 100 = 60%
+                  width: `${40}%`  // (2.0 - 1.2) / 2.0 * 100 = 40%
+                }
+              ]}
+            />
+            {/* 現在の効率を示すインジケーター */}
+            <View
+              style={[
+                styles.efficiencyIndicator,
+                {
+                  left: `${100 - Math.min(item.efficiency * 50, 100)}%`,  // 反転させた位置計算
+                  backgroundColor: getStatusColor(item.status)
+                }
+              ]}
+            />
+            <View style={styles.efficiencyScale}>
+              <Text style={styles.efficiencyScaleText}>洗濯不足</Text>
+              <Text style={[styles.efficiencyScaleText, { position: 'absolute', left: '50%', transform: [{ translateX: -10 }] }]}>良好</Text>
+              <Text style={styles.efficiencyScaleText}>洗いすぎ</Text>
+            </View>
           </View>
 
           <Text style={[styles.efficiencyText, { color: theme.text + "99" }]}>
@@ -345,6 +384,52 @@ export default function EfficiencyScreen() {
     progressBar: {
       height: '100%',
     },
+    efficiencyMeter: {
+      height: 30,
+      marginBottom: 8,
+      position: 'relative',
+    },
+    efficiencyIndicator: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      position: 'absolute',
+      top: 0,
+      transform: [{ translateX: -6 }],
+    },
+    optimalRange: {
+      height: 6,
+      backgroundColor: '#27ae60' + '40', // Green with opacity
+      position: 'absolute',
+      top: 3,
+      borderRadius: 3,
+    },
+    underwashedRange: {
+      height: 6,
+      backgroundColor: '#f39c12' + '40', // Orange with opacity
+      position: 'absolute',
+      top: 3,
+      borderRadius: 3,
+    },
+    overwashedRange: {
+      height: 6,
+      backgroundColor: '#e74c3c' + '40', // Red with opacity
+      position: 'absolute',
+      top: 3,
+      borderRadius: 3,
+    },
+    efficiencyScale: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+    },
+    efficiencyScaleText: {
+      fontSize: 10,
+      color: theme.text + "99",
+    },
     efficiencyText: {
       fontSize: 12,
     },
@@ -405,11 +490,11 @@ export default function EfficiencyScreen() {
 
   return (
     <>
-      <Stack.Screen 
+      <Stack.Screen
         options={{
           title: "洗濯効率分析",
           headerBackTitle: "戻る",
-        }} 
+        }}
       />
       <View style={styles.container}>
         {/* Period selector */}
@@ -451,17 +536,6 @@ export default function EfficiencyScreen() {
 
           <View style={styles.summaryContent}>
             <View style={styles.summaryItem}>
-              <View style={[styles.summaryBadge, { backgroundColor: '#27ae60' }]}>
-                <Text style={styles.summaryBadgeText}>
-                  {items.filter(item => item.status === 'good').length}
-                </Text>
-              </View>
-              <Text style={[styles.summaryItemText, { color: theme.text }]}>
-                良好
-              </Text>
-            </View>
-
-            <View style={styles.summaryItem}>
               <View style={[styles.summaryBadge, { backgroundColor: '#f39c12' }]}>
                 <Text style={styles.summaryBadgeText}>
                   {items.filter(item => item.status === 'underwashed').length}
@@ -469,6 +543,17 @@ export default function EfficiencyScreen() {
               </View>
               <Text style={[styles.summaryItemText, { color: theme.text }]}>
                 洗濯不足
+              </Text>
+            </View>
+
+            <View style={styles.summaryItem}>
+              <View style={[styles.summaryBadge, { backgroundColor: '#27ae60' }]}>
+                <Text style={styles.summaryBadgeText}>
+                  {items.filter(item => item.status === 'good').length}
+                </Text>
+              </View>
+              <Text style={[styles.summaryItemText, { color: theme.text }]}>
+                良好
               </Text>
             </View>
 
@@ -485,7 +570,7 @@ export default function EfficiencyScreen() {
           </View>
 
           <Text style={[styles.summaryTip, { color: theme.text + "99" }]}>
-            <Ionicons name="bulb" size={16} color={theme.warning} /> ヒント: 
+            <Ionicons name="bulb" size={16} color={theme.warning} /> ヒント:
             洗濯効率を高めるには、設定した閾値に近い頻度で洗濯しましょう。洗いすぎも洗わなさすぎも避けることが大切です。
           </Text>
         </View>

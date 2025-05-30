@@ -9,7 +9,11 @@ const themes = {
     text: '#000000',
     card: '#ffffff',
     border: '#e0e0e0',
-    // 他の色も必要に応じて追加
+    primary: '#3498db',      // 追加
+    secondary: '#95a5a6',    // 追加
+    success: '#27ae60',      // 追加
+    warning: '#f39c12',      // 追加
+    error: '#e74c3c',        // 追加
   },
   dark: {
     header: '#000000',
@@ -17,7 +21,11 @@ const themes = {
     text: '#ffffff',
     card: '#1e1e1e',
     border: '#2c2c2c',
-    // 他の色も必要に応じて追加
+    primary: '#3498db',      // 追加
+    secondary: '#7f8c8d',    // 追加
+    success: '#27ae60',      // 追加
+    warning: '#f39c12',      // 追加
+    error: '#e74c3c',        // 追加
   }
 };
 

@@ -52,6 +52,7 @@ export default function ImpactScreen() {
     container: {
       flex: 1,
       padding: 16,
+      backgroundColor: theme.background, // 固定の白色から変更
     },
     centerContent: {
       justifyContent: 'center',
@@ -214,6 +215,7 @@ export default function ImpactScreen() {
       flexDirection: 'row',
       justifyContent: 'space-around',
       alignItems: 'flex-end',
+      marginTop: 40,
       marginBottom: 16,
     },
     chartBarContainer: {

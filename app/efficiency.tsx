@@ -168,6 +168,7 @@ export default function EfficiencyScreen() {
     container: {
       flex: 1,
       padding: 16,
+      backgroundColor: theme.background, // 固定の白色から変更
     },
     centerContent: {
       justifyContent: 'center',

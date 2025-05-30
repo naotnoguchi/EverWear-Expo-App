@@ -87,8 +87,10 @@ export interface ItemDetailStats {
   id: string;
   name: string;
   category: CategoryValue;
+  imageUrl: string; // 追加: アイテム画像URL
   wearCount: number;
   washCount: number;
+  wearPerWash: number; // 追加: 着用回数/洗濯回数
   efficiency: number;
   wearsByDay: { [day: string]: number }; // Day of week statistics
   wearsByMonth: { [month: string]: number }; // Month statistics
@@ -100,5 +102,11 @@ export interface ItemDetailStats {
     period: string;
     count: number;
   }[];
+  averageWearInterval: number; // 追加: 平均着用間隔（日数）
+  lastWornDate: string | null; // 追加: 最終着用日
+  // 環境影響データ
+  waterSaved: number; // 追加: 節水量（リットル）
+  energySaved: number; // 追加: 節電量（kWh）
+  co2Reduced: number; // 追加: CO2削減量（kg）
   optimizedThreshold?: number; // Recommended threshold based on usage pattern
 }

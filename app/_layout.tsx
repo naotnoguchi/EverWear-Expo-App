@@ -75,6 +75,41 @@ function MainApp() {
             }),
           }}
         />
+        <Stack.Screen
+          name="ranking"
+          options={{
+            title: "着用回数ランキング",
+            headerBackTitle: "戻る"
+          }}
+        />
+        <Stack.Screen
+          name="efficiency"
+          options={{
+            title: "洗濯効率分析",
+            headerBackTitle: "戻る"
+          }}
+        />
+        <Stack.Screen
+          name="impact"
+          options={{
+            title: "環境影響・節約効果",
+            headerBackTitle: "戻る"
+          }}
+        />
+        <Stack.Screen
+          name="badges"
+          options={{
+            title: "バッジ・アチーブメント",
+            headerBackTitle: "戻る"
+          }}
+        />
+        <Stack.Screen
+          name="item/stats/[id]"
+          options={{
+            title: "アイテム詳細分析",
+            headerBackTitle: "戻る"
+          }}
+        />
       </Stack>
     </>
   );

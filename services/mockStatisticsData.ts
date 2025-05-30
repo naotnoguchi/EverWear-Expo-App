@@ -231,6 +231,7 @@ export const generateImpactData = (period: Period = '3months'): ImpactData => {
   const DETERGENT_COST_PER_BOTTLE = 400; // yen (800ml bottle)
   const CO2_PER_KWH = 0.5; // kg
   const TREES_PER_KG_CO2 = 0.05; // trees per kg CO2 per year
+  const ITEMS_PER_WASH_LOAD = 5; // 洗濯機1回あたりの平均アイテム数
 
   // Filter items by period
   const filteredItems = mockClothingItems.map(item => {
@@ -240,7 +241,8 @@ export const generateImpactData = (period: Period = '3months'): ImpactData => {
     // Calculate washes reduced
     // If we washed after every wear, we would have filteredWearHistory.length washes
     // Instead, we only have filteredWashHistory.length washes
-    const washesReduced = filteredWearHistory.length - filteredWashHistory.length;
+    // Divide by ITEMS_PER_WASH_LOAD to account for multiple items being washed together
+    const washesReduced = parseFloat(((filteredWearHistory.length - filteredWashHistory.length) / ITEMS_PER_WASH_LOAD).toFixed(1));
 
     return {
       ...item,
@@ -557,24 +559,19 @@ generateItemDetailStats = (itemId: string): ItemDetailStats | null => {
   // Calculate environmental impact (simplified calculations)
   // These are estimated values based on typical washing machine usage
 
-  // 修正案1: 理論上の洗濯回数（毎回着用後に洗濯した場合）
+  // 洗濯機1回あたりの平均アイテム数
+  const ITEMS_PER_WASH_LOAD = 5;
+
+  // 理論上の洗濯回数（毎回着用後に洗濯した場合）
   const theoreticalWashes = wearCount;
 
   // 削減された洗濯回数の基本計算
-  let washesReduced = Math.max(0, theoreticalWashes - washCount);
+  // 複数のアイテムを一度に洗濯することを考慮して、ITEMS_PER_WASH_LOADで割る
+  let washesReduced = parseFloat((Math.max(0, (theoreticalWashes - washCount) / ITEMS_PER_WASH_LOAD)).toFixed(1));
 
-  // 修正案2: カテゴリに基づく調整
-  if (item.category === 'アウター' || item.category === '小物') {
-    // アウターや小物は洗濯頻度が低いため、より寛大な計算を適用
-    washesReduced = Math.max(washesReduced, wearCount * 0.1);
-  } else if (item.category === 'トップス' || item.category === 'ボトムス') {
-    // 一般的な衣類には標準的な計算を適用
-    washesReduced = Math.max(washesReduced, wearCount * 0.05);
-  }
-
-  const waterSaved = washesReduced * 65; // 65L per wash cycle
-  const energySaved = washesReduced * 0.9; // 0.9kWh per wash cycle
-  const co2Reduced = washesReduced * 0.6; // 0.6kg CO2 per wash cycle
+  const waterSaved = parseFloat((washesReduced * 65).toFixed(1)); // 65L per wash cycle
+  const energySaved = parseFloat((washesReduced * 0.9).toFixed(1)); // 0.9kWh per wash cycle
+  const co2Reduced = parseFloat((washesReduced * 0.6).toFixed(1)); // 0.6kg CO2 per wash cycle
 
   // Calculate optimized threshold based on usage pattern
   // This is a simplified calculation - in a real app, this would be more sophisticated

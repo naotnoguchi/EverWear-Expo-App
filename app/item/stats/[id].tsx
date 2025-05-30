@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal } from "react-native";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { statisticsService, ItemDetailStats } from "../../../services/statisticsServiceFactory";
@@ -14,6 +14,12 @@ export default function ItemDetailScreen() {
   const [itemStats, setItemStats] = useState<ItemDetailStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Modal visibility states
+  const [showWashInfoModal, setShowWashInfoModal] = useState(false);
+  const [showWaterInfoModal, setShowWaterInfoModal] = useState(false);
+  const [showEnergyInfoModal, setShowEnergyInfoModal] = useState(false);
+  const [showCO2InfoModal, setShowCO2InfoModal] = useState(false);
 
   // スタイルをuseMemoでメモ化（最初に定義）
   const styles = useMemo(() => StyleSheet.create({
@@ -244,6 +250,40 @@ export default function ItemDetailScreen() {
     retryButtonText: {
       color: 'white',
       fontWeight: 'bold',
+    },
+    // Modal styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    modalContent: {
+      backgroundColor: theme.card,
+      borderRadius: 12,
+      padding: 20,
+      width: '90%',
+      maxWidth: 400,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 16,
+      color: theme.text,
+    },
+    modalText: {
+      fontSize: 14,
+      lineHeight: 20,
+      marginBottom: 16,
+      color: theme.text,
+    },
+    modalCloseButton: {
+      alignSelf: 'flex-end',
+      padding: 8,
+    },
+    infoIcon: {
+      marginLeft: 8,
     },
   }), [theme]);
 
@@ -589,6 +629,12 @@ export default function ItemDetailScreen() {
             <Text style={styles.cardTitle}>
               環境への影響
             </Text>
+            <TouchableOpacity 
+              onPress={() => setShowWashInfoModal(true)}
+              style={styles.infoIcon}
+            >
+              <Ionicons name="information-circle-outline" size={20} color={theme.text + "99"} />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.impactContainer}>
@@ -599,9 +645,15 @@ export default function ItemDetailScreen() {
               <Text style={styles.impactValue}>
                 {itemStats.waterSaved.toFixed(1)}L
               </Text>
-              <Text style={styles.impactLabel}>
-                節水量
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={styles.impactLabel}>節水量</Text>
+                <TouchableOpacity 
+                  onPress={() => setShowWaterInfoModal(true)}
+                  style={{ marginLeft: 2 }}
+                >
+                  <Ionicons name="information-circle-outline" size={14} color={theme.text + "99"} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.impactItem}>
@@ -611,9 +663,15 @@ export default function ItemDetailScreen() {
               <Text style={styles.impactValue}>
                 {itemStats.energySaved.toFixed(1)}kWh
               </Text>
-              <Text style={styles.impactLabel}>
-                節電量
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={styles.impactLabel}>節電量</Text>
+                <TouchableOpacity 
+                  onPress={() => setShowEnergyInfoModal(true)}
+                  style={{ marginLeft: 2 }}
+                >
+                  <Ionicons name="information-circle-outline" size={14} color={theme.text + "99"} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.impactItem}>
@@ -623,9 +681,15 @@ export default function ItemDetailScreen() {
               <Text style={styles.impactValue}>
                 {itemStats.co2Reduced.toFixed(1)}kg
               </Text>
-              <Text style={styles.impactLabel}>
-                CO2削減量
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={styles.impactLabel}>CO2削減量</Text>
+                <TouchableOpacity 
+                  onPress={() => setShowCO2InfoModal(true)}
+                  style={{ marginLeft: 2 }}
+                >
+                  <Ionicons name="information-circle-outline" size={14} color={theme.text + "99"} />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
@@ -634,6 +698,138 @@ export default function ItemDetailScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Wash Info Modal */}
+      <Modal
+        visible={showWashInfoModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowWashInfoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={() => setShowWashInfoModal(false)}
+            >
+              <Ionicons name="close" size={24} color={theme.text} />
+            </TouchableOpacity>
+
+            <Text style={styles.modalTitle}>洗濯回数削減の計算方法について</Text>
+
+            <Text style={styles.modalText}>
+              環境影響の計算は、「着用するたびに洗濯する」場合と比較して、実際の洗濯回数の差に基づいています。
+            </Text>
+
+            <Text style={styles.modalText}>
+              ただし、実際には複数のアイテムを一度に洗濯することが一般的です。そのため、削減された洗濯回数は平均的な洗濯機1回あたりのアイテム数（5アイテム）で割って計算しています。
+            </Text>
+
+            <Text style={styles.modalText}>
+              例：10回着用して2回洗濯した場合、理論上は8回の洗濯を削減したことになりますが、1回の洗濯で平均5アイテムを洗うと考えると、実際の削減効果は8÷5=1.6回分となります。
+            </Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Water Info Modal */}
+      <Modal
+        visible={showWaterInfoModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowWaterInfoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={() => setShowWaterInfoModal(false)}
+            >
+              <Ionicons name="close" size={24} color={theme.text} />
+            </TouchableOpacity>
+
+            <Text style={styles.modalTitle}>水量（料金）の計算方法について</Text>
+
+            <Text style={styles.modalText}>
+              水量の節約効果は、削減された洗濯回数に1回の洗濯で使用される平均的な水量（約65リットル）を掛けて計算しています。
+            </Text>
+
+            <Text style={styles.modalText}>
+              料金は地域によって異なりますが、一般的な水道料金（1000リットルあたり約300円）に基づいて計算しています。
+            </Text>
+
+            <Text style={styles.modalText}>
+              例：洗濯回数を10回削減した場合、65リットル×10回=650リットルの水を節約したことになり、料金に換算すると約195円の節約となります。
+            </Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Energy Info Modal */}
+      <Modal
+        visible={showEnergyInfoModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowEnergyInfoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={() => setShowEnergyInfoModal(false)}
+            >
+              <Ionicons name="close" size={24} color={theme.text} />
+            </TouchableOpacity>
+
+            <Text style={styles.modalTitle}>電気量（料金）の計算方法について</Text>
+
+            <Text style={styles.modalText}>
+              電気量の節約効果は、削減された洗濯回数に1回の洗濯で使用される平均的な電力量（約0.9kWh）を掛けて計算しています。
+            </Text>
+
+            <Text style={styles.modalText}>
+              料金は電力会社や契約プランによって異なりますが、一般的な電気料金（1kWhあたり約25円）に基づいて計算しています。
+            </Text>
+
+            <Text style={styles.modalText}>
+              例：洗濯回数を10回削減した場合、0.9kWh×10回=9kWhの電力を節約したことになり、料金に換算すると約225円の節約となります。
+            </Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* CO2 Info Modal */}
+      <Modal
+        visible={showCO2InfoModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCO2InfoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={() => setShowCO2InfoModal(false)}
+            >
+              <Ionicons name="close" size={24} color={theme.text} />
+            </TouchableOpacity>
+
+            <Text style={styles.modalTitle}>CO2削減量の計算方法について</Text>
+
+            <Text style={styles.modalText}>
+              CO2削減量は、節約された電力量に電力のCO2排出係数（1kWhあたり約0.6kg）を掛けて計算しています。
+            </Text>
+
+            <Text style={styles.modalText}>
+              洗濯機の使用だけでなく、水の供給や処理に関連するCO2排出も考慮しています。
+            </Text>
+
+            <Text style={styles.modalText}>
+              例：電力を9kWh節約した場合、9kWh×0.6kg/kWh=5.4kgのCO2排出を削減したことになります。
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }

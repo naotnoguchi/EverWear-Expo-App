@@ -14,10 +14,10 @@ import { CategoryValue } from '../types/categories';
 // Helper function to filter items by period
 const filterByPeriod = (dates: string[], period: Period): string[] => {
   if (period === 'all') return dates;
-  
+
   const now = new Date();
   let cutoffDate = new Date();
-  
+
   switch (period) {
     case '1month':
       cutoffDate.setMonth(now.getMonth() - 1);
@@ -32,7 +32,7 @@ const filterByPeriod = (dates: string[], period: Period): string[] => {
       cutoffDate.setFullYear(now.getFullYear() - 1);
       break;
   }
-  
+
   return dates.filter(date => new Date(date) >= cutoffDate);
 };
 
@@ -44,14 +44,14 @@ export const generateBasicStats = (period: Period = '3months'): BasicStats => {
     filteredWearHistory: filterByPeriod(item.wearHistory, period),
     filteredWashHistory: filterByPeriod(item.washHistory, period)
   }));
-  
+
   // Calculate total wears and washes in the period
   const totalWears = filteredItems.reduce((sum, item) => sum + item.filteredWearHistory.length, 0);
   const totalWashes = filteredItems.reduce((sum, item) => sum + item.filteredWashHistory.length, 0);
-  
+
   // Calculate average wears between washes
   const averageWearsBetweenWashes = totalWashes > 0 ? parseFloat((totalWears / totalWashes).toFixed(1)) : 0;
-  
+
   // Find most worn category
   const categoryWears: Record<CategoryValue, number> = {};
   filteredItems.forEach(item => {
@@ -59,28 +59,28 @@ export const generateBasicStats = (period: Period = '3months'): BasicStats => {
     if (!categoryWears[category]) categoryWears[category] = 0;
     categoryWears[category] += item.filteredWearHistory.length;
   });
-  
+
   const mostWornCategory = Object.entries(categoryWears)
     .sort((a, b) => b[1] - a[1])
     .map(entry => entry[0] as CategoryValue)[0];
-  
+
   // Find most and least worn items
   const sortedItems = [...filteredItems].sort(
     (a, b) => b.filteredWearHistory.length - a.filteredWearHistory.length
   );
-  
+
   const mostWornItem = {
     id: sortedItems[0].id,
     name: sortedItems[0].name,
     wears: sortedItems[0].filteredWearHistory.length
   };
-  
+
   const leastWornItem = {
     id: sortedItems[sortedItems.length - 1].id,
     name: sortedItems[sortedItems.length - 1].name,
     wears: sortedItems[sortedItems.length - 1].filteredWearHistory.length
   };
-  
+
   // Calculate category breakdown
   const categories: Record<CategoryValue, number> = {};
   mockClothingItems.forEach(item => {
@@ -88,18 +88,18 @@ export const generateBasicStats = (period: Period = '3months'): BasicStats => {
     if (!categories[category]) categories[category] = 0;
     categories[category]++;
   });
-  
+
   const totalItems = mockClothingItems.length;
   const categoryBreakdown = Object.entries(categories).map(([category, count]) => ({
     category: category as CategoryValue,
     count,
     percentage: Math.round((count / totalItems) * 100)
   }));
-  
+
   // Calculate monthly wears
   const monthlyWears: Record<string, number> = {};
   const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-  
+
   filteredItems.forEach(item => {
     item.filteredWearHistory.forEach(date => {
       const month = new Date(date).getMonth();
@@ -108,7 +108,7 @@ export const generateBasicStats = (period: Period = '3months'): BasicStats => {
       monthlyWears[monthName]++;
     });
   });
-  
+
   // Convert to array and sort by month
   const monthlyWearsArray = Object.entries(monthlyWears).map(([month, count]) => ({
     month,
@@ -116,7 +116,7 @@ export const generateBasicStats = (period: Period = '3months'): BasicStats => {
   })).sort((a, b) => {
     return months.indexOf(a.month) - months.indexOf(b.month);
   });
-  
+
   return {
     totalItems,
     totalWears,
@@ -143,19 +143,19 @@ export const generateRankingData = (
       ...item,
       filteredWearHistory: filterByPeriod(item.wearHistory, period)
     }));
-  
+
   // Sort by wear count
   filteredItems = filteredItems.sort((a, b) => {
     const diff = b.filteredWearHistory.length - a.filteredWearHistory.length;
     return sortOrder === 'most' ? diff : -diff;
   });
-  
+
   // Find maximum wear count for percentage calculation
   const maxWearCount = Math.max(
     ...filteredItems.map(item => item.filteredWearHistory.length),
     1 // Avoid division by zero
   );
-  
+
   // Convert to RankingItem format
   return filteredItems.map(item => ({
     id: item.id,
@@ -173,13 +173,13 @@ export const generateEfficiencyData = (period: Period = '3months'): EfficiencyIt
   const filteredItems = mockClothingItems.map(item => {
     const filteredWearHistory = filterByPeriod(item.wearHistory, period);
     const filteredWashHistory = filterByPeriod(item.washHistory, period);
-    
+
     // Calculate efficiency
     const wearCount = filteredWearHistory.length;
     const washCount = filteredWashHistory.length;
     const actualWearsBetweenWashes = washCount > 0 ? wearCount / washCount : wearCount;
     const efficiency = item.washThreshold > 0 ? actualWearsBetweenWashes / item.washThreshold : 0;
-    
+
     // Determine status based on efficiency
     let status: 'good' | 'warning' | 'bad';
     if (efficiency >= 1) {
@@ -189,7 +189,7 @@ export const generateEfficiencyData = (period: Period = '3months'): EfficiencyIt
     } else {
       status = 'bad';
     }
-    
+
     return {
       id: item.id,
       name: item.name,
@@ -202,7 +202,7 @@ export const generateEfficiencyData = (period: Period = '3months'): EfficiencyIt
       status
     };
   });
-  
+
   // Sort by efficiency (highest first)
   return filteredItems.sort((a, b) => b.efficiency - a.efficiency);
 };
@@ -218,17 +218,17 @@ export const generateImpactData = (period: Period = '3months'): ImpactData => {
   const DETERGENT_COST_PER_BOTTLE = 400; // yen (800ml bottle)
   const CO2_PER_KWH = 0.5; // kg
   const TREES_PER_KG_CO2 = 0.05; // trees per kg CO2 per year
-  
+
   // Filter items by period
   const filteredItems = mockClothingItems.map(item => {
     const filteredWearHistory = filterByPeriod(item.wearHistory, period);
     const filteredWashHistory = filterByPeriod(item.washHistory, period);
-    
+
     // Calculate washes reduced
     // If we washed after every wear, we would have filteredWearHistory.length washes
     // Instead, we only have filteredWashHistory.length washes
     const washesReduced = filteredWearHistory.length - filteredWashHistory.length;
-    
+
     return {
       ...item,
       filteredWearHistory,
@@ -236,39 +236,39 @@ export const generateImpactData = (period: Period = '3months'): ImpactData => {
       washesReduced: Math.max(0, washesReduced)
     };
   });
-  
+
   // Calculate total washes reduced
   const totalWashesReduced = filteredItems.reduce((sum, item) => sum + item.washesReduced, 0);
-  
+
   // Calculate resource savings
   const electricitySaved = {
     amount: parseFloat((totalWashesReduced * ELECTRICITY_PER_WASH).toFixed(1)),
     cost: Math.round(totalWashesReduced * ELECTRICITY_PER_WASH * ELECTRICITY_COST_PER_KWH)
   };
-  
+
   const waterSaved = {
     amount: Math.round(totalWashesReduced * WATER_PER_WASH),
     cost: Math.round(totalWashesReduced * WATER_PER_WASH * WATER_COST_PER_1000L / 1000)
   };
-  
+
   const detergentSaved = {
     amount: Math.round(totalWashesReduced * DETERGENT_PER_WASH),
     cost: Math.round(totalWashesReduced * DETERGENT_PER_WASH * DETERGENT_COST_PER_BOTTLE / 800)
   };
-  
+
   // Calculate CO2 reduction and tree equivalent
   const co2Reduced = parseFloat((electricitySaved.amount * CO2_PER_KWH).toFixed(1));
   const treeEquivalent = parseFloat((co2Reduced * TREES_PER_KG_CO2).toFixed(1));
-  
+
   // Calculate monthly impact
   const monthlyImpact: Record<string, { washesReduced: number, co2Reduced: number }> = {};
   const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-  
+
   // Initialize months
   months.forEach(month => {
     monthlyImpact[month] = { washesReduced: 0, co2Reduced: 0 };
   });
-  
+
   // Calculate impact for each month
   filteredItems.forEach(item => {
     // Group wear dates by month
@@ -278,7 +278,7 @@ export const generateImpactData = (period: Period = '3months'): ImpactData => {
       if (!wearsByMonth[month]) wearsByMonth[month] = 0;
       wearsByMonth[month]++;
     });
-    
+
     // Group wash dates by month
     const washesByMonth: Record<string, number> = {};
     item.filteredWashHistory.forEach(date => {
@@ -286,7 +286,7 @@ export const generateImpactData = (period: Period = '3months'): ImpactData => {
       if (!washesByMonth[month]) washesByMonth[month] = 0;
       washesByMonth[month]++;
     });
-    
+
     // Calculate washes reduced for each month
     Object.entries(wearsByMonth).forEach(([month, wears]) => {
       const washes = washesByMonth[month] || 0;
@@ -295,7 +295,7 @@ export const generateImpactData = (period: Period = '3months'): ImpactData => {
       monthlyImpact[month].co2Reduced += reduced * ELECTRICITY_PER_WASH * CO2_PER_KWH;
     });
   });
-  
+
   // Convert to array and sort by month
   const monthlyImpactArray = Object.entries(monthlyImpact)
     .filter(([_, impact]) => impact.washesReduced > 0) // Only include months with impact
@@ -305,7 +305,7 @@ export const generateImpactData = (period: Period = '3months'): ImpactData => {
       co2Reduced: parseFloat(impact.co2Reduced.toFixed(1))
     }))
     .sort((a, b) => months.indexOf(a.month) - months.indexOf(b.month));
-  
+
   return {
     totalWashesReduced,
     electricitySaved,
@@ -324,15 +324,15 @@ export const generateBadges = (): Badge[] => {
   const totalWears = mockClothingItems.reduce((sum, item) => sum + item.wearHistory.length, 0);
   const totalWashes = mockClothingItems.reduce((sum, item) => sum + item.washHistory.length, 0);
   const washesReduced = totalWears - totalWashes;
-  
+
   // Check if we have items in all categories
   const categories = new Set(mockClothingItems.map(item => item.category));
   const allCategories = ['トップス', 'ボトムス', 'アウター', 'シューズ', 'その他', '小物'];
   const hasAllCategories = allCategories.every(cat => categories.has(cat as CategoryValue));
-  
+
   // Find item with most wears
   const maxWears = Math.max(...mockClothingItems.map(item => item.wearHistory.length));
-  
+
   return [
     // Usage badges
     {
@@ -362,7 +362,7 @@ export const generateBadges = (): Badge[] => {
       earnedDate: totalWashes > 0 ? '2025-01-10' : undefined,
       category: 'usage'
     },
-    
+
     // Milestone badges
     {
       id: 'item-10-wears',
@@ -393,7 +393,7 @@ export const generateBadges = (): Badge[] => {
       progress: Math.round((maxWears / 50) * 100),
       category: 'milestone'
     },
-    
+
     // Efficiency badges
     {
       id: 'wash-reduced-10',
@@ -424,7 +424,7 @@ export const generateBadges = (): Badge[] => {
       progress: Math.round((washesReduced / 100) * 100),
       category: 'efficiency'
     },
-    
+
     // Special badges
     {
       id: 'category-complete',
@@ -454,44 +454,44 @@ export const
 generateItemDetailStats = (itemId: string): ItemDetailStats | null => {
   const item = mockClothingItems.find(item => item.id === itemId);
   if (!item) return null;
-  
+
   // Calculate wear count and wash count
   const wearCount = item.wearHistory.length;
   const washCount = item.washHistory.length;
-  
+
   // Calculate wearPerWash ratio
   const wearPerWash = washCount > 0 ? wearCount / washCount : 0;
-  
+
   // Calculate efficiency
   const efficiency = item.washThreshold > 0 && washCount > 0
     ? (wearCount / washCount) / item.washThreshold
     : 0;
-  
+
   // Calculate wears by day of week
   const wearsByDay: Record<string, number> = {
     '日': 0, '月': 0, '火': 0, '水': 0, '木': 0, '金': 0, '土': 0
   };
-  
+
   const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
   item.wearHistory.forEach(date => {
     const day = dayNames[new Date(date).getDay()];
     wearsByDay[day]++;
   });
-  
+
   // Calculate wears by month
   const wearsByMonth: Record<string, number> = {};
   const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-  
+
   item.wearHistory.forEach(date => {
     const month = months[new Date(date).getMonth()];
     if (!wearsByMonth[month]) wearsByMonth[month] = 0;
     wearsByMonth[month]++;
   });
-  
+
   // Calculate wear trend (last 6 months)
   const wearTrend: { period: string, count: number }[] = [];
   const washTrend: { period: string, count: number }[] = [];
-  
+
   // Get last 6 months
   const now = new Date();
   for (let i = 5; i >= 0; i--) {
@@ -500,58 +500,73 @@ generateItemDetailStats = (itemId: string): ItemDetailStats | null => {
     const monthName = months[date.getMonth()];
     const year = date.getFullYear();
     const period = `${year}/${monthName}`;
-    
+
     // Count wears in this month
     const monthStart = new Date(year, date.getMonth(), 1);
     const monthEnd = new Date(year, date.getMonth() + 1, 0);
-    
+
     const wearsInMonth = item.wearHistory.filter(date => {
       const wearDate = new Date(date);
       return wearDate >= monthStart && wearDate <= monthEnd;
     }).length;
-    
+
     const washesInMonth = item.washHistory.filter(date => {
       const washDate = new Date(date);
       return washDate >= monthStart && washDate <= monthEnd;
     }).length;
-    
+
     wearTrend.push({ period: monthName, count: wearsInMonth });
     washTrend.push({ period: monthName, count: washesInMonth });
   }
-  
+
   // Calculate average wear interval
   const averageWearInterval = (() => {
     if (item.wearHistory.length < 2) return 0;
-    
+
     const sortedDates = item.wearHistory.sort();
     let totalDays = 0;
-    
+
     for (let i = 1; i < sortedDates.length; i++) {
       const prev = new Date(sortedDates[i - 1]);
       const curr = new Date(sortedDates[i]);
       const diffDays = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
       totalDays += diffDays;
     }
-    
+
     return totalDays / (sortedDates.length - 1);
   })();
-  
+
   // Get last worn date
   const lastWornDate = item.wearHistory.length > 0 
     ? item.wearHistory.sort().reverse()[0]
     : null;
-  
+
   // Calculate environmental impact (simplified calculations)
   // These are estimated values based on typical washing machine usage
-  const washesReduced = Math.max(0, (wearCount / item.washThreshold) - washCount);
+
+  // 修正案1: 理論上の洗濯回数（毎回着用後に洗濯した場合）
+  const theoreticalWashes = wearCount;
+
+  // 削減された洗濯回数の基本計算
+  let washesReduced = Math.max(0, theoreticalWashes - washCount);
+
+  // 修正案2: カテゴリに基づく調整
+  if (item.category === 'アウター' || item.category === '小物') {
+    // アウターや小物は洗濯頻度が低いため、より寛大な計算を適用
+    washesReduced = Math.max(washesReduced, wearCount * 0.1);
+  } else if (item.category === 'トップス' || item.category === 'ボトムス') {
+    // 一般的な衣類には標準的な計算を適用
+    washesReduced = Math.max(washesReduced, wearCount * 0.05);
+  }
+
   const waterSaved = washesReduced * 65; // 65L per wash cycle
   const energySaved = washesReduced * 0.9; // 0.9kWh per wash cycle
   const co2Reduced = washesReduced * 0.6; // 0.6kg CO2 per wash cycle
-  
+
   // Calculate optimized threshold based on usage pattern
   // This is a simplified calculation - in a real app, this would be more sophisticated
   const optimizedThreshold = Math.round(wearCount / (washCount || 1));
-  
+
   return {
     id: item.id,
     name: item.name,

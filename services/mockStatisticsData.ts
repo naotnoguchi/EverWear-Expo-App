@@ -450,13 +450,17 @@ export const generateBadges = (): Badge[] => {
 };
 
 // Generate item detail statistics
-export const generateItemDetailStats = (itemId: string): ItemDetailStats | null => {
+export const 
+generateItemDetailStats = (itemId: string): ItemDetailStats | null => {
   const item = mockClothingItems.find(item => item.id === itemId);
   if (!item) return null;
   
   // Calculate wear count and wash count
   const wearCount = item.wearHistory.length;
   const washCount = item.washHistory.length;
+  
+  // Calculate wearPerWash ratio
+  const wearPerWash = washCount > 0 ? wearCount / washCount : 0;
   
   // Calculate efficiency
   const efficiency = item.washThreshold > 0 && washCount > 0
@@ -515,6 +519,35 @@ export const generateItemDetailStats = (itemId: string): ItemDetailStats | null 
     washTrend.push({ period: monthName, count: washesInMonth });
   }
   
+  // Calculate average wear interval
+  const averageWearInterval = (() => {
+    if (item.wearHistory.length < 2) return 0;
+    
+    const sortedDates = item.wearHistory.sort();
+    let totalDays = 0;
+    
+    for (let i = 1; i < sortedDates.length; i++) {
+      const prev = new Date(sortedDates[i - 1]);
+      const curr = new Date(sortedDates[i]);
+      const diffDays = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+      totalDays += diffDays;
+    }
+    
+    return totalDays / (sortedDates.length - 1);
+  })();
+  
+  // Get last worn date
+  const lastWornDate = item.wearHistory.length > 0 
+    ? item.wearHistory.sort().reverse()[0]
+    : null;
+  
+  // Calculate environmental impact (simplified calculations)
+  // These are estimated values based on typical washing machine usage
+  const washesReduced = Math.max(0, (wearCount / item.washThreshold) - washCount);
+  const waterSaved = washesReduced * 65; // 65L per wash cycle
+  const energySaved = washesReduced * 0.9; // 0.9kWh per wash cycle
+  const co2Reduced = washesReduced * 0.6; // 0.6kg CO2 per wash cycle
+  
   // Calculate optimized threshold based on usage pattern
   // This is a simplified calculation - in a real app, this would be more sophisticated
   const optimizedThreshold = Math.round(wearCount / (washCount || 1));
@@ -523,13 +556,20 @@ export const generateItemDetailStats = (itemId: string): ItemDetailStats | null 
     id: item.id,
     name: item.name,
     category: item.category,
+    imageUrl: item.image, // 追加
     wearCount,
     washCount,
+    wearPerWash, // 追加
     efficiency,
     wearsByDay,
     wearsByMonth,
     wearTrend,
     washTrend,
+    averageWearInterval, // 追加
+    lastWornDate, // 追加
+    waterSaved, // 追加
+    energySaved, // 追加
+    co2Reduced, // 追加
     optimizedThreshold: optimizedThreshold > 0 ? optimizedThreshold : item.washThreshold
   };
-};
+}

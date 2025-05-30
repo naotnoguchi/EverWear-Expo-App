@@ -52,7 +52,7 @@ export interface EfficiencyItem {
   washCount: number;
   threshold: number;
   efficiency: number; // Actual wears between washes / threshold
-  status: 'good' | 'warning' | 'bad'; // Status based on efficiency
+  status: 'good' | 'underwashed' | 'overwashed'; // Status based on efficiency
 }
 
 // Environmental impact data

@@ -100,6 +100,27 @@ export default function ItemDetailScreen() {
       top: 0,
       transform: [{ translateX: -8 }],
     },
+    optimalRange: {
+      height: 8,
+      backgroundColor: '#27ae60' + '40', // Green with opacity
+      position: 'absolute',
+      top: 4,
+      borderRadius: 4,
+    },
+    underwashedRange: {
+      height: 8,
+      backgroundColor: '#f39c12' + '40', // Orange with opacity
+      position: 'absolute',
+      top: 4,
+      borderRadius: 4,
+    },
+    overwashedRange: {
+      height: 8,
+      backgroundColor: '#e74c3c' + '40', // Red with opacity
+      position: 'absolute',
+      top: 4,
+      borderRadius: 4,
+    },
     efficiencyScale: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -251,9 +272,17 @@ export default function ItemDetailScreen() {
   // Calculate efficiency status - itemStatsがnullでないことを確認
   const getEfficiencyStatus = useCallback(() => {
     if (!itemStats) return { text: 'データなし', color: '#999' };
-    if (itemStats.efficiency >= 1) return { text: '良好', color: '#27ae60' };
-    if (itemStats.efficiency >= 0.7) return { text: '注意', color: '#f39c12' };
-    return { text: '要改善', color: '#e74c3c' };
+
+    const lowerThreshold = 0.8; // 閾値の80%
+    const upperThreshold = 1.2; // 閾値の120%
+
+    if (itemStats.efficiency >= lowerThreshold && itemStats.efficiency <= upperThreshold) {
+      return { text: '良好', color: '#27ae60' }; // 最適範囲内
+    } else if (itemStats.efficiency < lowerThreshold) {
+      return { text: '洗濯不足', color: '#f39c12' }; // 洗濯頻度が低すぎる
+    } else {
+      return { text: '洗いすぎ', color: '#e74c3c' }; // 洗濯頻度が高すぎる
+    }
   }, [itemStats]);
 
   // Find day with most wears - itemStatsがnullでないことを確認
@@ -384,35 +413,69 @@ export default function ItemDetailScreen() {
 
           <View style={styles.efficiencyContainer}>
             <View style={styles.efficiencyMeter}>
+              {/* 洗いすぎ範囲を示す背景 (左側) */}
+              <View 
+                style={[
+                  styles.overwashedRange, 
+                  { 
+                    left: `0%`,
+                    width: `${40}%`  // 0.8 / 2.0 * 100 = 40%
+                  }
+                ]} 
+              />
+              {/* 最適範囲を示す背景 (中央) */}
+              <View 
+                style={[
+                  styles.optimalRange, 
+                  { 
+                    left: `${40}%`,  // 0.8 / 2.0 * 100 = 40%
+                    width: `${20}%`  // (1.2 - 0.8) / 2.0 * 100 = 20%
+                  }
+                ]} 
+              />
+              {/* 洗濯不足範囲を示す背景 (右側) */}
+              <View 
+                style={[
+                  styles.underwashedRange, 
+                  { 
+                    left: `${60}%`,  // (0.8 + 0.4) / 2.0 * 100 = 60%
+                    width: `${40}%`  // (2.0 - 1.2) / 2.0 * 100 = 40%
+                  }
+                ]} 
+              />
+              {/* 現在の効率を示すインジケーター */}
               <View 
                 style={[
                   styles.efficiencyIndicator, 
-                  { left: `${Math.min(itemStats.efficiency * 100, 100)}%`, backgroundColor: efficiencyStatus.color }
+                  { 
+                    left: `${Math.min(itemStats.efficiency * 50, 100)}%`,  // 効率値 * 50 (2.0で100%になるようにスケーリング)
+                    backgroundColor: efficiencyStatus.color 
+                  }
                 ]} 
               />
               <View style={styles.efficiencyScale}>
-                <Text style={styles.efficiencyScaleText}>低</Text>
-                <Text style={styles.efficiencyScaleText}>最適</Text>
-                <Text style={styles.efficiencyScaleText}>高</Text>
+                <Text style={styles.efficiencyScaleText}>洗濯不足</Text>
+                <Text style={[styles.efficiencyScaleText, { position: 'absolute', left: '50%', transform: [{ translateX: -10 }] }]}>良好</Text>
+                <Text style={styles.efficiencyScaleText}>洗いすぎ</Text>
               </View>
             </View>
 
             <Text style={styles.efficiencyDescription}>
-              {itemStats.efficiency >= 1 
+              {itemStats.efficiency >= 0.8 && itemStats.efficiency <= 1.2
                 ? 'このアイテムは最適な頻度で洗濯されています。このまま続けましょう！' 
-                : itemStats.efficiency >= 0.7 
-                  ? 'このアイテムはやや頻繁に洗濯されています。もう少し着用回数を増やせる可能性があります。' 
-                  : 'このアイテムは洗濯頻度が高すぎる可能性があります。洗濯の間にもっと着用することで、衣類の寿命を延ばし、環境への影響を減らせます。'}
+                : itemStats.efficiency < 0.8
+                  ? '洗濯頻度が低すぎる可能性があります。衣類の清潔さを保つため、もう少し頻繁に洗濯することを検討してください。' 
+                  : '洗濯頻度が高すぎる可能性があります。洗濯の間にもっと着用することで、衣類の寿命を延ばし、環境への影響を減らせます。'}
             </Text>
 
             <View style={styles.efficiencyTip}>
               <Ionicons name="bulb" size={16} color="#f39c12" />
               <Text style={styles.tipText}>
                 {itemStats.category === 'デニム' 
-                  ? 'デニムは5-10回着用ごとに洗濯するのが理想的です。' 
+                  ? 'デニムは5-10回着用ごとに洗濯するのが理想的です。洗いすぎも洗わなさすぎも避けましょう。' 
                   : itemStats.category === 'アウター' 
-                    ? 'アウターは汚れた場合を除き、シーズンに1-2回の洗濯で十分です。' 
-                    : '一般的な衣類は2-3回着用ごとに洗濯するのが理想的です。'}
+                    ? 'アウターは汚れた場合を除き、シーズンに1-2回の洗濯で十分です。ただし、汚れが目立つ場合は適宜洗濯しましょう。' 
+                    : '一般的な衣類は2-3回着用ごとに洗濯するのが理想的です。衣類の種類や使用状況に応じて調整しましょう。'}
               </Text>
             </View>
           </View>

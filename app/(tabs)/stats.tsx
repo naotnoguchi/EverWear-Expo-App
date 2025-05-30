@@ -645,7 +645,7 @@ export default function Stats() {
                     {item.name}
                   </Text>
                   <Text style={[styles.itemCategory, { color: theme.text + "99" }]}>
-                    {item.category}
+                    {item.brand ? `${item.brand} / ${item.category}` : item.category}
                   </Text>
                   <View style={styles.wearCountContainer}>
                     <Text style={styles.wearCount}>{item.wearCount}回</Text>

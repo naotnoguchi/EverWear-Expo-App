@@ -169,6 +169,7 @@ export const generateRankingData = (
     id: item.id,
     name: item.name,
     category: item.category,
+    brand: item.brand, // Include brand property
     imageUrl: item.image,
     wearCount: item.filteredWearHistory.length,
     percentageOfMax: Math.round((item.filteredWearHistory.length / maxWearCount) * 100)
@@ -205,6 +206,7 @@ export const generateEfficiencyData = (period: Period = '3months'): EfficiencyIt
       id: item.id,
       name: item.name,
       category: item.category,
+      brand: item.brand, // Include brand property
       imageUrl: item.image,
       wearCount,
       washCount,
@@ -582,6 +584,7 @@ generateItemDetailStats = (itemId: string): ItemDetailStats | null => {
     id: item.id,
     name: item.name,
     category: item.category,
+    brand: item.brand, // Include brand property
     imageUrl: item.image, // 追加
     wearCount,
     washCount,

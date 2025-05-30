@@ -95,7 +95,7 @@ export default function EfficiencyScreen() {
           {item.name}
         </Text>
         <Text style={[styles.itemCategory, { color: theme.text + "99" }]}>
-          {item.category}
+          {item.brand ? `${item.brand} / ${item.category}` : item.category}
         </Text>
 
         <View style={styles.statsRow}>

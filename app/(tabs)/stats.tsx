@@ -604,7 +604,7 @@ export default function Stats() {
           <Text style={styles.sectionTitle}>着用回数ランキング</Text>
           <TouchableOpacity 
             style={styles.viewAllButton}
-            onPress={() => router.push('/stats/ranking')}
+            onPress={() => router.push('/ranking')}
           >
             <Text style={styles.viewAllText}>すべて見る</Text>
             <Ionicons name="chevron-forward" size={16} color="#3498db" />
@@ -618,7 +618,7 @@ export default function Stats() {
                 key={item.id}
                 style={styles.rankingItem}
                 onPress={() => router.push({
-                  pathname: '/stats/item-detail',
+                  pathname: '/item/stats/[id]',
                   params: { id: item.id }
                 })}
               >
@@ -668,7 +668,7 @@ export default function Stats() {
           <Text style={styles.sectionTitle}>洗濯効率</Text>
           <TouchableOpacity 
             style={styles.viewAllButton}
-            onPress={() => router.push('/stats/efficiency')}
+            onPress={() => router.push('/efficiency')}
           >
             <Text style={styles.viewAllText}>詳細を見る</Text>
             <Ionicons name="chevron-forward" size={16} color="#3498db" />
@@ -695,7 +695,7 @@ export default function Stats() {
           <Text style={styles.sectionTitle}>環境影響・節約効果</Text>
           <TouchableOpacity 
             style={styles.viewAllButton}
-            onPress={() => router.push('/stats/impact')}
+            onPress={() => router.push('/impact')}
           >
             <Text style={styles.viewAllText}>詳細を見る</Text>
             <Ionicons name="chevron-forward" size={16} color="#3498db" />
@@ -754,7 +754,7 @@ export default function Stats() {
           <Text style={styles.sectionTitle}>バッジ・アチーブメント</Text>
           <TouchableOpacity 
             style={styles.viewAllButton}
-            onPress={() => router.push('/stats/badges')}
+            onPress={() => router.push('/badges')}
           >
             <Text style={styles.viewAllText}>すべて見る</Text>
             <Ionicons name="chevron-forward" size={16} color="#3498db" />

@@ -351,7 +351,7 @@ export default function ItemDetailScreen() {
             {itemStats.name}
           </Text>
           <Text style={styles.itemCategory}>
-            {itemStats.category}
+            {itemStats.brand ? `${itemStats.brand} / ${itemStats.category}` : itemStats.category}
           </Text>
 
           <View style={styles.statsRow}>

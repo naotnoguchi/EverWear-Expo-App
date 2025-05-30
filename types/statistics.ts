@@ -38,6 +38,7 @@ export interface RankingItem {
   id: string;
   name: string;
   category: CategoryValue;
+  brand?: string; // Added brand property
   imageUrl: string;
   wearCount: number;
   percentageOfMax: number; // For bar visualization (0-100)
@@ -48,6 +49,7 @@ export interface EfficiencyItem {
   id: string;
   name: string;
   category: CategoryValue;
+  brand?: string; // Added brand property
   imageUrl: string;
   wearCount: number;
   washCount: number;
@@ -88,6 +90,7 @@ export interface ItemDetailStats {
   id: string;
   name: string;
   category: CategoryValue;
+  brand?: string; // Added brand property
   imageUrl: string; // 追加: アイテム画像URL
   wearCount: number;
   washCount: number;

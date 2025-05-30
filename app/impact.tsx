@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Share } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { useState, useEffect, useCallback } from "react";
 import { statisticsService, ImpactData, Period } from "../services/statisticsServiceFactory";
@@ -13,6 +13,33 @@ export default function ImpactScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period>('3months');
+
+  // Handle sharing environmental impact data
+  const handleShare = async () => {
+    try {
+      const shareMessage = `
+🌱 私の環境貢献度 🌱
+
+🌍 CO2削減量: ${impact?.co2Reduced.toFixed(1)}kg
+🌳 植樹相当効果: ${impact?.treeEquivalent.toFixed(1)}本の木
+
+💧 節水: ${impact?.waterSaved.amount}L (${impact?.waterSaved.cost}円相当)
+⚡ 節電: ${impact?.electricitySaved.amount}kWh (${impact?.electricitySaved.cost}円相当)
+🧴 洗剤節約: ${impact?.detergentSaved.amount}ml (${impact?.detergentSaved.cost}円相当)
+
+総節約金額: ${((impact?.electricitySaved.cost || 0) + (impact?.waterSaved.cost || 0) + (impact?.detergentSaved.cost || 0))}円
+
+ClothesManagerAppで洋服の寿命を延ばしながら環境にも貢献しよう！
+`;
+
+      await Share.share({
+        message: shareMessage,
+        title: '私の環境貢献度'
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
 
   // Modal visibility states
   const [showWashInfoModal, setShowWashInfoModal] = useState(false);
@@ -699,7 +726,7 @@ export default function ImpactScreen() {
             </Text>
           </View>
 
-          <TouchableOpacity style={styles.shareButton}>
+          <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
             <Ionicons name="share-social" size={16} color="white" />
             <Text style={styles.shareButtonText}>環境貢献度をシェアする</Text>
           </TouchableOpacity>

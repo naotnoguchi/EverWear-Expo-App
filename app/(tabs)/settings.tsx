@@ -13,6 +13,7 @@ import { useOnboarding } from "../../contexts/OnboardingContext";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useTabReset } from "../../contexts/TabResetContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function Settings() {
   // State for settings
@@ -23,6 +24,9 @@ export default function Settings() {
   // Get onboarding functions and router
   const { resetOnboarding } = useOnboarding();
   const router = useRouter();
+
+  // Get auth functions
+  const { signOut } = useAuth();
 
   // Get theme
   const theme = useTheme();
@@ -108,6 +112,18 @@ export default function Settings() {
         },
       ]
     );
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      // The app will automatically redirect to the login screen
+      // due to the auth state change and the logic in _layout.tsx
+    } catch (error) {
+      Alert.alert("エラー", "ログアウトに失敗しました");
+      console.error("Logout error:", error);
+    }
   };
 
   // Define styles with theme colors
@@ -323,8 +339,17 @@ export default function Settings() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>アカウント</Text>
+        <TouchableOpacity 
+          style={styles.actionButton} 
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out" size={24} color="#3498db" />
+          <Text style={styles.actionButtonText}>ログアウト</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
-          style={styles.dangerButton}
+          style={[styles.dangerButton, { marginTop: 16 }]}
           onPress={handleDeleteAccount}
         >
           <Text style={styles.dangerButtonText}>アカウントを削除</Text>

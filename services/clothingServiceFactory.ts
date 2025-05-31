@@ -1,8 +1,10 @@
-// Factory for creating clothing services (simplified to only use mock service)
+// Factory for creating clothing services
 import * as mockService from './mockClothingService';
+import * as supabaseService from './supabaseClothingService';
+import { useMockData } from '../lib/supabase';
 
-// Export the mock service directly
-export const clothingService = mockService;
+// Export the appropriate service based on configuration
+export const clothingService = useMockData ? mockService : supabaseService;
 
 // Re-export types from the database module for convenience
 export { AppClothingItem } from '../types/database';

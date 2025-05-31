@@ -114,9 +114,11 @@ export default function Onboarding() {
       flexDirection: 'row',
       justifyContent: 'flex-end',
       padding: 16,
+      paddingTop: Platform.OS === 'android' ? 40 : 16, // Add extra padding for Android status bar
     },
     skipButton: {
-      padding: 8,
+      padding: Platform.OS === 'android' ? 12 : 8, // Larger touch target for Android
+      marginRight: Platform.OS === 'android' ? 8 : 0, // Add margin for Android
     },
     skipText: {
       color: '#3498db', // Keep blue for brand consistency
@@ -129,6 +131,8 @@ export default function Onboarding() {
       alignItems: 'center',
       justifyContent: 'center',
       padding: 20,
+      paddingTop: Platform.OS === 'android' ? 30 : 20, // Add extra padding for Android
+      paddingBottom: Platform.OS === 'android' ? 30 : 20, // Add extra padding for Android
     },
     imageContainer: {
       flex: 2,
@@ -183,7 +187,7 @@ export default function Onboarding() {
     dotsContainer: {
       flexDirection: 'row',
       justifyContent: 'center',
-      marginBottom: 30,
+      marginBottom: Platform.OS === 'android' ? 40 : 30, // Add extra margin for Android
     },
     dot: {
       width: 10,
@@ -257,10 +261,20 @@ export default function Onboarding() {
     completeOnboarding();
   };
 
+  // On Android, SafeAreaView might not work as expected for status bar
+  // We're already adding extra padding in the styles
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[
+      styles.container,
+      // Add additional padding for Android status bar if needed
+      Platform.OS === 'android' ? { paddingTop: 10 } : {}
+    ]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
+        <TouchableOpacity 
+          onPress={handleSkip} 
+          style={styles.skipButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Increase touch area
+        >
           <Text style={styles.skipText}>スキップ</Text>
         </TouchableOpacity>
       </View>
@@ -283,4 +297,3 @@ export default function Onboarding() {
     </SafeAreaView>
   );
 }
-

@@ -1,24 +1,38 @@
 // app/_layout.tsx
-import React, { useState, useEffect } from 'react';
-import { Stack } from "expo-router";
-import { StatusBar } from 'expo-status-bar'; // StatusBarをインポート
+import React from 'react';
+import { Stack, useSegments } from "expo-router";
+import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ClothingProvider } from '../contexts/ClothingContext';
 import { OnboardingProvider, useOnboarding } from '../contexts/OnboardingContext';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { TabResetProvider } from '../contexts/TabResetContext';
-import { Platform, StyleSheet, View, useColorScheme } from 'react-native';
+import { Platform, StyleSheet, useColorScheme } from 'react-native';
 import Onboarding from '../components/Onboarding';
 import { useTheme } from "@/contexts/ThemeContext";
+import { Redirect } from 'expo-router';
 
-// Main app component with navigation
+// app/_layout.tsx の先頭に追加
+console.log('App starting...');
+
+// Main app component with navigation and auth flow
 function MainApp() {
   const { isOnboardingComplete } = useOnboarding();
-  const colorScheme = useColorScheme(); // 現在のカラースキーム（ライト/ダーク）を取得
-  const theme = useTheme(); // テーマの取得
+  const { user, loading, isFirstLaunch, setFirstLaunchComplete } = useAuth();
+  const segments = useSegments();
+  const colorScheme = useColorScheme();
+  const theme = useTheme();
+
+  // Show loading state
+  if (loading) {
+    console.log('App is loading...');
+    return null; // または適切なローディングインジケーター
+  }
 
   // If onboarding is not complete, show the onboarding screen
   if (!isOnboardingComplete) {
+    console.log('Showing onboarding...');
     return (
       <>
         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
@@ -27,12 +41,31 @@ function MainApp() {
     );
   }
 
-  // Otherwise, show the main app
+  // Check if we're already on an auth screen
+  const inAuthGroup = segments[0] === 'auth';
+
+  // If user is not authenticated and not already on auth screen, redirect to login
+  if (!user && !inAuthGroup) {
+    console.log('No user, redirecting to login...');
+    return <Redirect href="/auth/login" />;
+  }
+
+  // If user is authenticated and on auth screen, redirect to main app
+  if (user && inAuthGroup) {
+    console.log('User authenticated, redirecting to main app...');
+    return <Redirect href="/(tabs)" />;
+  }
+
+  // If this is the first launch and onboarding is complete, mark first launch as complete
+  if (isFirstLaunch && isOnboardingComplete) {
+    setFirstLaunchComplete();
+  }
+
+  // Show the appropriate content based on authentication state
   return (
     <>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       <Stack screenOptions={{
-        // ヘッダーの共通スタイル
         headerTitleStyle: {
           fontWeight: "600",
           color: theme.text,
@@ -45,78 +78,46 @@ function MainApp() {
         },
         headerTintColor: Platform.select({
           android: colorScheme === 'dark' ? 'white' : theme.text,
-          ios: undefined, // iOSはデフォルトの青色を使用
+          ios: undefined,
         }),
       }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
-          name="item/[id]"
+          name="auth/login"
           options={{
-            title: "アイテム詳細",
-            headerBackTitle: "戻る"
+            headerShown: false,
+            gestureEnabled: false,
           }}
         />
+        <Stack.Screen
+          name="auth/signup"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen name="item/[id]" options={{ title: "アイテム詳細", headerBackTitle: "戻る" }} />
         <Stack.Screen
           name="add"
           options={{
             title: "アイテム追加",
             animation: "slide_from_bottom",
-            presentation: "modal", // モーダル表示にする
-            // iOSでのスワイプジェスチャーを無効化
+            presentation: "modal",
             gestureEnabled: false,
-            // Androidで戻るボタンを非表示に
             headerLeft: () => null,
             headerShown: true,
-            // Android固有の設定
             ...Platform.select({
               android: {
-                headerBackVisible: false,  // Androidで戻るボタンを非表示
+                headerBackVisible: false,
               },
             }),
           }}
         />
-        <Stack.Screen
-          name="ranking"
-          options={{
-            title: "着用回数ランキング",
-            headerBackTitle: "戻る"
-          }}
-        />
-        <Stack.Screen
-          name="efficiency"
-          options={{
-            title: "洗濯効率分析",
-            headerBackTitle: "戻る"
-          }}
-        />
-        <Stack.Screen
-          name="impact"
-          options={{
-            title: "環境影響・節約効果",
-            headerBackTitle: "戻る"
-          }}
-        />
-        <Stack.Screen
-          name="badges"
-          options={{
-            title: "バッジ・アチーブメント",
-            headerBackTitle: "戻る"
-          }}
-        />
-        <Stack.Screen
-            name="badges-overview"
-            options={{
-                title: "バッジコレクション",
-                headerBackTitle: "戻る"
-            }}
-        />
-        <Stack.Screen
-          name="item/stats/[id]"
-          options={{
-            title: "アイテム詳細分析",
-            headerBackTitle: "戻る"
-          }}
-        />
+        <Stack.Screen name="ranking" options={{ title: "着用回数ランキング", headerBackTitle: "戻る" }} />
+        <Stack.Screen name="efficiency" options={{ title: "洗濯効率分析", headerBackTitle: "戻る" }} />
+        <Stack.Screen name="impact" options={{ title: "環境影響・節約効果", headerBackTitle: "戻る" }} />
+        <Stack.Screen name="badges" options={{ title: "バッジ・アチーブメント", headerBackTitle: "戻る" }} />
+        <Stack.Screen name="badges-overview" options={{ title: "バッジコレクション", headerBackTitle: "戻る" }} />
+        <Stack.Screen name="item/stats/[id]" options={{ title: "アイテム詳細分析", headerBackTitle: "戻る" }} />
       </Stack>
     </>
   );
@@ -125,21 +126,23 @@ function MainApp() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.container}>
-      <OnboardingProvider>
-        <ClothingProvider>
-          <ThemeProvider>
-            <TabResetProvider>
-              <MainApp />
-            </TabResetProvider>
-          </ThemeProvider>
-        </ClothingProvider>
-      </OnboardingProvider>
+      <AuthProvider>
+        <OnboardingProvider>
+          <ClothingProvider>
+            <ThemeProvider>
+              <TabResetProvider>
+                <MainApp />
+              </TabResetProvider>
+            </ThemeProvider>
+          </ClothingProvider>
+        </OnboardingProvider>
+      </AuthProvider>
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
+  container: {
+    flex: 1,
+  },
 });

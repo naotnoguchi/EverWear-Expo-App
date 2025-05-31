@@ -3,7 +3,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useState, useEffect, useCallback } from "react";
 import { statisticsService, Badge } from "../services/statisticsServiceFactory";
 import { Ionicons } from "@expo/vector-icons";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 
 export default function BadgesScreen() {
   const theme = useTheme();
@@ -182,6 +182,7 @@ export default function BadgesScreen() {
     statsHeader: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
       marginBottom: 16,
     },
     statsTitle: {
@@ -348,6 +349,21 @@ export default function BadgesScreen() {
       color: 'white',
       fontWeight: 'bold',
     },
+    overviewButton: {
+      backgroundColor: theme.primary,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+    },
+    overviewButtonText: {
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: 14,
+      marginLeft: 6,
+    },
   });
 
   // Render loading state
@@ -390,10 +406,19 @@ export default function BadgesScreen() {
         {/* Badge statistics */}
         <View style={[styles.statsCard, { backgroundColor: theme.card }]}>
           <View style={styles.statsHeader}>
-            <Ionicons name="ribbon" size={24} color={theme.primary} />
-            <Text style={[styles.statsTitle, { color: theme.text }]}>
-              バッジコレクション
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="ribbon" size={24} color={theme.primary} />
+              <Text style={[styles.statsTitle, { color: theme.text }]}>
+                バッジコレクション
+              </Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.overviewButton}
+              onPress={() => router.push('/badges-overview')}
+            >
+              <Ionicons name="grid" size={16} color="white" />
+              <Text style={styles.overviewButtonText}>バッジ一覧を表示</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.statsContent}>

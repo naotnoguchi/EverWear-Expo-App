@@ -218,7 +218,8 @@ export default function Settings() {
   return (
     <ScrollView 
       ref={scrollViewRef}
-      style={styles.container}>
+      style={styles.container}
+      contentContainerStyle={{ paddingTop: 16 }}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>通知設定</Text>
         <View style={styles.settingItem}>

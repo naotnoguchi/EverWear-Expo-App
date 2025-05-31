@@ -104,6 +104,13 @@ function MainApp() {
           }}
         />
         <Stack.Screen
+            name="badges-overview"
+            options={{
+                title: "バッジコレクション",
+                headerBackTitle: "戻る"
+            }}
+        />
+        <Stack.Screen
           name="item/stats/[id]"
           options={{
             title: "アイテム詳細分析",

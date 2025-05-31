@@ -782,7 +782,7 @@ export default function Stats() {
         {recentBadge ? (
           <TouchableOpacity 
             style={styles.badgeCard}
-            onPress={() => router.push('/stats/badges')}
+            onPress={() => router.push('/badges')}
           >
             <View style={styles.badgeContent}>
               <View 
@@ -840,7 +840,7 @@ export default function Stats() {
             </Text>
             <TouchableOpacity 
               style={styles.checkBadgesButton}
-              onPress={() => router.push('/stats/badges')}
+              onPress={() => router.push('/badges')}
             >
               <Text style={styles.checkBadgesText}>バッジを確認する</Text>
             </TouchableOpacity>

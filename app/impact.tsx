@@ -408,7 +408,7 @@ ClothesManagerAppで洋服の寿命を延ばしながら環境にも貢献しよ
           headerBackTitle: "戻る",
         }} 
       />
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
         {/* Period selector */}
         <View style={styles.filterSection}>
           <Text style={[styles.filterLabel, { color: theme.text }]}>期間</Text>

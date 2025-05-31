@@ -384,7 +384,7 @@ export default function ItemDetailScreen() {
           headerBackTitle: "戻る",
         }} 
       />
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
         {/* Item basic info */}
         <View style={styles.card}>
           <Text style={styles.itemName}>

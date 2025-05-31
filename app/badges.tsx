@@ -417,7 +417,7 @@ export default function BadgesScreen() {
               onPress={() => router.push('/badges-overview')}
             >
               <Ionicons name="grid" size={16} color="white" />
-              <Text style={styles.overviewButtonText}>バッジ一覧を表示</Text>
+              <Text style={styles.overviewButtonText}>一覧を表示</Text>
             </TouchableOpacity>
           </View>
 

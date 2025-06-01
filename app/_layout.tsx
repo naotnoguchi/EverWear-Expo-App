@@ -1,5 +1,5 @@
 // app/_layout.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Stack, useSegments } from "expo-router";
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -12,6 +12,7 @@ import { Platform, StyleSheet, useColorScheme } from 'react-native';
 import Onboarding from '../components/Onboarding';
 import { useTheme } from "@/contexts/ThemeContext";
 import { Redirect } from 'expo-router';
+import * as Linking from 'expo-linking';
 
 // app/_layout.tsx の先頭に追加
 console.log('App starting...');
@@ -19,10 +20,34 @@ console.log('App starting...');
 // Main app component with navigation and auth flow
 function MainApp() {
   const { isOnboardingComplete } = useOnboarding();
-  const { user, loading, isFirstLaunch, setFirstLaunchComplete } = useAuth();
+  const { user, loading, isFirstLaunch, setFirstLaunchComplete, handleDeepLink } = useAuth();
   const segments = useSegments();
   const colorScheme = useColorScheme();
   const theme = useTheme();
+
+  // ディープリンクリスナーを設定
+  useEffect(() => {
+    // 初期URLを処理
+    const getInitialURL = async () => {
+      const initialUrl = await Linking.getInitialURL();
+      if (initialUrl) {
+        console.log('Initial URL:', initialUrl);
+        handleDeepLink(initialUrl);
+      }
+    };
+
+    getInitialURL();
+
+    // リスナーを設定
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      console.log('Received URL:', url);
+      handleDeepLink(url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [handleDeepLink]);
 
   // Show loading state
   if (loading) {
@@ -53,7 +78,7 @@ function MainApp() {
   // If user is authenticated and on auth screen, redirect to main app
   if (user && inAuthGroup) {
     console.log('User authenticated, redirecting to main app...');
-    return <Redirect href="/(tabs)" />;
+    return <Redirect href="/" />;
   }
 
   // If this is the first launch and onboarding is complete, mark first launch as complete
@@ -92,6 +117,20 @@ function MainApp() {
         <Stack.Screen
           name="auth/signup"
           options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="auth/callback"
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="auth/reset-password"
+          options={{
+            title: "パスワードリセット",
             headerShown: false,
           }}
         />

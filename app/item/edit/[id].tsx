@@ -41,6 +41,9 @@ export default function EditItem() {
   const [washThreshold, setWashThreshold] = useState("3");
   const [imageUrl, setImageUrl] = useState("");
   const [imageSelected, setImageSelected] = useState(false);
+  const [memo, setMemo] = useState("");
+  const [condition, setCondition] = useState("");
+  const [purchasePrice, setPurchasePrice] = useState("");
 
   // 初期値を保存するための状態
   const [initialValues, setInitialValues] = useState({
@@ -49,7 +52,10 @@ export default function EditItem() {
     brand: "",
     washThreshold: "",
     imageUrl: "",
-    imageSelected: false
+    imageSelected: false,
+    memo: "",
+    condition: "",
+    purchasePrice: ""
   });
 
   // 初期データの読み込み
@@ -65,6 +71,9 @@ export default function EditItem() {
       setWashThreshold(String(item.washThreshold));
       setImageUrl(item.image);
       setImageSelected(true);
+      setMemo(item.memo || "");
+      setCondition(item.condition || "");
+      setPurchasePrice(item.purchasePrice ? String(item.purchasePrice) : "");
 
       // 初期値を保存
       setInitialValues({
@@ -73,7 +82,10 @@ export default function EditItem() {
         brand: item.brand || "",
         washThreshold: String(item.washThreshold),
         imageUrl: item.image,
-        imageSelected: true
+        imageSelected: true,
+        memo: item.memo || "",
+        condition: item.condition || "",
+        purchasePrice: item.purchasePrice ? String(item.purchasePrice) : ""
       });
     }
   }, [id, clothingItems]);
@@ -91,7 +103,10 @@ export default function EditItem() {
       brand !== initialValues.brand ||
       washThreshold !== initialValues.washThreshold ||
       imageUrl !== initialValues.imageUrl ||
-      imageSelected !== initialValues.imageSelected
+      imageSelected !== initialValues.imageSelected ||
+      memo !== initialValues.memo ||
+      condition !== initialValues.condition ||
+      purchasePrice !== initialValues.purchasePrice
     );
   };
 
@@ -162,7 +177,10 @@ export default function EditItem() {
       category: selectedCategory,
       brand,
       washThreshold: Number(washThreshold),
-      image: imageUrl
+      image: imageUrl,
+      memo,
+      condition,
+      purchasePrice: purchasePrice ? Number(purchasePrice) : null
     };
 
     try {
@@ -198,6 +216,11 @@ export default function EditItem() {
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
+    triggerHaptic();
+  };
+
+  const handleConditionSelect = (selectedCondition: string) => {
+    setCondition(selectedCondition);
     triggerHaptic();
   };
 
@@ -534,6 +557,95 @@ export default function EditItem() {
                 >
                   <Ionicons name="add" size={24} color="#3498db" /* Keep blue for brand consistency */ />
                 </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* 状態選択 (新品/中古) */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>状態</Text>
+              <Text style={styles.sublabel}>新品で購入したか中古で購入したかを選択します</Text>
+              <View style={styles.categoryContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.categoryButton,
+                    condition === "新品" && styles.selectedCategory,
+                  ]}
+                  onPress={() => handleConditionSelect("新品")}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons 
+                    name="star" 
+                    size={20} 
+                    color={condition === "新品" ? "#fff" : theme.text + "99"} 
+                    style={styles.categoryIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      condition === "新品" && styles.selectedCategoryText,
+                    ]}
+                  >
+                    新品
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.categoryButton,
+                    condition === "中古" && styles.selectedCategory,
+                  ]}
+                  onPress={() => handleConditionSelect("中古")}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons 
+                    name="repeat" 
+                    size={20} 
+                    color={condition === "中古" ? "#fff" : theme.text + "99"} 
+                    style={styles.categoryIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      condition === "中古" && styles.selectedCategoryText,
+                    ]}
+                  >
+                    中古
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* 購入価格入力 */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>購入価格</Text>
+              <Text style={styles.sublabel}>任意：アイテムの購入価格を入力します</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="pricetag-outline" size={20} color={theme.text + "99"} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={purchasePrice}
+                  onChangeText={setPurchasePrice}
+                  placeholder="例: 5000"
+                  placeholderTextColor={theme.text + "77"}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            {/* メモ入力 */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>メモ</Text>
+              <Text style={styles.sublabel}>任意：アイテムに関するメモを入力します</Text>
+              <View style={[styles.inputContainer, { height: 100 }]}>
+                <Ionicons name="document-text-outline" size={20} color={theme.text + "99"} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+                  value={memo}
+                  onChangeText={setMemo}
+                  placeholder="例: お気に入りのシャツ。冬はインナーとして着用。"
+                  placeholderTextColor={theme.text + "77"}
+                  multiline={true}
+                  numberOfLines={4}
+                />
               </View>
             </View>
 

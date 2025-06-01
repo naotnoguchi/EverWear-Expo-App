@@ -37,6 +37,9 @@ export default function AddItem() {
   const [brand, setBrand] = useState(""); // ブランド状態を追加
   const [washThreshold, setWashThreshold] = useState("3");
   const [imageSelected, setImageSelected] = useState(false);
+  const [memo, setMemo] = useState("");
+  const [condition, setCondition] = useState("");
+  const [purchasePrice, setPurchasePrice] = useState("");
 
   // 触覚フィードバック
   const triggerHaptic = () => {
@@ -46,7 +49,7 @@ export default function AddItem() {
   // 閉じるボタンのハンドラ
   const handleClose = () => {
     // 入力内容があれば確認ダイアログを表示
-    if (name || selectedCategory !== "" || washThreshold !== "3" || imageSelected) {
+    if (name || selectedCategory !== "" || washThreshold !== "3" || imageSelected || memo || condition || purchasePrice) {
       Alert.alert(
         "編集内容の破棄",
         "入力した内容は保存されません。よろしいですか？",
@@ -105,6 +108,9 @@ export default function AddItem() {
       washThreshold: Number(washThreshold),
       lastWorn: "",
       wearCount: 0,
+      memo: memo,
+      condition: condition,
+      purchasePrice: purchasePrice ? Number(purchasePrice) : null,
       wearHistory: [],
       washHistory: []
     };
@@ -144,6 +150,11 @@ export default function AddItem() {
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
+    triggerHaptic();
+  };
+
+  const handleConditionSelect = (selectedCondition: string) => {
+    setCondition(selectedCondition);
     triggerHaptic();
   };
 
@@ -472,6 +483,95 @@ export default function AddItem() {
                 >
                   <Ionicons name="add" size={24} color="#3498db" /* Keep blue for brand consistency */ />
                 </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* 状態選択 (新品/中古) */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>状態</Text>
+              <Text style={styles.sublabel}>新品で購入したか中古で購入したかを選択します</Text>
+              <View style={styles.categoryContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.categoryButton,
+                    condition === "新品" && styles.selectedCategory,
+                  ]}
+                  onPress={() => handleConditionSelect("新品")}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons 
+                    name="star" 
+                    size={20} 
+                    color={condition === "新品" ? "#fff" : theme.text + "99"} 
+                    style={styles.categoryIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      condition === "新品" && styles.selectedCategoryText,
+                    ]}
+                  >
+                    新品
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.categoryButton,
+                    condition === "中古" && styles.selectedCategory,
+                  ]}
+                  onPress={() => handleConditionSelect("中古")}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons 
+                    name="repeat" 
+                    size={20} 
+                    color={condition === "中古" ? "#fff" : theme.text + "99"} 
+                    style={styles.categoryIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      condition === "中古" && styles.selectedCategoryText,
+                    ]}
+                  >
+                    中古
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* 購入価格入力 */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>購入価格</Text>
+              <Text style={styles.sublabel}>任意：アイテムの購入価格を入力します</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="pricetag-outline" size={20} color={theme.text + "99"} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={purchasePrice}
+                  onChangeText={setPurchasePrice}
+                  placeholder="例: 5000"
+                  placeholderTextColor={theme.text + "77"}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            {/* メモ入力 */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>メモ</Text>
+              <Text style={styles.sublabel}>任意：アイテムに関するメモを入力します</Text>
+              <View style={[styles.inputContainer, { height: 100 }]}>
+                <Ionicons name="document-text-outline" size={20} color={theme.text + "99"} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+                  value={memo}
+                  onChangeText={setMemo}
+                  placeholder="例: お気に入りのシャツ。冬はインナーとして着用。"
+                  placeholderTextColor={theme.text + "77"}
+                  multiline={true}
+                  numberOfLines={4}
+                />
               </View>
             </View>
 

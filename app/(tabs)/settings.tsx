@@ -116,14 +116,29 @@ export default function Settings() {
 
   // Handle logout
   const handleLogout = async () => {
-    try {
-      await signOut();
-      // The app will automatically redirect to the login screen
-      // due to the auth state change and the logic in _layout.tsx
-    } catch (error) {
-      Alert.alert("エラー", "ログアウトに失敗しました");
-      console.error("Logout error:", error);
-    }
+    Alert.alert(
+      "ログアウト",
+      "本当にログアウトしますか？",
+      [
+        {
+          text: "キャンセル",
+          style: "cancel",
+        },
+        {
+          text: "ログアウト",
+          onPress: async () => {
+            try {
+              await signOut();
+              // The app will automatically redirect to the login screen
+              // due to the auth state change and the logic in _layout.tsx
+            } catch (error) {
+              Alert.alert("エラー", "ログアウトに失敗しました");
+              console.error("Logout error:", error);
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Define styles with theme colors

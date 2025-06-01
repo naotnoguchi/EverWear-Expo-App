@@ -22,6 +22,9 @@ interface AuthContextType {
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
   setFirstLaunchComplete: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string, token?: string) => Promise<void>;
+  handleDeepLink: (url: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -185,6 +188,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // パスワードリセットメールの送信
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await auth.resetPasswordForEmail(email, {
+        redirectTo: 'clothesmanagerapp://auth/callback?type=recovery',
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      throw error;
+    }
+  };
+
+  // パスワードの更新
+  const updatePassword = async (password: string, token?: string) => {
+    try {
+      const { error } = await auth.updateUser({
+        password: password
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating password:', error);
+      throw error;
+    }
+  };
+
+  // ディープリンクの処理
+  const handleDeepLink = async (url: string) => {
+    try {
+      if (!url) return;
+
+      console.log('Processing deep link:', url);
+
+      // URLからパラメータを抽出
+      const parsedUrl = new URL(url);
+      const token = parsedUrl.searchParams.get('token');
+      const type = parsedUrl.searchParams.get('type');
+
+      if (token) {
+        // トークンの種類に応じて処理
+        if (type === 'signup') {
+          // メールアドレス確認の処理
+          const { error } = await auth.verifyOtp({
+            token_hash: token,
+            type: 'email',
+          });
+          if (error) throw error;
+        } else if (type === 'recovery') {
+          // パスワードリセットの場合は何もしない（画面で処理）
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error handling deep link:', error);
+      throw error;
+    }
+  };
+
   // 初回起動完了を記録
   const setFirstLaunchComplete = async () => {
     try {
@@ -208,6 +269,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signInWithApple,
         signOut,
         setFirstLaunchComplete,
+        resetPassword,
+        updatePassword,
+        handleDeepLink,
       }}
     >
       {children}

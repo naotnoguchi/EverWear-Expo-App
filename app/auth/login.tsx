@@ -9,8 +9,10 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, signInWithGoogle, signInWithApple } = useAuth();
+  const [showResetForm, setShowResetForm] = useState(false);
+  const { signIn, signInWithGoogle, signInWithApple, resetPassword } = useAuth();
   const { resetOnboarding } = useOnboarding();
   const theme = useTheme();
 
@@ -23,7 +25,7 @@ export default function LoginScreen() {
     try {
       setIsLoading(true);
       await signIn(email, password);
-      router.replace('/(tabs)');
+      router.replace('/');
     } catch (error) {
       Alert.alert('ログインエラー', error.message || 'ログインに失敗しました');
     } finally {
@@ -71,39 +73,109 @@ export default function LoginScreen() {
     }
   };
 
+  // パスワードリセット処理
+  const handleResetPassword = async () => {
+    if (!resetEmail) {
+      Alert.alert('エラー', 'メールアドレスを入力してください');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await resetPassword(resetEmail);
+      Alert.alert(
+        'パスワードリセット',
+        'パスワードリセットのリンクを送信しました。メールを確認してください。',
+        [{ text: 'OK', onPress: () => setShowResetForm(false) }]
+      );
+    } catch (error) {
+      Alert.alert('エラー', error.message || 'パスワードリセットに失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // パスワードリセットフォームを表示する関数
+  const renderResetForm = () => {
+    if (!showResetForm) return null;
+
+    return (
+      <View style={styles.resetForm}>
+        <Text style={[styles.resetTitle, { color: theme.text }]}>
+          パスワードをリセット
+        </Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
+          placeholder="メールアドレス"
+          placeholderTextColor={theme.textSecondary}
+          value={resetEmail}
+          onChangeText={setResetEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: theme.primary }]}
+          onPress={handleResetPassword}
+          disabled={isLoading}
+        >
+          <Text style={styles.buttonText}>
+            {isLoading ? '送信中...' : 'リセットリンクを送信'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setShowResetForm(false)}>
+          <Text style={[styles.cancelText, { color: theme.textSecondary }]}>
+            キャンセル
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={[styles.title, { color: theme.text }]}>ClothesManagerApp</Text>
       <Text style={[styles.subtitle, { color: theme.text }]}>アカウントにログイン</Text>
 
-      <TextInput
-        style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-        placeholder="メールアドレス"
-        placeholderTextColor={theme.textSecondary}
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
+      {!showResetForm && (
+        <>
+          <TextInput
+            style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
+            placeholder="メールアドレス"
+            placeholderTextColor={theme.textSecondary}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
 
-      <TextInput
-        style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-        placeholder="パスワード"
-        placeholderTextColor={theme.textSecondary}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+          <TextInput
+            style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
+            placeholder="パスワード"
+            placeholderTextColor={theme.textSecondary}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
 
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: theme.primary }]}
-        onPress={handleEmailLogin}
-        disabled={isLoading}
-      >
-        <Text style={[styles.buttonText, { color: '#ffffff' }]}>
-          {isLoading ? 'ログイン中...' : 'ログイン'}
-        </Text>
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: theme.primary }]}
+            onPress={handleEmailLogin}
+            disabled={isLoading}
+          >
+            <Text style={[styles.buttonText, { color: '#ffffff' }]}>
+              {isLoading ? 'ログイン中...' : 'ログイン'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => setShowResetForm(true)}>
+            <Text style={[styles.forgotPassword, { color: theme.primary }]}>
+              パスワードをお忘れですか？
+            </Text>
+          </TouchableOpacity>
+        </>
+      )}
+
+      {renderResetForm()}
 
       <View style={styles.divider}>
         <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
@@ -192,6 +264,25 @@ const styles = StyleSheet.create({
     color: 'white', // Will be overridden for dark mode
     fontSize: 16,
     fontWeight: '600',
+  },
+  forgotPassword: {
+    textAlign: 'center',
+    marginTop: 15,
+    marginBottom: 15,
+  },
+  resetForm: {
+    marginTop: 20,
+    width: '100%',
+  },
+  resetTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  cancelText: {
+    textAlign: 'center',
+    marginTop: 15,
   },
   divider: {
     flexDirection: 'row',

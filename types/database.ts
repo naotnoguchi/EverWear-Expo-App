@@ -19,6 +19,9 @@ export interface ClothingItem {
   wear_count: number;
   wash_threshold: number;
   last_worn: string | null; // ISO date string
+  memo: string | null;
+  condition: string | null;
+  purchase_price: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -89,6 +92,9 @@ export interface AppClothingItem {
   wearCount: number;
   washThreshold: number;
   lastWorn: string;
+  memo: string;
+  condition: string;
+  purchasePrice: number | null;
   wearHistory: string[];
   washHistory: string[];
 }
@@ -104,6 +110,9 @@ export const toAppClothingItem = (dbItem: ClothingItem, wearHistory: WearHistory
     wearCount: dbItem.wear_count,
     washThreshold: dbItem.wash_threshold,
     lastWorn: dbItem.last_worn || '',
+    memo: dbItem.memo || '',
+    condition: dbItem.condition || '',
+    purchasePrice: dbItem.purchase_price,
     wearHistory: wearHistory.map(wh => wh.wear_date),
     washHistory: washHistory.map(wh => wh.wash_date)
   };
@@ -118,6 +127,9 @@ export const toDbClothingItem = (appItem: Partial<AppClothingItem>, userId: stri
     image_url: appItem.image || null,
     wear_count: appItem.wearCount || 0,
     wash_threshold: appItem.washThreshold || 3,
-    last_worn: appItem.lastWorn || null
+    last_worn: appItem.lastWorn || null,
+    memo: appItem.memo || null,
+    condition: appItem.condition || null,
+    purchase_price: appItem.purchasePrice || null
   };
 };

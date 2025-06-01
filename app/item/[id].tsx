@@ -19,6 +19,9 @@ interface ClothingItem {
   wearCount: number;
   washThreshold: number;
   lastWorn: string;
+  memo: string;
+  condition: string;
+  purchasePrice: number | null;
   wearHistory: string[];
   washHistory: string[];
 }
@@ -411,6 +414,33 @@ export default function ItemDetail() {
       fontSize: 16,
       marginLeft: 8,
     },
+    memoContainer: {
+      backgroundColor: theme.card,
+      borderRadius: 8,
+      padding: 16,
+      marginBottom: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    memoHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    memoTitle: {
+      fontSize: 16,
+      fontWeight: "bold",
+      marginLeft: 8,
+      color: theme.text,
+    },
+    memoText: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: theme.text,
+    },
   });
 
   if (!item) {
@@ -546,6 +576,28 @@ export default function ItemDetail() {
           </View>
         )}
 
+        {/* 状態情報 */}
+        {item.condition && (
+          <View style={styles.categoryContainer}>
+            <Text style={styles.categoryLabel}>状態:</Text>
+            <Text style={styles.categoryValue}>
+              {item.condition === "新品" ? (
+                <><Ionicons name="star" size={16} color={theme.text} style={{marginRight: 4}} /> 新品</>
+              ) : (
+                <><Ionicons name="repeat" size={16} color={theme.text} style={{marginRight: 4}} /> 中古</>
+              )}
+            </Text>
+          </View>
+        )}
+
+        {/* 購入価格情報 */}
+        {item.purchasePrice && (
+          <View style={styles.categoryContainer}>
+            <Text style={styles.categoryLabel}>購入価格:</Text>
+            <Text style={styles.categoryValue}>¥{item.purchasePrice.toLocaleString()}</Text>
+          </View>
+        )}
+
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity
               style={[styles.actionButton, styles.wearButton]}
@@ -617,6 +669,17 @@ export default function ItemDetail() {
             </Text>
           )}
         </View>
+
+        {/* メモ情報 */}
+        {item.memo && (
+          <View style={styles.memoContainer}>
+            <View style={styles.memoHeader}>
+              <Ionicons name="document-text-outline" size={20} color={theme.text} />
+              <Text style={styles.memoTitle}>メモ</Text>
+            </View>
+            <Text style={styles.memoText}>{item.memo}</Text>
+          </View>
+        )}
 
         <ItemCalendar
             wearHistory={item.wearHistory}

@@ -27,6 +27,9 @@ export const mockClothingItems: AppClothingItem[] = [
     image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=776&q=80",
     washThreshold: 3,
     lastWorn: "2025-05-20",
+    memo: "フォーマルな場面で着用。シルク混紡で肌触りが良い。",
+    condition: "新品",
+    purchasePrice: 35000,
     wearHistory: [
       "2025-01-05", "2025-01-15", "2025-01-25",
       "2025-02-10", "2025-02-20",
@@ -52,6 +55,9 @@ export const mockClothingItems: AppClothingItem[] = [
     image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80",
     washThreshold: 3,
     lastWorn: "2025-05-15",
+    memo: "ビジネスカジュアルに最適。シワになりにくい素材。",
+    condition: "新品",
+    purchasePrice: 42000,
     wearHistory: [
       "2025-01-08", "2025-01-18", "2025-01-28",
       "2025-02-08", "2025-02-18", "2025-02-28",
@@ -77,6 +83,9 @@ export const mockClothingItems: AppClothingItem[] = [
     image: "https://images.unsplash.com/photo-1548126032-079a0fb0099d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80",
     washThreshold: 5,
     lastWorn: "2025-05-18",
+    memo: "カジュアルな場面に。経年変化を楽しむ。",
+    condition: "中古",
+    purchasePrice: 28000,
     wearHistory: [
       "2025-01-12", "2025-01-22",
       "2025-02-05", "2025-02-15", "2025-02-25",
@@ -100,6 +109,9 @@ export const mockClothingItems: AppClothingItem[] = [
     image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=870&q=80",
     washThreshold: 4,
     lastWorn: "2025-05-12",
+    memo: "カシミヤ混。ドライクリーニング推奨。",
+    condition: "新品",
+    purchasePrice: 65000,
     wearHistory: [
       "2025-01-03", "2025-01-13", "2025-01-23",
       "2025-02-03", "2025-02-13", "2025-02-23",
@@ -125,6 +137,9 @@ export const mockClothingItems: AppClothingItem[] = [
     image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=397&q=80",
     washThreshold: 4,
     lastWorn: "2025-05-22",
+    memo: null,
+    condition: null,
+    purchasePrice: null,
     wearHistory: [
       "2025-01-07", "2025-01-17", "2025-01-27",
       "2025-02-07", "2025-02-17", "2025-02-27",
@@ -150,6 +165,9 @@ export const mockClothingItems: AppClothingItem[] = [
     image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1112&q=80",
     washThreshold: 10,
     lastWorn: "2025-05-19",
+    memo: "限定モデル。レザーケア製品で定期的にメンテナンス。",
+    condition: "新品",
+    purchasePrice: 89000,
     wearHistory: [
       "2025-01-10", "2025-01-20", "2025-01-30",
       "2025-02-09", "2025-02-19",
@@ -173,6 +191,9 @@ export const mockClothingItems: AppClothingItem[] = [
     image: "https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
     washThreshold: 5,
     lastWorn: "2025-05-16",
+    memo: "誕生日プレゼントで頂いたもの。大切に使用。",
+    condition: "新品",
+    purchasePrice: null,
     wearHistory: [
       "2025-01-02", "2025-01-12", "2025-01-22",
       "2025-02-01", "2025-02-11", "2025-02-21",
@@ -197,6 +218,9 @@ export const mockClothingItems: AppClothingItem[] = [
     image: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
     washThreshold: 6,
     lastWorn: "2025-05-21",
+    memo: null,
+    condition: "中古",
+    purchasePrice: 120000,
     wearHistory: [
       "2025-01-05", "2025-01-15", "2025-01-25",
       "2025-02-04", "2025-02-14", "2025-02-24",
@@ -220,6 +244,9 @@ export const mockClothingItems: AppClothingItem[] = [
     image: "https://images.unsplash.com/photo-1589756823695-278bc923f962?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=735&q=80",
     washThreshold: 5,
     lastWorn: "2025-05-23",
+    memo: "結婚式やフォーマルな場で使用。",
+    condition: "新品",
+    purchasePrice: 25000,
     wearHistory: [
       "2025-01-08", "2025-01-18", "2025-01-28",
       "2025-02-07", "2025-02-17", "2025-02-27",
@@ -244,6 +271,9 @@ export const mockClothingItems: AppClothingItem[] = [
     image: "https://images.unsplash.com/photo-1605812860427-4024433a70fd?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=735&q=80",
     washThreshold: 8,
     lastWorn: "2025-05-25",
+    memo: null,
+    condition: "中古",
+    purchasePrice: 45000,
     wearHistory: [
       "2025-01-03", "2025-01-13", "2025-01-23",
       "2025-02-02", "2025-02-12", "2025-02-22",

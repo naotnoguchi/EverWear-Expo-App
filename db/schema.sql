@@ -21,6 +21,9 @@ CREATE TABLE clothing_items (
   wear_count INTEGER DEFAULT 0,
   wash_threshold INTEGER DEFAULT 3,
   last_worn DATE,
+  memo TEXT,
+  condition TEXT,
+  purchase_price NUMERIC,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

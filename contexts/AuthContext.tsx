@@ -177,13 +177,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // サインアウト
+  // サインアウト（Android Expo Go対応版）
   const signOut = async () => {
     try {
+      console.log('Starting sign out process...');
+      
+      // 1. Supabaseからのサインアウト
       const { error } = await auth.signOut();
-      if (error) throw error;
+      if (error && !error.message.includes('Auth session missing')) {
+        console.error('Supabase signOut error:', error);
+      }
+      
+      // 2. ローカル状態を即座にクリア
+      setSession(null);
+      setUser(null);
+      
+      // 3. AsyncStorageから全ての認証関連データを削除
+      await AsyncStorage.multiRemove([
+        AUTH_STATE_KEY,
+        'supabase.auth.token', // Supabaseのデフォルトキー
+        'sb-auth-token', // 代替キー
+        '@supabase/auth-js',  // ライブラリのキー
+      ]);
+      
+      // 4. Android Expo Go専用: さらに徹底的なクリア
+      if (Platform.OS === 'android') {
+        try {
+          // 全てのストレージキーを取得して認証関連のものを削除
+          const allKeys = await AsyncStorage.getAllKeys();
+          const authKeys = allKeys.filter(key => 
+            key.includes('auth') || 
+            key.includes('supabase') || 
+            key.includes('session') ||
+            key.includes('token')
+          );
+          
+          if (authKeys.length > 0) {
+            await AsyncStorage.multiRemove(authKeys);
+            console.log('Cleared additional auth keys:', authKeys);
+          }
+        } catch (error) {
+          console.warn('Error clearing additional storage:', error);
+        }
+      }
+      
+      // 5. AuthClientを強制的にリセット
+      try {
+        // 新しい空のセッションを強制設定
+        await auth.setSession({
+          access_token: '',
+          refresh_token: '',
+        });
+      } catch (resetError) {
+        console.warn('Session reset error (expected):', resetError);
+      }
+      
+      console.log('Sign out completed');
+      
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('Error during sign out:', error);
+      
+      // エラーが発生してもローカル状態はクリア
+      setSession(null);
+      setUser(null);
+      
       throw error;
     }
   };

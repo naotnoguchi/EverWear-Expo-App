@@ -543,7 +543,7 @@ export async function getBadges(): Promise<Badge[]> {
   const cachedData = cache.get<Badge[]>('badges');
 
   if (cachedData) {
-    return cachedData;
+    return cachedData || [];
   }
 
   try {
@@ -638,7 +638,58 @@ export async function getBadges(): Promise<Badge[]> {
     return badges;
   } catch (error) {
     console.error('Error fetching badges:', error);
-    throw error;
+
+    // Even if there's an error, return default badges with isEarned set to false
+    // This ensures badges are always displayed, even if the user hasn't earned any yet
+    return [
+      // Usage badges
+      {
+        id: 'first-item',
+        name: '最初の一歩',
+        description: '最初のアイテムを登録しました',
+        imageUrl: 'https://example.com/badges/first-item.png',
+        isEarned: false,
+        progress: 0,
+        category: 'milestone'
+      },
+      {
+        id: 'ten-items',
+        name: 'コレクター',
+        description: '10個のアイテムを登録しました',
+        imageUrl: 'https://example.com/badges/ten-items.png',
+        isEarned: false,
+        progress: 0,
+        category: 'milestone'
+      },
+      {
+        id: 'fifty-wears',
+        name: '着こなしマスター',
+        description: '合計50回の着用を記録しました',
+        imageUrl: 'https://example.com/badges/fifty-wears.png',
+        isEarned: false,
+        progress: 0,
+        category: 'usage'
+      },
+      {
+        id: 'twenty-washes',
+        name: 'クリーンキーパー',
+        description: '合計20回の洗濯を記録しました',
+        imageUrl: 'https://example.com/badges/twenty-washes.png',
+        isEarned: false,
+        progress: 0,
+        category: 'usage'
+      },
+      // Efficiency badges
+      {
+        id: 'efficient-washer',
+        name: '賢い洗濯',
+        description: '洗濯閾値の90%以上で洗濯を5回実施',
+        imageUrl: 'https://example.com/badges/efficient-washer.png',
+        isEarned: false,
+        progress: 0,
+        category: 'efficiency'
+      }
+    ];
   }
 }
 

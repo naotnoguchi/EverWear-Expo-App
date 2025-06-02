@@ -17,6 +17,7 @@ export default function Stats() {
   const [topItems, setTopItems] = useState<RankingItem[]>([]);
   const [impactData, setImpactData] = useState<ImpactData | null>(null);
   const [recentBadge, setRecentBadge] = useState<Badge | null>(null);
+  const [badges, setBadges] = useState<Badge[]>([]); // この行を追加
   const [loading, setLoading] = useState(true);
 
   // Get efficiency status color
@@ -50,8 +51,9 @@ export default function Stats() {
       setImpactData(impact);
 
       // Fetch badges and get the most recent one
-      const badges = await statisticsService.getBadges();
-      const earnedBadges = badges.filter(badge => badge.isEarned);
+      const badgesData = await statisticsService.getBadges() || [];
+      setBadges(badgesData); // この行を追加
+      const earnedBadges = badgesData.filter(badge => badge.isEarned);
       if (earnedBadges.length > 0) {
         // Sort by earned date (most recent first)
         const sortedBadges = [...earnedBadges].sort((a, b) => {
@@ -447,6 +449,8 @@ export default function Stats() {
       paddingHorizontal: 8,
       paddingVertical: 2,
       borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     recentBadgeText: {
       color: 'white',
@@ -480,13 +484,22 @@ export default function Stats() {
     emptyText: {
       fontSize: 16,
       textAlign: 'center',
-      marginBottom: 16,
+      marginBottom: 8,
+    },
+    emptySubtext: {
+      fontSize: 14,
+      textAlign: 'center',
+      marginHorizontal: 16,
+      color: theme.text + "99",
     },
     checkBadgesButton: {
       backgroundColor: "#3498db",
       paddingVertical: 8,
       paddingHorizontal: 16,
       borderRadius: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     checkBadgesText: {
       color: 'white',
@@ -827,34 +840,43 @@ export default function Stats() {
                     {recentBadge.name}
                   </Text>
                   <View style={styles.recentBadge}>
-                    <Text style={styles.recentBadgeText}>最近獲得</Text>
+                    <Ionicons name="time-outline" size={10} color="white" style={{ marginRight: 2 }} />
+                    <Text style={styles.recentBadgeText}>NEW</Text>
                   </View>
                 </View>
 
-                <Text style={[styles.badgeDescription, { color: theme.text + "CC" }]} numberOfLines={2}>
-                  {recentBadge.description}
-                </Text>
-
-                <Text style={[styles.badgeDate, { color: theme.text + "99" }]}>
-                  獲得日: {recentBadge.earnedDate ? new Date(recentBadge.earnedDate).toLocaleDateString('ja-JP') : '不明'}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Ionicons name="calendar-outline" size={12} color={theme.text + "99"} style={{ marginRight: 4 }} />
+                  <Text style={[styles.badgeDate, { color: theme.text + "99" }]}>
+                    {recentBadge.earnedDate ? new Date(recentBadge.earnedDate).toLocaleDateString('ja-JP') : '不明'}
+                  </Text>
+                </View>
               </View>
             </View>
 
             <Text style={styles.moreBadgesText}>
-              他のバッジも確認する <Ionicons name="arrow-forward" size={14} color="#3498db" />
+              バッジをもっと見る <Ionicons name="arrow-forward" size={14} color="#3498db" />
             </Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: theme.text }]}>
-              獲得したバッジはありません
+            <Ionicons name="ribbon-outline" size={48} color={theme.text + "66"} />
+            <Text style={[styles.emptyText, { color: theme.text, marginTop: 12 }]}>
+              {badges.length > 0 ? '獲得したバッジはありません' : 'バッジコレクションを始めよう！'}
+            </Text>
+            <Text style={[styles.emptySubtext, { color: theme.text + "99", marginBottom: 12 }]}>
+              {badges.length > 0 
+                ? 'アプリを使い続けて、様々な条件を達成するとバッジが獲得できます。チャレンジしてみましょう！' 
+                : 'アイテムを登録して着用・洗濯を記録すると、様々なバッジを獲得できます。最初のアイテムを登録して、バッジ収集を始めましょう！'}
             </Text>
             <TouchableOpacity 
               style={styles.checkBadgesButton}
               onPress={() => router.push('/badges')}
             >
-              <Text style={styles.checkBadgesText}>バッジを確認する</Text>
+              <Ionicons name="ribbon" size={16} color="white" style={{ marginRight: 6 }} />
+              <Text style={styles.checkBadgesText}>
+                {badges.length > 0 ? 'バッジ一覧を見る' : 'バッジの種類を見る'}
+              </Text>
             </TouchableOpacity>
           </View>
         )}

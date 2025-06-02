@@ -23,10 +23,11 @@ export default function BadgesOverviewScreen() {
       setLoading(true);
       setError(null);
       const data = await statisticsService.getBadges();
-      setBadges(data);
+      setBadges(data || []);
     } catch (err) {
       console.error('Error fetching badges data:', err);
       setError('バッジデータの取得に失敗しました。後でもう一度お試しください。');
+      setBadges([]);
     } finally {
       setLoading(false);
     }
@@ -66,10 +67,12 @@ export default function BadgesOverviewScreen() {
     try {
       const uri = await viewShotRef.current.capture();
 
+      // Ensure badges is an array before filtering
+      const badgesArray = Array.isArray(badges) ? badges : [];
       await Share.share({
         url: uri,
         title: 'バッジコレクション',
-        message: `私のバッジコレクション: ${badges.filter(b => b.isEarned).length}/${badges.length}個獲得しました！`
+        message: `私のバッジコレクション: ${badgesArray.filter(b => b.isEarned).length}/${badgesArray.length}個獲得しました！`
       });
     } catch (error) {
       console.error('Error sharing screenshot:', error);
@@ -77,8 +80,10 @@ export default function BadgesOverviewScreen() {
   };
 
   // Calculate badge statistics
-  const totalBadges = badges.length;
-  const earnedBadges = badges.filter(badge => badge.isEarned).length;
+  // Ensure badges is an array before calculating statistics
+  const badgesArray = Array.isArray(badges) ? badges : [];
+  const totalBadges = badgesArray.length;
+  const earnedBadges = badgesArray.filter(badge => badge.isEarned).length;
   const earnedPercentage = totalBadges > 0 ? Math.round((earnedBadges / totalBadges) * 100) : 0;
 
   const styles = StyleSheet.create({
@@ -224,56 +229,66 @@ export default function BadgesOverviewScreen() {
         }} 
       />
       <ScrollView style={styles.container}>
-        <ViewShot 
-          ref={viewShotRef} 
-          options={{ format: "jpg", quality: 0.9 }}
-          style={styles.screenshotContainer}
-        >
-          <View style={styles.header}>
-            <Text style={styles.title}>バッジコレクション</Text>
-            <Text style={styles.subtitle}>獲得済み: {earnedBadges}/{totalBadges} ({earnedPercentage}%)</Text>
-          </View>
+        {badges.length > 0 ? (
+          <ViewShot 
+            ref={viewShotRef} 
+            options={{ format: "jpg", quality: 0.9 }}
+            style={styles.screenshotContainer}
+          >
+            <View style={styles.header}>
+              <Text style={styles.title}>バッジコレクション</Text>
+              <Text style={styles.subtitle}>獲得済み: {earnedBadges}/{totalBadges} ({earnedPercentage}%)</Text>
+            </View>
 
-          <View style={styles.badgeGrid}>
-            {badges.map(badge => (
-              <View key={badge.id} style={styles.badgeItem}>
-                <View 
-                  style={[
-                    styles.badgeIcon, 
-                    { backgroundColor: badge.isEarned 
-                      ? getBadgeColor(badge.category) 
-                      : theme.text + '20' } // Use theme text color with opacity for unearned badges
-                  ]}
-                >
-                  <Ionicons 
-                    name={getBadgeIcon(badge.category)} 
-                    size={24} 
-                    color={badge.isEarned ? 'white' : theme.text + '66'} // Use theme text color with opacity for unearned badge icons
-                  />
-                </View>
-                <Text 
-                  style={[
-                    styles.badgeName, 
-                    { color: badge.isEarned ? theme.text : theme.text + '66' } // Use theme text color for earned, with opacity for unearned
-                  ]}
-                  numberOfLines={2}
-                >
-                  {badge.name}
-                </Text>
-                {badge.isEarned && showEarnedDates && badge.earnedDate && (
-                  <Text style={[styles.earnedDate, { color: theme.text + '99' }]}>
-                    {new Date(badge.earnedDate).toLocaleDateString('ja-JP')}
-                  </Text>
-                )}
-                {badge.isEarned && (
-                  <View style={styles.earnedIndicator}>
-                    <Ionicons name="checkmark-circle" size={16} color={theme.success} /> {/* Use theme success color */}
+            <View style={styles.badgeGrid}>
+              {badges.map(badge => (
+                <View key={badge.id} style={styles.badgeItem}>
+                  <View 
+                    style={[
+                      styles.badgeIcon, 
+                      { backgroundColor: badge.isEarned 
+                        ? getBadgeColor(badge.category) 
+                        : theme.text + '20' } // Use theme text color with opacity for unearned badges
+                    ]}
+                  >
+                    <Ionicons 
+                      name={getBadgeIcon(badge.category)} 
+                      size={24} 
+                      color={badge.isEarned ? 'white' : theme.text + '66'} // Use theme text color with opacity for unearned badge icons
+                    />
                   </View>
-                )}
-              </View>
-            ))}
+                  <Text 
+                    style={[
+                      styles.badgeName, 
+                      { color: badge.isEarned ? theme.text : theme.text + '66' } // Use theme text color for earned, with opacity for unearned
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {badge.name}
+                  </Text>
+                  {badge.isEarned && showEarnedDates && badge.earnedDate && (
+                    <Text style={[styles.earnedDate, { color: theme.text + '99' }]}>
+                      {new Date(badge.earnedDate).toLocaleDateString('ja-JP')}
+                    </Text>
+                  )}
+                  {badge.isEarned && (
+                    <View style={styles.earnedIndicator}>
+                      <Ionicons name="checkmark-circle" size={16} color={theme.success} /> {/* Use theme success color */}
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          </ViewShot>
+        ) : (
+          <View style={[styles.screenshotContainer, styles.centerContent]}>
+            <Ionicons name="ribbon-outline" size={64} color={theme.text + "66"} />
+            <Text style={[styles.title, { marginTop: 16 }]}>バッジはまだありません</Text>
+            <Text style={[styles.subtitle, { textAlign: 'center', marginTop: 8, marginBottom: 16 }]}>
+              アイテムを登録して着用・洗濯を記録すると、様々なバッジを獲得できます。最初のアイテムを登録して、バッジ収集を始めましょう！
+            </Text>
           </View>
-        </ViewShot>
+        )}
 
         <View style={styles.actionButtons}>
           <TouchableOpacity 

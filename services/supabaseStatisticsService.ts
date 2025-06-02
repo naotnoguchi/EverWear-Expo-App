@@ -1,16 +1,24 @@
-import { 
-  BasicStats, 
-  RankingItem, 
-  EfficiencyItem, 
-  ImpactData, 
-  Badge, 
-  ItemDetailStats,
-  Period
-} from '../types/statistics';
-import { CategoryValue } from '../types/categories';
-import { db } from '../lib/dbClient';
 import { auth } from '../lib/authClient';
+import { db } from '../lib/dbClient';
+import { CategoryValue } from '../types/categories';
 import { AppClothingItem, toAppClothingItem } from '../types/database';
+import {
+  Badge,
+  BasicStats,
+  EfficiencyItem,
+  ImpactData,
+  ItemDetailStats,
+  Period,
+  RankingItem
+} from '../types/statistics';
+import {
+  calculateBadgeProgress,
+  evaluateBadgeCondition,
+  fetchBadgeConditions,
+  fetchBadgeDefinitions,
+  fetchUserBadges,
+  saveNewlyEarnedBadges
+} from './badgeService';
 
 // Helper function to filter items by period
 const filterByPeriod = (dates: string[], period: Period): string[] => {
@@ -39,7 +47,7 @@ const filterByPeriod = (dates: string[], period: Period): string[] => {
 
 // Cache for statistics data to avoid redundant calculations
 class StatisticsCache {
-  private static instance: StatisticsCache;
+  private static instance: StatisticsCache | null = null;
   private cache: {
     basicStats: Map<string, { data: BasicStats; timestamp: number }>;
     rankingData: Map<string, { data: RankingItem[]; timestamp: number }>;
@@ -72,7 +80,16 @@ class StatisticsCache {
     if (!cacheMap) return null;
 
     if (type === 'badges') {
-      return cacheMap as unknown as T;
+      const cached = cacheMap as { data: T; timestamp: number } | null;
+      if (!cached) return null;
+
+      // Cache expires after 5 minutes
+      if (Date.now() - cached.timestamp > 5 * 60 * 1000) {
+        this.cache[type] = null;
+        return null;
+      }
+
+      return cached.data;
     }
 
     const cached = cacheMap.get(key);
@@ -539,72 +556,354 @@ export async function getImpactData(period: Period = '3months'): Promise<ImpactD
 
 // Get badges
 export async function getBadges(): Promise<Badge[]> {
+  console.log('getBadges function called from:', new Error().stack?.split('\n')[2]?.trim() || 'unknown');
+
   const cache = StatisticsCache.getInstance();
   const cachedData = cache.get<Badge[]>('badges');
 
   if (cachedData) {
-    return cachedData || [];
+    console.log('getBadges returning cached data, count:', cachedData.length);
+    return cachedData;
   }
 
   try {
-    // Fetch real data from Supabase
+    // Get user session
+    const { data: session } = await auth.getSession();
+    const userId = session?.session?.user?.id;
+
+    console.log('Auth session in getBadges:', session ? 'exists' : 'null');
+    console.log('User ID in getBadges:', userId || 'not found');
+
+    if (!userId) {
+      console.warn('User not authenticated when fetching badges');
+      const defaultBadges = createDefaultBadges();
+      cache.set('badges', defaultBadges);
+      return defaultBadges;
+    }
+
+    // Fetch items with history
     const items = await fetchClothingItemsWithHistory();
 
-    // Calculate badge achievements based on real data
+    // Calculate statistics for badge evaluation
     const totalItems = items.length;
     const totalWears = items.reduce((sum, item) => sum + item.wearHistory.length, 0);
     const totalWashes = items.reduce((sum, item) => sum + item.washHistory.length, 0);
+    const washesReduced = totalWears - totalWashes;
+    const maxWears = items.length > 0 ? Math.max(...items.map(item => item.wearHistory.length)) : 0;
+    const categories = new Set(items.map(item => item.category));
+    const allCategories = ['トップス', 'ボトムス', 'アウター', 'シューズ', 'その他', '小物'];
 
-    // Define badges
-    const badges: Badge[] = [
+    // Prepare stats object for badge evaluation
+    const stats = {
+      totalItems,
+      totalWears,
+      totalWashes,
+      washesReduced,
+      maxWears,
+      categories
+    };
+
+    // Fetch badge definitions and conditions from database
+    console.log('Fetching badge definitions, conditions, and user badges');
+
+    let badgeDefinitions, badgeConditions, userBadges;
+
+    try {
+      [badgeDefinitions, badgeConditions, userBadges] = await Promise.all([
+        fetchBadgeDefinitions(),
+        fetchBadgeConditions(),
+        fetchUserBadges(userId)
+      ]);
+
+      console.log('Successfully fetched badge data:',
+        `definitions=${badgeDefinitions.length},`,
+        `conditions=${badgeConditions.length},`,
+        `userBadges=${userBadges.size}`);
+
+    } catch (e) {
+      console.error('Error fetching badge data:', e);
+      const defaultBadges = createDefaultBadges(items, stats);
+      cache.set('badges', defaultBadges);
+      return defaultBadges;
+    }
+
+    // If no badge definitions found in database, use default hardcoded badges
+    if (!badgeDefinitions || badgeDefinitions.length === 0) {
+      console.warn('No badge definitions found in database, using default hardcoded badges');
+      const defaultBadges = createDefaultBadges(items, stats);
+      cache.set('badges', defaultBadges);
+      return defaultBadges;
+    }
+
+    // Process badge definitions and evaluate conditions
+    const badges: Badge[] = badgeDefinitions.map(def => {
+      // Check if badge is already earned
+      const isAlreadyEarned = userBadges.has(def.id);
+      let isEarned = isAlreadyEarned;
+      let earnedDate = isAlreadyEarned ? userBadges.get(def.id) : undefined;
+      let progress = 0;
+
+      // If not already earned, evaluate conditions
+      if (!isAlreadyEarned) {
+        const conditions = badgeConditions.filter(condition => condition.badge_id === def.id);
+
+        // Special case for efficient-washer badge
+        if (def.id === 'efficient-washer') {
+          isEarned = items.some(item => {
+            let currentCount = 0;
+            let efficientWashes = 0;
+
+            // Sort wear and wash history by date
+            const sortedWears = [...item.wearHistory].sort();
+            const sortedWashes = [...item.washHistory].sort();
+
+            // Count wears between washes
+            for (const wearDate of sortedWears) {
+              currentCount++;
+              // Check if there's a wash after this wear
+              const nextWash = sortedWashes.find(washDate => washDate >= wearDate);
+              if (nextWash) {
+                // If the wear count is at least 90% of the threshold, count it as efficient
+                if (currentCount >= item.washThreshold * 0.9) {
+                  efficientWashes++;
+                }
+                currentCount = 0;
+                // Remove this wash from consideration for future wears
+                sortedWashes.splice(sortedWashes.indexOf(nextWash), 1);
+              }
+            }
+
+            return efficientWashes >= 5;
+          });
+        } 
+        // Normal case: evaluate all conditions
+        else if (conditions.length > 0) {
+          isEarned = conditions.every(condition => 
+            evaluateBadgeCondition(condition, items, stats)
+          );
+
+          // Calculate progress for the first condition (if only one condition)
+          if (conditions.length === 1) {
+            progress = calculateBadgeProgress(conditions[0], stats);
+          }
+        }
+        // Fallback for badges without conditions
+        else {
+          // Use hardcoded logic for common badges if no conditions defined
+          switch (def.id) {
+            case 'first-item':
+              isEarned = totalItems > 0;
+              progress = totalItems > 0 ? 100 : 0;
+              break;
+            case 'first-wear':
+              isEarned = totalWears > 0;
+              progress = totalWears > 0 ? 100 : 0;
+              break;
+            case 'first-wash':
+              isEarned = totalWashes > 0;
+              progress = totalWashes > 0 ? 100 : 0;
+              break;
+            case 'item-10-wears':
+              isEarned = maxWears >= 10;
+              progress = maxWears >= 10 ? 100 : Math.round((maxWears / 10) * 100);
+              break;
+            case 'item-30-wears':
+              isEarned = maxWears >= 30;
+              progress = maxWears >= 30 ? 100 : Math.round((maxWears / 30) * 100);
+              break;
+            case 'item-50-wears':
+              isEarned = maxWears >= 50;
+              progress = maxWears >= 50 ? 100 : Math.round((maxWears / 50) * 100);
+              break;
+            case 'wash-reduced-10':
+              isEarned = washesReduced >= 10;
+              progress = washesReduced >= 10 ? 100 : Math.round((washesReduced / 10) * 100);
+              break;
+            case 'wash-reduced-50':
+              isEarned = washesReduced >= 50;
+              progress = washesReduced >= 50 ? 100 : Math.round((washesReduced / 50) * 100);
+              break;
+            case 'wash-reduced-100':
+              isEarned = washesReduced >= 100;
+              progress = washesReduced >= 100 ? 100 : Math.round((washesReduced / 100) * 100);
+              break;
+            case 'category-complete':
+              isEarned = allCategories.every(cat => categories.has(cat as CategoryValue));
+              progress = Math.round((categories.size / allCategories.length) * 100);
+              break;
+            case 'eco-warrior':
+              isEarned = washesReduced >= 30;
+              progress = washesReduced >= 30 ? 100 : Math.round((washesReduced / 30) * 100);
+              break;
+          }
+        }
+
+        // Set earned date for newly earned badges
+        if (isEarned) {
+          earnedDate = new Date().toISOString();
+        }
+      }
+
+      // Create Badge object
+      return {
+        id: def.id,
+        name: def.name,
+        description: def.description,
+        imageUrl: def.image_url,
+        isEarned,
+        earnedDate,
+        progress: isEarned ? 100 : progress,
+        category: def.category
+      };
+    });
+
+    // Save newly earned badges to database
+    if (userId) {
+      await saveNewlyEarnedBadges(userId, badges);
+    }
+
+    // Cache and return badges
+    cache.set('badges', badges);
+    console.log('getBadges returning data, count:', badges.length, 'earned:', badges.filter(b => b.isEarned).length);
+    return badges;
+  } catch (error) {
+    console.error('Error fetching badges:', error);
+    const defaultBadges = createDefaultBadges();
+    cache.set('badges', defaultBadges);
+    return defaultBadges;
+  }
+}
+
+// Helper function to create default badges
+function createDefaultBadges(items?: AppClothingItem[], stats?: any): Badge[] {
+  if (items && stats) {
+    // If we have items and stats, calculate badge achievements
+    const { totalItems, totalWears, totalWashes, washesReduced, maxWears, categories } = stats;
+    const allCategories = ['トップス', 'ボトムス', 'アウター', 'シューズ', 'その他', '小物'];
+    const hasAllCategories = allCategories.every(cat => categories.has(cat as CategoryValue));
+
+    const badges = [
       // Usage badges
       {
         id: 'first-item',
-        name: '最初の一歩',
+        name: '初めてのアイテム登録',
         description: '最初のアイテムを登録しました',
         imageUrl: 'https://example.com/badges/first-item.png',
-        isEarned: totalItems >= 1,
-        earnedDate: totalItems >= 1 ? new Date().toISOString() : undefined,
-        category: 'milestone'
-      },
-      {
-        id: 'ten-items',
-        name: 'コレクター',
-        description: '10個のアイテムを登録しました',
-        imageUrl: 'https://example.com/badges/ten-items.png',
-        isEarned: totalItems >= 10,
-        earnedDate: totalItems >= 10 ? new Date().toISOString() : undefined,
-        progress: totalItems >= 10 ? 100 : Math.round((totalItems / 10) * 100),
-        category: 'milestone'
-      },
-      {
-        id: 'fifty-wears',
-        name: '着こなしマスター',
-        description: '合計50回の着用を記録しました',
-        imageUrl: 'https://example.com/badges/fifty-wears.png',
-        isEarned: totalWears >= 50,
-        earnedDate: totalWears >= 50 ? new Date().toISOString() : undefined,
-        progress: totalWears >= 50 ? 100 : Math.round((totalWears / 50) * 100),
+        isEarned: totalItems > 0,
+        earnedDate: totalItems > 0 ? new Date().toISOString() : undefined,
         category: 'usage'
       },
       {
-        id: 'twenty-washes',
-        name: 'クリーンキーパー',
-        description: '合計20回の洗濯を記録しました',
-        imageUrl: 'https://example.com/badges/twenty-washes.png',
-        isEarned: totalWashes >= 20,
-        earnedDate: totalWashes >= 20 ? new Date().toISOString() : undefined,
-        progress: totalWashes >= 20 ? 100 : Math.round((totalWashes / 20) * 100),
+        id: 'first-wear',
+        name: '初めての着用記録',
+        description: '最初の着用を記録しました',
+        imageUrl: 'https://example.com/badges/first-wear.png',
+        isEarned: totalWears > 0,
+        earnedDate: totalWears > 0 ? new Date().toISOString() : undefined,
         category: 'usage'
       },
+      {
+        id: 'first-wash',
+        name: '初めての洗濯記録',
+        description: '最初の洗濯を記録しました',
+        imageUrl: 'https://example.com/badges/first-wash.png',
+        isEarned: totalWashes > 0,
+        earnedDate: totalWashes > 0 ? new Date().toISOString() : undefined,
+        category: 'usage'
+      },
+
+      // Milestone badges
+      {
+        id: 'item-10-wears',
+        name: '10回着用達成',
+        description: '1つのアイテムを10回着用しました',
+        imageUrl: 'https://example.com/badges/10-wears.png',
+        isEarned: maxWears >= 10,
+        earnedDate: maxWears >= 10 ? new Date().toISOString() : undefined,
+        progress: maxWears >= 10 ? 100 : Math.round((maxWears / 10) * 100),
+        category: 'milestone'
+      },
+      {
+        id: 'item-30-wears',
+        name: '30回着用達成',
+        description: '1つのアイテムを30回着用しました',
+        imageUrl: 'https://example.com/badges/30-wears.png',
+        isEarned: maxWears >= 30,
+        earnedDate: maxWears >= 30 ? new Date().toISOString() : undefined,
+        progress: maxWears >= 30 ? 100 : Math.round((maxWears / 30) * 100),
+        category: 'milestone'
+      },
+      {
+        id: 'item-50-wears',
+        name: '50回着用達成',
+        description: '1つのアイテムを50回着用しました',
+        imageUrl: 'https://example.com/badges/50-wears.png',
+        isEarned: maxWears >= 50,
+        earnedDate: maxWears >= 50 ? new Date().toISOString() : undefined,
+        progress: maxWears >= 50 ? 100 : Math.round((maxWears / 50) * 100),
+        category: 'milestone'
+      },
+
       // Efficiency badges
+      {
+        id: 'wash-reduced-10',
+        name: '洗濯10回削減',
+        description: '洗濯回数を10回削減しました',
+        imageUrl: 'https://example.com/badges/wash-10.png',
+        isEarned: washesReduced >= 10,
+        earnedDate: washesReduced >= 10 ? new Date().toISOString() : undefined,
+        progress: washesReduced >= 10 ? 100 : Math.round((washesReduced / 10) * 100),
+        category: 'efficiency'
+      },
+      {
+        id: 'wash-reduced-50',
+        name: '洗濯50回削減',
+        description: '洗濯回数を50回削減しました',
+        imageUrl: 'https://example.com/badges/wash-50.png',
+        isEarned: washesReduced >= 50,
+        earnedDate: washesReduced >= 50 ? new Date().toISOString() : undefined,
+        progress: washesReduced >= 50 ? 100 : Math.round((washesReduced / 50) * 100),
+        category: 'efficiency'
+      },
+      {
+        id: 'wash-reduced-100',
+        name: '洗濯100回削減',
+        description: '洗濯回数を100回削減しました',
+        imageUrl: 'https://example.com/badges/wash-100.png',
+        isEarned: washesReduced >= 100,
+        earnedDate: washesReduced >= 100 ? new Date().toISOString() : undefined,
+        progress: washesReduced >= 100 ? 100 : Math.round((washesReduced / 100) * 100),
+        category: 'efficiency'
+      },
+
+      // Special badges
+      {
+        id: 'category-complete',
+        name: 'カテゴリコンプリート',
+        description: '全カテゴリでアイテムを登録しました',
+        imageUrl: 'https://example.com/badges/category-complete.png',
+        isEarned: hasAllCategories,
+        earnedDate: hasAllCategories ? new Date().toISOString() : undefined,
+        progress: hasAllCategories ? 100 : Math.round((categories.size / allCategories.length) * 100),
+        category: 'special'
+      },
+      {
+        id: 'eco-warrior',
+        name: 'エコウォリアー',
+        description: '環境貢献度が高いユーザーに贈られるバッジ',
+        imageUrl: 'https://example.com/badges/eco-warrior.png',
+        isEarned: washesReduced >= 30,
+        earnedDate: washesReduced >= 30 ? new Date().toISOString() : undefined,
+        progress: washesReduced >= 30 ? 100 : Math.round((washesReduced / 30) * 100),
+        category: 'special'
+      },
+      // Additional efficiency badges
       {
         id: 'efficient-washer',
         name: '賢い洗濯',
         description: '洗濯閾値の90%以上で洗濯を5回実施',
         imageUrl: 'https://example.com/badges/efficient-washer.png',
         isEarned: items.some(item => {
-          const wearCounts = [];
           let currentCount = 0;
           let efficientWashes = 0;
 
@@ -634,52 +933,124 @@ export async function getBadges(): Promise<Badge[]> {
       }
     ];
 
-    cache.set('badges', badges);
-    return badges;
-  } catch (error) {
-    console.error('Error fetching badges:', error);
+    console.log('createDefaultBadges with items and stats, count:', badges.length, 'earned:', badges.filter(b => b.isEarned).length);
+    console.log('Badge categories:', badges.reduce((acc, b) => {
+      acc[b.category] = (acc[b.category] || 0) + 1;
+      return acc;
+    }, {}));
 
-    // Even if there's an error, return default badges with isEarned set to false
-    // This ensures badges are always displayed, even if the user hasn't earned any yet
-    return [
+    return badges;
+  } else {
+    // Return default badges with isEarned set to false
+    const badges = [
       // Usage badges
       {
         id: 'first-item',
-        name: '最初の一歩',
+        name: '初めてのアイテム登録',
         description: '最初のアイテムを登録しました',
         imageUrl: 'https://example.com/badges/first-item.png',
         isEarned: false,
         progress: 0,
-        category: 'milestone'
+        category: 'usage'
       },
       {
-        id: 'ten-items',
-        name: 'コレクター',
-        description: '10個のアイテムを登録しました',
-        imageUrl: 'https://example.com/badges/ten-items.png',
-        isEarned: false,
-        progress: 0,
-        category: 'milestone'
-      },
-      {
-        id: 'fifty-wears',
-        name: '着こなしマスター',
-        description: '合計50回の着用を記録しました',
-        imageUrl: 'https://example.com/badges/fifty-wears.png',
+        id: 'first-wear',
+        name: '初めての着用記録',
+        description: '最初の着用を記録しました',
+        imageUrl: 'https://example.com/badges/first-wear.png',
         isEarned: false,
         progress: 0,
         category: 'usage'
       },
       {
-        id: 'twenty-washes',
-        name: 'クリーンキーパー',
-        description: '合計20回の洗濯を記録しました',
-        imageUrl: 'https://example.com/badges/twenty-washes.png',
+        id: 'first-wash',
+        name: '初めての洗濯記録',
+        description: '最初の洗濯を記録しました',
+        imageUrl: 'https://example.com/badges/first-wash.png',
         isEarned: false,
         progress: 0,
         category: 'usage'
       },
+
+      // Milestone badges
+      {
+        id: 'item-10-wears',
+        name: '10回着用達成',
+        description: '1つのアイテムを10回着用しました',
+        imageUrl: 'https://example.com/badges/10-wears.png',
+        isEarned: false,
+        progress: 0,
+        category: 'milestone'
+      },
+      {
+        id: 'item-30-wears',
+        name: '30回着用達成',
+        description: '1つのアイテムを30回着用しました',
+        imageUrl: 'https://example.com/badges/30-wears.png',
+        isEarned: false,
+        progress: 0,
+        category: 'milestone'
+      },
+      {
+        id: 'item-50-wears',
+        name: '50回着用達成',
+        description: '1つのアイテムを50回着用しました',
+        imageUrl: 'https://example.com/badges/50-wears.png',
+        isEarned: false,
+        progress: 0,
+        category: 'milestone'
+      },
+
       // Efficiency badges
+      {
+        id: 'wash-reduced-10',
+        name: '洗濯10回削減',
+        description: '洗濯回数を10回削減しました',
+        imageUrl: 'https://example.com/badges/wash-10.png',
+        isEarned: false,
+        progress: 0,
+        category: 'efficiency'
+      },
+      {
+        id: 'wash-reduced-50',
+        name: '洗濯50回削減',
+        description: '洗濯回数を50回削減しました',
+        imageUrl: 'https://example.com/badges/wash-50.png',
+        isEarned: false,
+        progress: 0,
+        category: 'efficiency'
+      },
+      {
+        id: 'wash-reduced-100',
+        name: '洗濯100回削減',
+        description: '洗濯回数を100回削減しました',
+        imageUrl: 'https://example.com/badges/wash-100.png',
+        isEarned: false,
+        progress: 0,
+        category: 'efficiency'
+      },
+
+      // Special badges
+      {
+        id: 'category-complete',
+        name: 'カテゴリコンプリート',
+        description: '全カテゴリでアイテムを登録しました',
+        imageUrl: 'https://example.com/badges/category-complete.png',
+        isEarned: false,
+        progress: 0,
+        category: 'special'
+      },
+      {
+        id: 'eco-warrior',
+        name: 'エコウォリアー',
+        description: '環境貢献度が高いユーザーに贈られるバッジ',
+        imageUrl: 'https://example.com/badges/eco-warrior.png',
+        isEarned: false,
+        progress: 0,
+        category: 'special'
+      },
+
+      // Additional efficiency badges
       {
         id: 'efficient-washer',
         name: '賢い洗濯',
@@ -690,6 +1061,14 @@ export async function getBadges(): Promise<Badge[]> {
         category: 'efficiency'
       }
     ];
+
+    console.log('createDefaultBadges with default values, count:', badges.length, 'earned:', badges.filter(b => b.isEarned).length);
+    console.log('Badge categories:', badges.reduce((acc, b) => {
+      acc[b.category] = (acc[b.category] || 0) + 1;
+      return acc;
+    }, {}));
+
+    return badges;
   }
 }
 

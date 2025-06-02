@@ -49,6 +49,38 @@ export interface Brand {
   created_at: string;
 }
 
+// Badge definition type
+export interface BadgeDefinition {
+  id: string;
+  name: string;
+  description: string;
+  image_url: string;
+  category: 'usage' | 'efficiency' | 'milestone' | 'special';
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Badge condition type
+export interface BadgeCondition {
+  id: string;
+  badge_id: string;
+  condition_type: string;
+  condition_value: any; // JSONB data
+  created_at: string;
+  updated_at: string;
+}
+
+// User badge type
+export interface UserBadge {
+  id: string;
+  user_id: string;
+  badge_id: string;
+  earned_date: string; // ISO date string
+  created_at: string;
+}
+
 // Database schema type (for Supabase)
 export interface Database {
   public: {
@@ -77,6 +109,21 @@ export interface Database {
         Row: Brand;
         Insert: Omit<Brand, 'id' | 'created_at'>;
         Update: Partial<Omit<Brand, 'id' | 'created_at'>>;
+      };
+      badge_definitions: {
+        Row: BadgeDefinition;
+        Insert: Omit<BadgeDefinition, 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<BadgeDefinition, 'created_at' | 'updated_at'>>;
+      };
+      badge_conditions: {
+        Row: BadgeCondition;
+        Insert: Omit<BadgeCondition, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<BadgeCondition, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      user_badges: {
+        Row: UserBadge;
+        Insert: Omit<UserBadge, 'id' | 'created_at'>;
+        Update: Partial<Omit<UserBadge, 'id' | 'created_at'>>;
       };
     };
   };

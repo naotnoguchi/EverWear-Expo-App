@@ -21,7 +21,17 @@ export default function BadgesScreen() {
       setLoading(true);
       setError(null);
       const data = await statisticsService.getBadges();
-      setBadges(data || []);
+      // Ensure data is an array before using array methods
+      const badgesArray = Array.isArray(data) ? data : [];
+      console.log('Badges screen - getBadges result:', 
+        `count=${badgesArray.length},`, 
+        `earned=${badgesArray.filter(b => b.isEarned).length},`,
+        `categories=${Object.keys(badgesArray.reduce((acc, b) => {
+          acc[b.category] = true;
+          return acc;
+        }, {})).join(',')}`
+      );
+      setBadges(badgesArray);
     } catch (err) {
       console.error('Error fetching badges data:', err);
       setError('バッジデータの取得に失敗しました。後でもう一度お試しください。');

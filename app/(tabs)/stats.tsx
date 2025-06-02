@@ -52,6 +52,14 @@ export default function Stats() {
 
       // Fetch badges and get the most recent one
       const badgesData = await statisticsService.getBadges() || [];
+      console.log('Stats screen - getBadges result:', 
+        `count=${badgesData.length},`, 
+        `earned=${badgesData.filter(b => b.isEarned).length},`,
+        `categories=${Object.keys(badgesData.reduce((acc, b) => {
+          acc[b.category] = true;
+          return acc;
+        }, {})).join(',')}`
+      );
       setBadges(badgesData); // この行を追加
       const earnedBadges = badgesData.filter(badge => badge.isEarned);
       if (earnedBadges.length > 0) {

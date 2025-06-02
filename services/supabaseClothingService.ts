@@ -353,25 +353,32 @@ export const deleteWashRecord = async (washId: string): Promise<void> => {
   if (error) throw error;
 };
 
-// Get all brands
+// Get all brands from the brands table
 export const getBrands = async (): Promise<string[]> => {
-  const { data: session } = await auth.getSession();
-  const userId = session?.session?.user?.id;
+  console.log('getBrands() is now using getAllBrands() internally');
+  return getAllBrands();
+};
 
-  if (!userId) {
-    throw new Error('User not authenticated');
+// Get all brands from the brands table
+export const getAllBrands = async (): Promise<string[]> => {
+  try {
+    console.log('Fetching all brands from brands table');
+
+    // Get all brands from the brands table
+    const { data, error } = await db
+      .from('brands')
+      .select('name')
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching brands from brands table:', error);
+      throw error;
+    }
+
+    console.log('Fetched brands from brands table:', data?.length || 0);
+    return data?.map(brand => brand.name) || [];
+  } catch (e) {
+    console.error('Exception in getAllBrands:', e);
+    return [];
   }
-
-  // Get all brands from the user's items
-  const { data, error } = await db
-    .from('clothing_items')
-    .select('brand')
-    .eq('user_id', userId)
-    .not('brand', 'is', null);
-
-  if (error) throw error;
-
-  // Extract unique brands
-  const brands = [...new Set(data.map(item => item.brand))];
-  return brands.filter(brand => brand && brand.trim() !== '');
 };

@@ -58,6 +58,9 @@ The database schema is defined in the `db/schema.sql` file. It includes the foll
 - `wear_history`: Records when items are worn
 - `wash_history`: Records when items are washed
 - `brands`: Stores brand information
+- `badge_definitions`: Stores badge metadata (name, description, image, etc.)
+- `badge_conditions`: Stores conditions for earning badges
+- `user_badges`: Records which badges users have earned and when
 
 ### Setting up Supabase
 

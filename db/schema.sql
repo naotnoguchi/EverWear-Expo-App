@@ -183,3 +183,24 @@ CREATE TRIGGER reset_wear_count_on_wash
 AFTER INSERT ON wash_history
 FOR EACH ROW
 EXECUTE FUNCTION reset_wear_count();
+
+-- Function to automatically create a user record when a new auth user is created
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (id)
+  VALUES (NEW.id)
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to call the function when an auth.users record is created
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Create user records for existing auth users
+INSERT INTO public.users (id)
+SELECT id FROM auth.users
+ON CONFLICT (id) DO NOTHING;

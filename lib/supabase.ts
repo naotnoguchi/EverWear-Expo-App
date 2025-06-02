@@ -1,3 +1,3 @@
 // Flag to determine whether to use mock data
-// Always set to true since we're only using mock data for now
-export const useMockData = true;
+// Read from environment variable
+export const useMockData = process.env.EXPO_PUBLIC_USE_MOCK_DATA === 'true';

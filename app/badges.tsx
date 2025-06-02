@@ -21,10 +21,11 @@ export default function BadgesScreen() {
       setLoading(true);
       setError(null);
       const data = await statisticsService.getBadges();
-      setBadges(data);
+      setBadges(data || []);
     } catch (err) {
       console.error('Error fetching badges data:', err);
       setError('バッジデータの取得に失敗しました。後でもう一度お試しください。');
+      setBadges([]);
     } finally {
       setLoading(false);
     }
@@ -36,7 +37,9 @@ export default function BadgesScreen() {
   }, [fetchBadges]);
 
   // Filter badges based on selected category and earned status
-  const filteredBadges = badges.filter(badge => {
+  // Ensure badges is an array before filtering
+  const badgesArray = Array.isArray(badges) ? badges : [];
+  const filteredBadges = badgesArray.filter(badge => {
     const categoryMatch = selectedCategory === 'all' || badge.category === selectedCategory;
     const earnedMatch = showEarned === 'all' || 
                         (showEarned === 'earned' && badge.isEarned) || 
@@ -390,8 +393,9 @@ export default function BadgesScreen() {
   }
 
   // Calculate badge statistics
-  const totalBadges = badges.length;
-  const earnedBadges = badges.filter(badge => badge.isEarned).length;
+  // Ensure badges is an array before calculating statistics
+  const totalBadges = badgesArray.length;
+  const earnedBadges = badgesArray.filter(badge => badge.isEarned).length;
   const earnedPercentage = totalBadges > 0 ? Math.round((earnedBadges / totalBadges) * 100) : 0;
 
   return (
@@ -519,10 +523,12 @@ export default function BadgesScreen() {
           <View style={styles.emptyContainer}>
             <Ionicons name="ribbon-outline" size={64} color={theme.text + "66"} />
             <Text style={[styles.emptyText, { color: theme.text }]}>
-              該当するバッジがありません
+              {badges.length > 0 ? '該当するバッジがありません' : 'バッジはまだありません'}
             </Text>
             <Text style={[styles.emptySubtext, { color: theme.text + "99" }]}>
-              フィルター条件を変更してお試しください
+              {badges.length > 0 
+                ? 'フィルター条件を変更してお試しください' 
+                : 'アイテムを登録して着用・洗濯を記録すると、様々なバッジを獲得できます。\n最初のアイテムを登録して、バッジ収集を始めましょう！'}
             </Text>
           </View>
         )}

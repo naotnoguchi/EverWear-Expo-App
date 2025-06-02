@@ -77,19 +77,19 @@ export const getBasicStats = async (period: Period = '3months'): Promise<BasicSt
   if (cachedData && Date.now() - cachedData.timestamp < CACHE_EXPIRY) {
     return cachedData.data;
   }
-  
+
   // Simulate network delay
   await simulateNetworkDelay();
-  
+
   // Generate data
   const data = generateBasicStats(period);
-  
+
   // Update cache
   cache.basicStats[period] = {
     data,
     timestamp: Date.now()
   };
-  
+
   return data;
 };
 
@@ -101,25 +101,25 @@ export const getRankingData = async (
 ): Promise<RankingItem[]> => {
   // Create cache key
   const cacheKey = `${period}_${sortOrder}_${category || 'all'}`;
-  
+
   // Check cache
   const cachedData = cache.rankingData[cacheKey];
   if (cachedData && Date.now() - cachedData.timestamp < CACHE_EXPIRY) {
     return cachedData.data;
   }
-  
+
   // Simulate network delay
   await simulateNetworkDelay();
-  
+
   // Generate data
   const data = generateRankingData(period, sortOrder, category);
-  
+
   // Update cache
   cache.rankingData[cacheKey] = {
     data,
     timestamp: Date.now()
   };
-  
+
   return data;
 };
 
@@ -130,19 +130,19 @@ export const getEfficiencyData = async (period: Period = '3months'): Promise<Eff
   if (cachedData && Date.now() - cachedData.timestamp < CACHE_EXPIRY) {
     return cachedData.data;
   }
-  
+
   // Simulate network delay
   await simulateNetworkDelay();
-  
+
   // Generate data
   const data = generateEfficiencyData(period);
-  
+
   // Update cache
   cache.efficiencyData[period] = {
     data,
     timestamp: Date.now()
   };
-  
+
   return data;
 };
 
@@ -153,42 +153,47 @@ export const getImpactData = async (period: Period = '3months'): Promise<ImpactD
   if (cachedData && Date.now() - cachedData.timestamp < CACHE_EXPIRY) {
     return cachedData.data;
   }
-  
+
   // Simulate network delay
   await simulateNetworkDelay();
-  
+
   // Generate data
   const data = generateImpactData(period);
-  
+
   // Update cache
   cache.impactData[period] = {
     data,
     timestamp: Date.now()
   };
-  
+
   return data;
 };
 
 // Get badges
 export const getBadges = async (): Promise<Badge[]> => {
-  // Check cache
-  if (cache.badges && Date.now() - cache.badges.timestamp < CACHE_EXPIRY) {
-    return cache.badges.data;
+  try {
+    // Check cache
+    if (cache.badges && Date.now() - cache.badges.timestamp < CACHE_EXPIRY) {
+      return cache.badges.data || [];
+    }
+
+    // Simulate network delay
+    await simulateNetworkDelay();
+
+    // Generate data
+    const data = generateBadges();
+
+    // Update cache
+    cache.badges = {
+      data,
+      timestamp: Date.now()
+    };
+
+    return data;
+  } catch (error) {
+    console.error('Error fetching badges:', error);
+    return [];
   }
-  
-  // Simulate network delay
-  await simulateNetworkDelay();
-  
-  // Generate data
-  const data = generateBadges();
-  
-  // Update cache
-  cache.badges = {
-    data,
-    timestamp: Date.now()
-  };
-  
-  return data;
 };
 
 // Get item detail statistics
@@ -198,13 +203,13 @@ export const getItemDetailStats = async (itemId: string): Promise<ItemDetailStat
   if (cachedData && Date.now() - cachedData.timestamp < CACHE_EXPIRY) {
     return cachedData.data;
   }
-  
+
   // Simulate network delay
   await simulateNetworkDelay();
-  
+
   // Generate data
   const data = generateItemDetailStats(itemId);
-  
+
   // Update cache if data exists
   if (data) {
     cache.itemDetailStats[itemId] = {
@@ -212,7 +217,7 @@ export const getItemDetailStats = async (itemId: string): Promise<ItemDetailStat
       timestamp: Date.now()
     };
   }
-  
+
   return data;
 };
 

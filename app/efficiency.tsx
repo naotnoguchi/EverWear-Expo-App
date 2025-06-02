@@ -304,6 +304,22 @@ export default function EfficiencyScreen() {
       padding: 12,
       borderRadius: 8,
     },
+    emptyEfficiencyContainer: {
+      padding: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyEfficiencyText: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginTop: 12,
+      marginBottom: 8,
+    },
+    emptyEfficiencySubtext: {
+      fontSize: 14,
+      textAlign: 'center',
+      paddingHorizontal: 16,
+    },
     listContent: {
       paddingBottom: 16,
     },
@@ -534,45 +550,59 @@ export default function EfficiencyScreen() {
             </Text>
           </View>
 
-          <View style={styles.summaryContent}>
-            <View style={styles.summaryItem}>
-              <View style={[styles.summaryBadge, { backgroundColor: '#f39c12' }]}>
-                <Text style={styles.summaryBadgeText}>
-                  {items.filter(item => item.status === 'underwashed').length}
-                </Text>
+          {items.length > 0 ? (
+            <>
+              <View style={styles.summaryContent}>
+                <View style={styles.summaryItem}>
+                  <View style={[styles.summaryBadge, { backgroundColor: '#f39c12' }]}>
+                    <Text style={styles.summaryBadgeText}>
+                      {items.filter(item => item.status === 'underwashed').length}
+                    </Text>
+                  </View>
+                  <Text style={[styles.summaryItemText, { color: theme.text }]}>
+                    洗濯不足
+                  </Text>
+                </View>
+
+                <View style={styles.summaryItem}>
+                  <View style={[styles.summaryBadge, { backgroundColor: '#27ae60' }]}>
+                    <Text style={styles.summaryBadgeText}>
+                      {items.filter(item => item.status === 'good').length}
+                    </Text>
+                  </View>
+                  <Text style={[styles.summaryItemText, { color: theme.text }]}>
+                    良好
+                  </Text>
+                </View>
+
+                <View style={styles.summaryItem}>
+                  <View style={[styles.summaryBadge, { backgroundColor: '#e74c3c' }]}>
+                    <Text style={styles.summaryBadgeText}>
+                      {items.filter(item => item.status === 'overwashed').length}
+                    </Text>
+                  </View>
+                  <Text style={[styles.summaryItemText, { color: theme.text }]}>
+                    洗いすぎ
+                  </Text>
+                </View>
               </View>
-              <Text style={[styles.summaryItemText, { color: theme.text }]}>
-                洗濯不足
+
+              <Text style={[styles.summaryTip, { color: theme.text + "99" }]}>
+                <Ionicons name="bulb" size={16} color={theme.warning} /> ヒント:
+                洗濯効率を高めるには、設定した閾値に近い頻度で洗濯しましょう。洗いすぎも洗わなさすぎも避けることが大切です。
+              </Text>
+            </>
+          ) : (
+            <View style={styles.emptyEfficiencyContainer}>
+              <Ionicons name="information-circle-outline" size={24} color={theme.primary} />
+              <Text style={[styles.emptyEfficiencyText, { color: theme.text }]}>
+                洗濯効率データがありません
+              </Text>
+              <Text style={[styles.emptyEfficiencySubtext, { color: theme.text + "99" }]}>
+                アイテムを登録して着用・洗濯履歴を記録すると、洗濯効率の分析情報が表示されます。
               </Text>
             </View>
-
-            <View style={styles.summaryItem}>
-              <View style={[styles.summaryBadge, { backgroundColor: '#27ae60' }]}>
-                <Text style={styles.summaryBadgeText}>
-                  {items.filter(item => item.status === 'good').length}
-                </Text>
-              </View>
-              <Text style={[styles.summaryItemText, { color: theme.text }]}>
-                良好
-              </Text>
-            </View>
-
-            <View style={styles.summaryItem}>
-              <View style={[styles.summaryBadge, { backgroundColor: '#e74c3c' }]}>
-                <Text style={styles.summaryBadgeText}>
-                  {items.filter(item => item.status === 'overwashed').length}
-                </Text>
-              </View>
-              <Text style={[styles.summaryItemText, { color: theme.text }]}>
-                洗いすぎ
-              </Text>
-            </View>
-          </View>
-
-          <Text style={[styles.summaryTip, { color: theme.text + "99" }]}>
-            <Ionicons name="bulb" size={16} color={theme.warning} /> ヒント:
-            洗濯効率を高めるには、設定した閾値に近い頻度で洗濯しましょう。洗いすぎも洗わなさすぎも避けることが大切です。
-          </Text>
+          )}
         </View>
 
         {/* Results */}

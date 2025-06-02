@@ -684,26 +684,38 @@ export default function Stats() {
           </TouchableOpacity>
         </View>
         <View style={styles.efficiencyContainer}>
-          <Text style={styles.efficiencyText}>
-            あなたの洗濯効率は
-            {stats && (
-              (() => {
-                const status = stats.averageWearsBetweenWashes >= stats.averageWashThreshold * 0.8 && 
-                  stats.averageWearsBetweenWashes <= stats.averageWashThreshold * 1.2 ? '良好' : 
-                  stats.averageWearsBetweenWashes < stats.averageWashThreshold * 0.8 ? '洗いすぎ' : '洗濯不足';
-                return (
-                  <Text style={[styles.efficiencyHighlight, { color: getEfficiencyStatusColor(status) }]}>
-                    {status}
-                  </Text>
-                );
-              })()
-            )}
-            です。平均して{stats?.averageWearsBetweenWashes || 0}回着用ごとに洗濯しています。
-          </Text>
-          <Text style={styles.efficiencyTip}>
-            <Ionicons name="bulb" size={16} color="#f39c12" /> ヒント:
-            最適な洗濯頻度は衣類の種類によって異なります。洗いすぎも洗わなさすぎも避けましょう。
-          </Text>
+          {stats && stats.totalItems > 0 ? (
+            <>
+              <Text style={styles.efficiencyText}>
+                あなたの洗濯効率は
+                {(() => {
+                  const status = stats.averageWearsBetweenWashes >= stats.averageWashThreshold * 0.8 && 
+                    stats.averageWearsBetweenWashes <= stats.averageWashThreshold * 1.2 ? '良好' : 
+                    stats.averageWearsBetweenWashes < stats.averageWashThreshold * 0.8 ? '洗いすぎ' : '洗濯不足';
+                  return (
+                    <Text style={[styles.efficiencyHighlight, { color: getEfficiencyStatusColor(status) }]}>
+                      {status}
+                    </Text>
+                  );
+                })()}
+                です。平均して{stats.averageWearsBetweenWashes}回着用ごとに洗濯しています。
+              </Text>
+              <Text style={styles.efficiencyTip}>
+                <Ionicons name="bulb" size={16} color="#f39c12" /> ヒント:
+                最適な洗濯頻度は衣類の種類によって異なります。洗いすぎも洗わなさすぎも避けましょう。
+              </Text>
+            </>
+          ) : (
+            <View style={{ alignItems: 'center', padding: 16 }}>
+              <Ionicons name="information-circle-outline" size={24} color={theme.primary} />
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text, marginTop: 12, marginBottom: 8 }}>
+                洗濯効率データがありません
+              </Text>
+              <Text style={{ fontSize: 14, textAlign: 'center', color: theme.text + "99", paddingHorizontal: 16 }}>
+                アイテムを登録して着用・洗濯履歴を記録すると、洗濯効率の分析情報が表示されます。
+              </Text>
+            </View>
+          )}
         </View>
       </View>
 

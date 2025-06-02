@@ -1,8 +1,10 @@
-// Factory for creating statistics services (simplified to only use mock service)
+// Factory for creating statistics services
 import * as mockService from './mockStatisticsService';
+import * as supabaseService from './supabaseStatisticsService';
+import { useMockData } from '../lib/supabase';
 
-// Export the mock service directly
-export const statisticsService = mockService;
+// Export the appropriate service based on configuration
+export const statisticsService = useMockData ? mockService : supabaseService;
 
 // Re-export types from the statistics module for convenience
 export { 

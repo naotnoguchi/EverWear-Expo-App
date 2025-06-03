@@ -316,52 +316,71 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
 
 // Delete a clothing item
 export const deleteClothingItem = async (id: string): Promise<void> => {
+  console.log('Starting to delete clothing item with ID:', id);
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
 
+  console.log('User authentication check for item deletion');
   if (!userId) {
+    console.log('User not authenticated, cannot delete item');
     throw new Error('User not authenticated');
   }
 
   // Get authenticated client
+  console.log('Getting authenticated client for database operations');
   const authClient = await getAuthenticatedClient();
 
   // Delete the item (cascade will handle related records)
+  console.log('Deleting item from clothing_items table');
   const { error } = await authClient
     .from('clothing_items')
     .delete()
     .eq('id', id)
     .eq('user_id', userId);
 
-  if (error) throw error;
+  if (error) {
+    console.log('Error deleting item from database:', error);
+    throw error;
+  }
+  console.log('Successfully deleted item with ID:', id);
 };
 
 // Add a wear record
 export const addWearRecord = async (clothingItemId: string, date: string): Promise<void> => {
+  console.log('Starting to add wear record for clothing item ID:', clothingItemId, 'with date:', date);
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
 
+  console.log('User authentication check for adding wear record');
   if (!userId) {
+    console.log('User not authenticated, cannot add wear record');
     throw new Error('User not authenticated');
   }
 
   // Get authenticated client
+  console.log('Getting authenticated client for database operations');
   const authClient = await getAuthenticatedClient();
 
   // Verify the item belongs to the user
+  console.log('Verifying item belongs to the user');
   const { count, error: countError } = await authClient
     .from('clothing_items')
     .select('*', { count: 'exact', head: true })
     .eq('id', clothingItemId)
     .eq('user_id', userId);
 
-  if (countError) throw countError;
+  if (countError) {
+    console.log('Error verifying item ownership:', countError);
+    throw countError;
+  }
 
   if (count === 0) {
+    console.log('Item not found or does not belong to the user');
     throw new Error('Item not found or does not belong to the user');
   }
 
   // Add wear record
+  console.log('Adding wear record to wear_history table');
   const { error } = await authClient
     .from('wear_history')
     .insert({
@@ -369,58 +388,84 @@ export const addWearRecord = async (clothingItemId: string, date: string): Promi
       date,
     });
 
-  if (error) throw error;
+  if (error) {
+    console.log('Error adding wear record:', error);
+    throw error;
+  }
+  console.log('Successfully added wear record');
 
   // Update last_worn date on the clothing item
+  console.log('Updating last_worn date on clothing item');
   await authClient
     .from('clothing_items')
     .update({ last_worn: date })
     .eq('id', clothingItemId);
+  console.log('Successfully updated last_worn date');
 };
 
 // Delete a wear record
 export const deleteWearRecord = async (wearId: string): Promise<void> => {
+  console.log('Starting to delete wear record with ID:', wearId);
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
 
+  console.log('User authentication check for deleting wear record');
   if (!userId) {
+    console.log('User not authenticated, cannot delete wear record');
     throw new Error('User not authenticated');
   }
 
   // Get authenticated client
+  console.log('Getting authenticated client for database operations');
   const authClient = await getAuthenticatedClient();
 
   // Get the wear record to verify ownership
+  console.log('Getting wear record to verify ownership');
   const { data: wearRecord, error: getError } = await authClient
     .from('wear_history')
     .select('clothing_item_id')
     .eq('id', wearId)
     .single();
 
-  if (getError) throw getError;
+  if (getError) {
+    console.log('Error retrieving wear record:', getError);
+    throw getError;
+  }
+  console.log('Retrieved wear record for clothing item ID:', wearRecord.clothing_item_id);
 
   // Verify the item belongs to the user
+  console.log('Verifying item belongs to the user');
   const { count, error: countError } = await authClient
     .from('clothing_items')
     .select('*', { count: 'exact', head: true })
     .eq('id', wearRecord.clothing_item_id)
     .eq('user_id', userId);
 
-  if (countError) throw countError;
+  if (countError) {
+    console.log('Error verifying item ownership:', countError);
+    throw countError;
+  }
 
   if (count === 0) {
+    console.log('Item not found or does not belong to the user');
     throw new Error('Item not found or does not belong to the user');
   }
 
   // Delete the wear record
+  console.log('Deleting wear record from wear_history table');
   const { error } = await authClient
     .from('wear_history')
     .delete()
     .eq('id', wearId);
 
-  if (error) throw error;
+  if (error) {
+    console.log('Error deleting wear record:', error);
+    throw error;
+  }
+  console.log('Successfully deleted wear record');
 
   // Update last_worn date to the most recent wear record
+  console.log('Updating last_worn date to most recent wear record');
   const { data: latestWear, error: latestError } = await authClient
     .from('wear_history')
     .select('date')
@@ -430,43 +475,56 @@ export const deleteWearRecord = async (wearId: string): Promise<void> => {
     .single();
 
   if (latestError && latestError.code !== 'PGRST116') {
+    console.log('Error retrieving latest wear record:', latestError);
     throw latestError;
   }
 
+  console.log('Updating clothing item with new last_worn date');
   await authClient
     .from('clothing_items')
     .update({ 
       last_worn: latestWear ? latestWear.date : null 
     })
     .eq('id', wearRecord.clothing_item_id);
+  console.log('Successfully updated last_worn date');
 };
 
 // Add a wash record
 export const addWashRecord = async (clothingItemId: string, date: string): Promise<void> => {
+  console.log('Starting to add wash record for clothing item ID:', clothingItemId, 'with date:', date);
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
 
+  console.log('User authentication check for adding wash record');
   if (!userId) {
+    console.log('User not authenticated, cannot add wash record');
     throw new Error('User not authenticated');
   }
 
   // Get authenticated client
+  console.log('Getting authenticated client for database operations');
   const authClient = await getAuthenticatedClient();
 
   // Verify the item belongs to the user
+  console.log('Verifying item belongs to the user');
   const { count, error: countError } = await authClient
     .from('clothing_items')
     .select('*', { count: 'exact', head: true })
     .eq('id', clothingItemId)
     .eq('user_id', userId);
 
-  if (countError) throw countError;
+  if (countError) {
+    console.log('Error verifying item ownership:', countError);
+    throw countError;
+  }
 
   if (count === 0) {
+    console.log('Item not found or does not belong to the user');
     throw new Error('Item not found or does not belong to the user');
   }
 
   // Add wash record
+  console.log('Adding wash record to wash_history table');
   const { error } = await authClient
     .from('wash_history')
     .insert({
@@ -474,50 +532,73 @@ export const addWashRecord = async (clothingItemId: string, date: string): Promi
       date,
     });
 
-  if (error) throw error;
+  if (error) {
+    console.log('Error adding wash record:', error);
+    throw error;
+  }
+  console.log('Successfully added wash record');
 };
 
 // Delete a wash record
 export const deleteWashRecord = async (washId: string): Promise<void> => {
+  console.log('Starting to delete wash record with ID:', washId);
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
 
+  console.log('User authentication check for deleting wash record');
   if (!userId) {
+    console.log('User not authenticated, cannot delete wash record');
     throw new Error('User not authenticated');
   }
 
   // Get authenticated client
+  console.log('Getting authenticated client for database operations');
   const authClient = await getAuthenticatedClient();
 
   // Get the wash record to verify ownership
+  console.log('Getting wash record to verify ownership');
   const { data: washRecord, error: getError } = await authClient
     .from('wash_history')
     .select('clothing_item_id')
     .eq('id', washId)
     .single();
 
-  if (getError) throw getError;
+  if (getError) {
+    console.log('Error retrieving wash record:', getError);
+    throw getError;
+  }
+  console.log('Retrieved wash record for clothing item ID:', washRecord.clothing_item_id);
 
   // Verify the item belongs to the user
+  console.log('Verifying item belongs to the user');
   const { count, error: countError } = await authClient
     .from('clothing_items')
     .select('*', { count: 'exact', head: true })
     .eq('id', washRecord.clothing_item_id)
     .eq('user_id', userId);
 
-  if (countError) throw countError;
+  if (countError) {
+    console.log('Error verifying item ownership:', countError);
+    throw countError;
+  }
 
   if (count === 0) {
+    console.log('Item not found or does not belong to the user');
     throw new Error('Item not found or does not belong to the user');
   }
 
   // Delete the wash record
+  console.log('Deleting wash record from wash_history table');
   const { error } = await authClient
     .from('wash_history')
     .delete()
     .eq('id', washId);
 
-  if (error) throw error;
+  if (error) {
+    console.log('Error deleting wash record:', error);
+    throw error;
+  }
+  console.log('Successfully deleted wash record');
 };
 
 // Get all brands from the brands table

@@ -250,11 +250,25 @@ export default function History() {
         {
           text: "削除",
           style: "destructive",
-          onPress: () => {
-            if (item.eventType === "wear") {
-              deleteWearHistory(item.itemId, item.date);
-            } else {
-              deleteWashHistory(item.itemId, item.date);
+          onPress: async () => {
+            try {
+              let success: boolean;
+              if (item.eventType === "wear") {
+                success = await deleteWearHistory(item.itemId, item.date);
+              } else {
+                success = await deleteWashHistory(item.itemId, item.date);
+              }
+
+              if (success) {
+                Alert.alert(
+                  "削除完了", 
+                  `${item.itemName}の${item.date}の${item.eventType === "wear" ? "着用" : "洗濯"}履歴を削除しました`
+                );
+              }
+            } catch (err) {
+              console.error('Error in handleDeleteHistory:', err);
+              // エラーはClothingContextでキャッチされ、setErrorが呼ばれるので
+              // ここでは追加のエラー処理は不要
             }
           }
         }

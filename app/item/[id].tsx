@@ -179,21 +179,33 @@ export default function ItemDetail() {
   };
 
   // 着用履歴削除ハンドラー
-  const handleDeleteWearHistory = (date: string) => {
+  const handleDeleteWearHistory = async (date: string) => {
     if (item) {
-      const success = deleteWearHistory(item.id, date);
-      if (success) {
-        Alert.alert("削除完了", `${formatDateJapanese(date)}の着用履歴を削除しました`);
+      try {
+        const success = await deleteWearHistory(item.id, date);
+        if (success) {
+          Alert.alert("削除完了", `${formatDateJapanese(date)}の着用履歴を削除しました`);
+        }
+      } catch (err) {
+        console.error('Error in handleDeleteWearHistory:', err);
+        // エラーはClothingContextでキャッチされ、setErrorが呼ばれるので
+        // ここでは追加のエラー処理は不要
       }
     }
   };
 
   // 洗濯履歴削除ハンドラー
-  const handleDeleteWashHistory = (date: string) => {
+  const handleDeleteWashHistory = async (date: string) => {
     if (item) {
-      const success = deleteWashHistory(item.id, date);
-      if (success) {
-        Alert.alert("削除完了", `${formatDateJapanese(date)}の洗濯履歴を削除しました`);
+      try {
+        const success = await deleteWashHistory(item.id, date);
+        if (success) {
+          Alert.alert("削除完了", `${formatDateJapanese(date)}の洗濯履歴を削除しました`);
+        }
+      } catch (err) {
+        console.error('Error in handleDeleteWashHistory:', err);
+        // エラーはClothingContextでキャッチされ、setErrorが呼ばれるので
+        // ここでは追加のエラー処理は不要
       }
     }
   };

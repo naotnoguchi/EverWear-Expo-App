@@ -151,12 +151,10 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     const recordDate = date || formatDateToLocalISOString(new Date());
 
     try {
-      const success = await clothingService.addWearRecord(id, recordDate);
-      if (success) {
-        // データを再読み込み
-        await loadData();
-      }
-      return success;
+      await clothingService.addWearRecord(id, recordDate);
+      // データを再読み込み
+      await loadData();
+      return true;
     } catch (err) {
       console.error('Failed to record wear:', err);
       setError('着用記録の追加に失敗しました');
@@ -169,12 +167,10 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     const recordDate = date || formatDateToLocalISOString(new Date());
 
     try {
-      const success = await clothingService.addWashRecord(id, recordDate);
-      if (success) {
-        // データを再読み込み
-        await loadData();
-      }
-      return success;
+      await clothingService.addWashRecord(id, recordDate);
+      // データを再読み込み
+      await loadData();
+      return true;
     } catch (err) {
       console.error('Failed to record wash:', err);
       setError('洗濯記録の追加に失敗しました');
@@ -222,12 +218,10 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
   // 着用履歴を削除する関数
   const deleteWearHistory = async (itemId: string, date: string): Promise<boolean> => {
     try {
-      const success = await clothingService.deleteWearRecord(itemId, date);
-      if (success) {
-        // データを再読み込み
-        await loadData();
-      }
-      return success;
+      await clothingService.deleteWearRecord(itemId, date);
+      // データを再読み込み
+      await loadData();
+      return true;
     } catch (err) {
       console.error('Failed to delete wear history:', err);
       setError('着用履歴の削除に失敗しました');
@@ -238,12 +232,10 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
   // 洗濯履歴を削除する関数
   const deleteWashHistory = async (itemId: string, date: string): Promise<boolean> => {
     try {
-      const success = await clothingService.deleteWashRecord(itemId, date);
-      if (success) {
-        // データを再読み込み
-        await loadData();
-      }
-      return success;
+      await clothingService.deleteWashRecord(itemId, date);
+      // データを再読み込み
+      await loadData();
+      return true;
     } catch (err) {
       console.error('Failed to delete wash history:', err);
       setError('洗濯履歴の削除に失敗しました');

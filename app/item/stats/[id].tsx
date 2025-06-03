@@ -313,9 +313,11 @@ export default function ItemDetailScreen() {
   const getEfficiencyStatus = useCallback(() => {
     if (!itemStats) return { text: 'データなし', color: '#999' };
 
-    // 着用・洗濯履歴がない場合は判定を表示しない
+    // 着用・洗濯履歴がない場合、または洗濯履歴が0件の場合は判定を表示しない
     if (itemStats.wearCount === 0 && itemStats.washCount === 0) {
       return { text: '履歴なし', color: '#999' };
+    } else if (itemStats.washCount === 0) {
+      return { text: 'データなし', color: '#999' };
     }
 
     const lowerThreshold = 0.8; // 閾値の80%
@@ -488,8 +490,8 @@ export default function ItemDetailScreen() {
                   }
                 ]}
               />
-              {/* 現在の効率を示すインジケーター - 履歴がない場合は表示しない */}
-              {(itemStats.wearCount > 0 || itemStats.washCount > 0) && (
+              {/* 現在の効率を示すインジケーター - 履歴がない場合、または洗濯履歴が0件の場合は表示しない */}
+              {itemStats.washCount > 0 && (
                 <View
                   style={[
                     styles.efficiencyIndicator,
@@ -510,11 +512,13 @@ export default function ItemDetailScreen() {
             <Text style={styles.efficiencyDescription}>
               {itemStats.wearCount === 0 && itemStats.washCount === 0
                 ? 'このアイテムはまだ着用・洗濯の記録がありません。着用と洗濯を記録すると、洗濯効率の分析が表示されます。'
-                : itemStats.efficiency >= 0.8 && itemStats.efficiency <= 1.2
-                  ? 'このアイテムは最適な頻度で洗濯されています。このまま続けましょう！' 
-                  : itemStats.efficiency < 0.8
-                    ? '洗濯頻度が高すぎる可能性があります。洗濯の間にもっと着用することで、衣類の寿命を延ばし、環境への影響を減らせます。'
-                    : '洗濯頻度が低すぎる可能性があります。衣類の清潔さを保つため、もう少し頻繁に洗濯することを検討してください。'}
+                : itemStats.washCount === 0
+                  ? 'このアイテムはまだ洗濯の記録がありません。洗濯を記録すると、洗濯効率の分析が表示されます。'
+                  : itemStats.efficiency >= 0.8 && itemStats.efficiency <= 1.2
+                    ? 'このアイテムは最適な頻度で洗濯されています。このまま続けましょう！' 
+                    : itemStats.efficiency < 0.8
+                      ? '洗濯頻度が高すぎる可能性があります。洗濯の間にもっと着用することで、衣類の寿命を延ばし、環境への影響を減らせます。'
+                      : '洗濯頻度が低すぎる可能性があります。衣類の清潔さを保つため、もう少し頻繁に洗濯することを検討してください。'}
             </Text>
 
             <View style={styles.efficiencyTip}>

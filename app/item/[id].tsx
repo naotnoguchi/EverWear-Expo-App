@@ -675,11 +675,6 @@ export default function ItemDetail() {
               ]}
             />
           </View>
-          {needsWash && (
-            <Text style={styles.washAlert}>
-              洗濯しましょう <Text style={styles.parenthesisText}>({item.wearCount}回着用)</Text>
-            </Text>
-          )}
         </View>
 
         {/* メモ情報 */}

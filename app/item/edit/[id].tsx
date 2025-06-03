@@ -33,7 +33,7 @@ const categories = [
 export default function EditItem() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { clothingItems, updateItem, addBrand } = useClothing();
+  const { clothingItems, updateItem } = useClothing();
   const theme = useTheme();
   const [name, setName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -157,10 +157,7 @@ export default function EditItem() {
       return;
     }
 
-    // ブランド入力は必須ではないが、入力された場合はシステムに追加
-    if (brand) {
-      await addBrand(brand);
-    }
+    // ブランド入力は必須ではない
 
     // 現在のアイテムを取得
     const currentItem = clothingItems.find(item => item.id === id);

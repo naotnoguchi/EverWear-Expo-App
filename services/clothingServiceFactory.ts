@@ -7,4 +7,4 @@ import { useMockData } from '../lib/supabase';
 export const clothingService = useMockData ? mockService : supabaseService;
 
 // Re-export types from the database module for convenience
-export { AppClothingItem } from '../types/database';
+export { AppClothingItem, ExtendedBrand } from '../types/database';

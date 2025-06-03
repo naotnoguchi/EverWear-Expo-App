@@ -14,7 +14,7 @@ export interface ClothingItem {
   user_id: string;
   name: string;
   category: CategoryValue;
-  brand: string | null;
+  brand_id: string | null;
   image_url: string | null;
   wear_count: number;
   wash_threshold: number;
@@ -46,7 +46,19 @@ export interface WashHistory {
 export interface Brand {
   id: string;
   name: string;
+  name_hiragana?: string;
+  name_english?: string;
+  search_terms?: string[];
   created_at: string;
+}
+
+// Extended brand information for enhanced search and display
+export interface ExtendedBrand {
+  id: string;
+  name: string;
+  nameHiragana?: string;
+  nameEnglish?: string;
+  searchTerms: string[];
 }
 
 // Badge definition type
@@ -147,12 +159,12 @@ export interface AppClothingItem {
 }
 
 // Conversion functions between database and app models
-export const toAppClothingItem = (dbItem: ClothingItem, wearHistory: WearHistory[], washHistory: WashHistory[]): AppClothingItem => {
+export const toAppClothingItem = (dbItem: ClothingItem, wearHistory: WearHistory[], washHistory: WashHistory[], brandName?: string): AppClothingItem => {
   return {
     id: dbItem.id,
     name: dbItem.name,
     category: dbItem.category,
-    brand: dbItem.brand || '',
+    brand: brandName || '',
     image: dbItem.image_url || '',
     wearCount: dbItem.wear_count,
     washThreshold: dbItem.wash_threshold,
@@ -165,12 +177,12 @@ export const toAppClothingItem = (dbItem: ClothingItem, wearHistory: WearHistory
   };
 };
 
-export const toDbClothingItem = (appItem: Partial<AppClothingItem>, userId: string): Omit<ClothingItem, 'id' | 'created_at' | 'updated_at'> => {
+export const toDbClothingItem = (appItem: Partial<AppClothingItem>, userId: string, brandId?: string): Omit<ClothingItem, 'id' | 'created_at' | 'updated_at'> => {
   return {
     user_id: userId,
     name: appItem.name || '',
     category: appItem.category || null,
-    brand: appItem.brand || null,
+    brand_id: brandId || null,
     image_url: appItem.image || null,
     wear_count: appItem.wearCount || 0,
     wash_threshold: appItem.washThreshold || 3,

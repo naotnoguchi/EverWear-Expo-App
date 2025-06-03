@@ -2,6 +2,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { clothingService, AppClothingItem } from '../services/clothingServiceFactory';
 import { formatDateToLocalISOString, formatDateJapanese } from '../lib/dateUtils';
+import { ExtendedBrand } from '../types/database';
 
 // Use AppClothingItem from our database types
 type ClothingItem = AppClothingItem;
@@ -26,7 +27,7 @@ interface ClothingContextType {
 
   // ブランド管理機能
   brands: string[]; // システムに登録されているブランドリスト
-  addBrand: (brand: string) => Promise<void>; // 新しいブランドをシステムに追加
+  extendedBrands: ExtendedBrand[]; // 拡張ブランド情報
   getBrandSuggestions: (query: string) => string[]; // 検索クエリに基づくブランド候補を取得
   refreshData: () => Promise<void>; // データを再読み込みする関数
 }
@@ -48,6 +49,7 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
 
   // ブランド管理のための状態
   const [brands, setBrands] = useState<string[]>([]);
+  const [extendedBrands, setExtendedBrands] = useState<ExtendedBrand[]>([]);
 
   // データを読み込む関数
   const loadData = useCallback(async () => {
@@ -58,9 +60,20 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       const items = await clothingService.getClothingItems();
       setClothingItems(items);
 
-      // ブランドを取得
-      const brandList = await clothingService.getBrands();
+      // ブランドを取得（キャッシュ優先）
+      const brandList = await clothingService.getAllBrands();
       setBrands(brandList);
+
+      // 拡張ブランド情報も取得（検索用）
+      if (clothingService.getExtendedBrands) {
+        try {
+          const extendedBrandList = await clothingService.getExtendedBrands();
+          setExtendedBrands(extendedBrandList);
+        } catch (extendedBrandsError) {
+          console.error('Failed to load extended brands:', extendedBrandsError);
+          // 拡張ブランド情報の取得に失敗しても、アプリ全体の動作には影響しないようにする
+        }
+      }
     } catch (err) {
       console.error('Failed to load data:', err);
       setError('データの読み込みに失敗しました');
@@ -76,6 +89,17 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
 
   // データを再読み込みする関数
   const refreshData = useCallback(async () => {
+    // ブランドキャッシュを更新（利用可能な場合）
+    if (clothingService.refreshBrandsCache) {
+      try {
+        await clothingService.refreshBrandsCache();
+      } catch (cacheError) {
+        console.error('Failed to refresh brands cache:', cacheError);
+        // キャッシュの更新に失敗しても、アプリ全体の動作には影響しないようにする
+      }
+    }
+
+    // 全データを再読み込み
     await loadData();
   }, [loadData]);
 
@@ -84,26 +108,40 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     setSortConfig(config);
   };
 
-  // 新しいブランドを追加する関数
-  const addBrand = async (brand: string) => {
-    if (!brand) return;
-
-    try {
-      await clothingService.addBrand(brand);
-      // ブランドリストを更新
-      const updatedBrands = await clothingService.getBrands();
-      setBrands(updatedBrands);
-    } catch (err) {
-      console.error('Failed to add brand:', err);
-      setError('ブランドの追加に失敗しました');
-    }
-  };
+  // Note: addBrand function has been removed as per requirements
 
   // ブランド候補を検索する関数
   const getBrandSuggestions = (query: string): string[] => {
-    if (!query) return brands;
+    if (!query) return brands.slice(0, 10); // 入力がない場合は最初の10件を表示
+
+    const normalizedQuery = query.toLowerCase();
+
+    // 拡張ブランド情報がある場合は、それを使用して検索
+    if (extendedBrands.length > 0) {
+      // 複数の条件でフィルタリング
+      const matchedBrands = extendedBrands.filter(brand => {
+        // 標準名での検索
+        if (brand.name.toLowerCase().includes(normalizedQuery)) return true;
+
+        // ひらがな名での検索
+        if (brand.nameHiragana?.toLowerCase().includes(normalizedQuery)) return true;
+
+        // 英語名での検索
+        if (brand.nameEnglish?.toLowerCase().includes(normalizedQuery)) return true;
+
+        // 検索語句での検索
+        if (brand.searchTerms?.some(term => term.toLowerCase().includes(normalizedQuery))) return true;
+
+        return false;
+      });
+
+      // 結果をブランド名のリストに変換
+      return matchedBrands.map(brand => brand.name);
+    }
+
+    // 拡張ブランド情報がない場合は、通常の検索を行う
     return brands.filter(brand => 
-      brand.toLowerCase().includes(query.toLowerCase())
+      brand.toLowerCase().includes(normalizedQuery)
     );
   };
 
@@ -226,7 +264,7 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
         updateSortConfig,
         // ブランド管理機能
         brands,
-        addBrand,
+        extendedBrands,
         getBrandSuggestions,
         refreshData
       }}

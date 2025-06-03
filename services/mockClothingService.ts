@@ -1,5 +1,5 @@
 // Mock clothing service that mimics Supabase API behavior
-import { AppClothingItem } from '../types/database';
+import { AppClothingItem, ExtendedBrand } from '../types/database';
 import { mockClothingItems, mockBrands, simulateNetworkDelay, MOCK_USER_ID } from './mockData';
 
 // In-memory storage for mock data
@@ -230,13 +230,42 @@ export const getBrands = async (): Promise<string[]> => {
   return [...brands];
 };
 
-// Add a new brand
-export const addBrand = async (brand: string): Promise<void> => {
+// Get extended brands with additional information for search
+export const getExtendedBrands = async (): Promise<ExtendedBrand[]> => {
   await simulateNetworkDelay();
 
-  if (!brands.includes(brand)) {
-    brands.push(brand);
-  }
+  // Create mock extended brands from the basic brand list
+  const extendedBrands: ExtendedBrand[] = brands.map((brandName, index) => {
+    // Generate some mock data for Japanese brands
+    const isJapanese = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/.test(brandName);
+
+    return {
+      id: `mock-brand-${index}`,
+      name: brandName,
+      // For Japanese brands, create English version; for English brands, create hiragana version
+      nameHiragana: isJapanese ? undefined : `${brandName}のひらがな表記`,
+      nameEnglish: isJapanese ? `${brandName} in English` : undefined,
+      // Create some mock search terms
+      searchTerms: [
+        brandName.toLowerCase(),
+        brandName.toUpperCase(),
+        // Add some variations
+        `${brandName} brand`,
+        isJapanese ? `${brandName}ブランド` : `${brandName} ブランド`
+      ]
+    };
+  });
+
+  return extendedBrands;
+};
+
+// Note: addBrand function has been removed as per requirements
+
+// キャッシュを強制的に更新（Supabaseサービスとの互換性のため）
+export const refreshBrandsCache = async (): Promise<void> => {
+  await simulateNetworkDelay();
+  console.log('Mock refreshBrandsCache called - no actual cache to refresh in mock service');
+  // モックサービスでは実際のキャッシュはないが、インターフェースの互換性のために実装
 };
 
 // Reset mock data (useful for testing)

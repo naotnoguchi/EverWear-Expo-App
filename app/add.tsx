@@ -30,7 +30,7 @@ const categories = [
 
 export default function AddItem() {
   const router = useRouter();
-  const { addBrand, addItem } = useClothing();
+  const { addItem } = useClothing();
   const theme = useTheme();
   const [name, setName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -94,10 +94,7 @@ export default function AddItem() {
       return;
     }
 
-    // ブランド入力は必須ではないが、入力された場合はシステムに追加
-    if (brand) {
-      await addBrand(brand); // 新しいブランドをシステムに追加
-    }
+    // ブランド入力は必須ではない
 
     // 新しいアイテムオブジェクトを作成
     const newItem = {

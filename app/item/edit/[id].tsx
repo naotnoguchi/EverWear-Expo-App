@@ -200,7 +200,12 @@ export default function EditItem() {
         ]
       );
     } catch (error) {
-      Alert.alert("エラー", "アイテムの更新に失敗しました");
+      // エラー通知
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+      // エラーメッセージを表示
+      const errorMessage = error instanceof Error ? error.message : "アイテムの更新に失敗しました";
+      Alert.alert("エラー", errorMessage);
     }
   };
 

@@ -190,17 +190,21 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Failed to add item:', err);
       setError('アイテムの追加に失敗しました');
+      // エラーを再スローして呼び出し元でキャッチできるようにする
+      throw err;
     }
   };
 
   const updateItem = async (updatedItem: ClothingItem) => {
     try {
-      await clothingService.updateClothingItem(updatedItem);
+      await clothingService.updateClothingItem(updatedItem.id, updatedItem);
       // データを再読み込み
       await loadData();
     } catch (err) {
       console.error('Failed to update item:', err);
       setError('アイテムの更新に失敗しました');
+      // エラーを再スローして呼び出し元でキャッチできるようにする
+      throw err;
     }
   };
 

@@ -16,7 +16,7 @@ CREATE TABLE clothing_items (
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   category TEXT NOT NULL,
-  brand TEXT,
+  brand_id UUID REFERENCES brands(id),
   image_url TEXT,
   wear_count INTEGER DEFAULT 0,
   wash_threshold INTEGER DEFAULT 3,
@@ -48,6 +48,9 @@ CREATE TABLE wash_history (
 CREATE TABLE brands (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT UNIQUE NOT NULL,
+  name_hiragana TEXT,
+  name_english TEXT,
+  search_terms TEXT[],
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

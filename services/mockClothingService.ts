@@ -42,22 +42,29 @@ export const addClothingItem = async (item: Omit<AppClothingItem, 'id'>): Promis
 };
 
 // Update an existing clothing item
-export const updateClothingItem = async (item: AppClothingItem): Promise<AppClothingItem> => {
+export const updateClothingItem = async (id: string, updates: Partial<AppClothingItem>): Promise<AppClothingItem> => {
   await simulateNetworkDelay();
 
-  const index = clothingItems.findIndex(i => i.id === item.id);
+  const index = clothingItems.findIndex(i => i.id === id);
   if (index === -1) {
-    throw new Error(`Clothing item with ID ${item.id} not found`);
+    throw new Error(`Clothing item with ID ${id} not found`);
   }
 
-  clothingItems[index] = { ...item };
+  // Get the current item to merge with updates
+  const currentItem = clothingItems[index];
+
+  // Merge updates with current item
+  const updatedItem = { ...currentItem, ...updates };
+
+  // Update the item in the array
+  clothingItems[index] = updatedItem;
 
   // No longer adding brands to the list as they should be selected from master list
-  // if (item.brand && !brands.includes(item.brand)) {
-  //   brands.push(item.brand);
+  // if (updatedItem.brand && !brands.includes(updatedItem.brand)) {
+  //   brands.push(updatedItem.brand);
   // }
 
-  return { ...item };
+  return { ...updatedItem };
 };
 
 // Delete a clothing item

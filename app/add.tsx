@@ -133,8 +133,12 @@ export default function AddItem() {
         ]
       );
     } catch (error) {
-      // エラー処理
-      Alert.alert("エラー", "アイテムの追加に失敗しました");
+      // エラー通知
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+      // エラーメッセージを表示
+      const errorMessage = error instanceof Error ? error.message : "アイテムの追加に失敗しました";
+      Alert.alert("エラー", errorMessage);
     }
   };
 

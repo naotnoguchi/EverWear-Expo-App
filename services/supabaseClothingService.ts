@@ -385,7 +385,7 @@ export const addWearRecord = async (clothingItemId: string, date: string): Promi
     .from('wear_history')
     .insert({
       clothing_item_id: clothingItemId,
-      date,
+      wear_date: date,
     });
 
   if (error) {
@@ -394,18 +394,69 @@ export const addWearRecord = async (clothingItemId: string, date: string): Promi
   }
   console.log('Successfully added wear record');
 
-  // Update last_worn date on the clothing item
-  console.log('Updating last_worn date on clothing item');
+  // Get the latest wash date to calculate wear count
+  console.log('Getting latest wash date to calculate wear count');
+  const { data: latestWash, error: washError } = await authClient
+    .from('wash_history')
+    .select('wash_date')
+    .eq('clothing_item_id', clothingItemId)
+    .order('wash_date', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (washError && washError.code !== 'PGRST116') {
+    console.log('Error retrieving latest wash record:', washError);
+    throw washError;
+  }
+
+  // Get all wear records after the latest wash to calculate wear count
+  console.log('Calculating updated wear count');
+  let wearCount = 0;
+
+  if (latestWash) {
+    // If there's a wash record, count wears after the latest wash
+    const { data: wearRecordsAfterWash, error: wearCountError } = await authClient
+      .from('wear_history')
+      .select('id')
+      .eq('clothing_item_id', clothingItemId)
+      .gt('wear_date', latestWash.wash_date);
+
+    if (wearCountError) {
+      console.log('Error counting wear records after wash:', wearCountError);
+      throw wearCountError;
+    }
+
+    wearCount = wearRecordsAfterWash ? wearRecordsAfterWash.length : 0;
+  } else {
+    // If no wash record, count all wear records
+    const { data: allWearRecords, error: wearCountError } = await authClient
+      .from('wear_history')
+      .select('id')
+      .eq('clothing_item_id', clothingItemId);
+
+    if (wearCountError) {
+      console.log('Error counting all wear records:', wearCountError);
+      throw wearCountError;
+    }
+
+    wearCount = allWearRecords ? allWearRecords.length : 0;
+  }
+
+  // Update last_worn date and wear count on the clothing item
+  console.log('Updating last_worn date and wear count on clothing item');
   await authClient
     .from('clothing_items')
-    .update({ last_worn: date })
+    .update({ 
+      last_worn: date,
+      wear_count: wearCount
+    })
     .eq('id', clothingItemId);
-  console.log('Successfully updated last_worn date');
+  console.log('Successfully updated last_worn date and wear count');
 };
 
 // Delete a wear record
-export const deleteWearRecord = async (wearId: string): Promise<void> => {
-  console.log('Starting to delete wear record with ID:', wearId);
+export const deleteWearRecord = async (clothingItemId: string, wearDate: string): Promise<void> => {
+  console.log('Starting to delete wear record for clothing item ID:', clothingItemId, 'with date:', wearDate);
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
 
@@ -419,26 +470,12 @@ export const deleteWearRecord = async (wearId: string): Promise<void> => {
   console.log('Getting authenticated client for database operations');
   const authClient = await getAuthenticatedClient();
 
-  // Get the wear record to verify ownership
-  console.log('Getting wear record to verify ownership');
-  const { data: wearRecord, error: getError } = await authClient
-    .from('wear_history')
-    .select('clothing_item_id')
-    .eq('id', wearId)
-    .single();
-
-  if (getError) {
-    console.log('Error retrieving wear record:', getError);
-    throw getError;
-  }
-  console.log('Retrieved wear record for clothing item ID:', wearRecord.clothing_item_id);
-
   // Verify the item belongs to the user
   console.log('Verifying item belongs to the user');
   const { count, error: countError } = await authClient
     .from('clothing_items')
     .select('*', { count: 'exact', head: true })
-    .eq('id', wearRecord.clothing_item_id)
+    .eq('id', clothingItemId)
     .eq('user_id', userId);
 
   if (countError) {
@@ -451,26 +488,45 @@ export const deleteWearRecord = async (wearId: string): Promise<void> => {
     throw new Error('Item not found or does not belong to the user');
   }
 
-  // Delete the wear record
-  console.log('Deleting wear record from wear_history table');
+  // Find the wear record with the given clothing item ID and date
+  console.log('Finding wear record with clothing item ID and date');
+  const { data: wearRecords, error: findError } = await authClient
+    .from('wear_history')
+    .select('id')
+    .eq('clothing_item_id', clothingItemId)
+    .eq('wear_date', wearDate);
+
+  if (findError) {
+    console.log('Error finding wear record:', findError);
+    throw findError;
+  }
+
+  if (!wearRecords || wearRecords.length === 0) {
+    console.log('Wear record not found for the given clothing item ID and date');
+    throw new Error('Wear record not found for the given clothing item ID and date');
+  }
+
+  // Delete the wear record(s)
+  console.log('Deleting wear record(s) from wear_history table');
   const { error } = await authClient
     .from('wear_history')
     .delete()
-    .eq('id', wearId);
+    .eq('clothing_item_id', clothingItemId)
+    .eq('wear_date', wearDate);
 
   if (error) {
     console.log('Error deleting wear record:', error);
     throw error;
   }
-  console.log('Successfully deleted wear record');
+  console.log('Successfully deleted wear record(s)');
 
   // Update last_worn date to the most recent wear record
   console.log('Updating last_worn date to most recent wear record');
   const { data: latestWear, error: latestError } = await authClient
     .from('wear_history')
-    .select('date')
-    .eq('clothing_item_id', wearRecord.clothing_item_id)
-    .order('date', { ascending: false })
+    .select('wear_date')
+    .eq('clothing_item_id', clothingItemId)
+    .order('wear_date', { ascending: false })
     .limit(1)
     .single();
 
@@ -479,14 +535,63 @@ export const deleteWearRecord = async (wearId: string): Promise<void> => {
     throw latestError;
   }
 
-  console.log('Updating clothing item with new last_worn date');
+  // Get the latest wash date to calculate wear count
+  console.log('Getting latest wash date to calculate wear count');
+  const { data: latestWash, error: washError } = await authClient
+    .from('wash_history')
+    .select('wash_date')
+    .eq('clothing_item_id', clothingItemId)
+    .order('wash_date', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (washError && washError.code !== 'PGRST116') {
+    console.log('Error retrieving latest wash record:', washError);
+    throw washError;
+  }
+
+  // Get all wear records after the latest wash to calculate wear count
+  console.log('Calculating updated wear count');
+  let wearCount = 0;
+
+  if (latestWash) {
+    // If there's a wash record, count wears after the latest wash
+    const { data: wearRecordsAfterWash, error: wearCountError } = await authClient
+      .from('wear_history')
+      .select('id')
+      .eq('clothing_item_id', clothingItemId)
+      .gt('wear_date', latestWash.wash_date);
+
+    if (wearCountError) {
+      console.log('Error counting wear records after wash:', wearCountError);
+      throw wearCountError;
+    }
+
+    wearCount = wearRecordsAfterWash ? wearRecordsAfterWash.length : 0;
+  } else {
+    // If no wash record, count all wear records
+    const { data: allWearRecords, error: wearCountError } = await authClient
+      .from('wear_history')
+      .select('id')
+      .eq('clothing_item_id', clothingItemId);
+
+    if (wearCountError) {
+      console.log('Error counting all wear records:', wearCountError);
+      throw wearCountError;
+    }
+
+    wearCount = allWearRecords ? allWearRecords.length : 0;
+  }
+
+  console.log('Updating clothing item with new last_worn date and wear count');
   await authClient
     .from('clothing_items')
     .update({ 
-      last_worn: latestWear ? latestWear.date : null 
+      last_worn: latestWear ? latestWear.wear_date : null,
+      wear_count: wearCount
     })
-    .eq('id', wearRecord.clothing_item_id);
-  console.log('Successfully updated last_worn date');
+    .eq('id', clothingItemId);
+  console.log('Successfully updated last_worn date and wear count');
 };
 
 // Add a wash record
@@ -529,7 +634,7 @@ export const addWashRecord = async (clothingItemId: string, date: string): Promi
     .from('wash_history')
     .insert({
       clothing_item_id: clothingItemId,
-      date,
+      wash_date: date,
     });
 
   if (error) {
@@ -537,11 +642,35 @@ export const addWashRecord = async (clothingItemId: string, date: string): Promi
     throw error;
   }
   console.log('Successfully added wash record');
+
+  // Get wear records after this wash date to calculate wear count
+  console.log('Calculating updated wear count');
+  const { data: wearRecordsAfterWash, error: wearCountError } = await authClient
+    .from('wear_history')
+    .select('id')
+    .eq('clothing_item_id', clothingItemId)
+    .gt('wear_date', date);
+
+  if (wearCountError) {
+    console.log('Error counting wear records after wash:', wearCountError);
+    throw wearCountError;
+  }
+
+  // After adding a wash record, the wear count should be the number of wears after this wash
+  const wearCount = wearRecordsAfterWash ? wearRecordsAfterWash.length : 0;
+
+  // Update wear count on the clothing item
+  console.log('Updating wear count on clothing item');
+  await authClient
+    .from('clothing_items')
+    .update({ wear_count: wearCount })
+    .eq('id', clothingItemId);
+  console.log('Successfully updated wear count');
 };
 
 // Delete a wash record
-export const deleteWashRecord = async (washId: string): Promise<void> => {
-  console.log('Starting to delete wash record with ID:', washId);
+export const deleteWashRecord = async (clothingItemId: string, washDate: string): Promise<void> => {
+  console.log('Starting to delete wash record for clothing item ID:', clothingItemId, 'with date:', washDate);
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
 
@@ -555,26 +684,12 @@ export const deleteWashRecord = async (washId: string): Promise<void> => {
   console.log('Getting authenticated client for database operations');
   const authClient = await getAuthenticatedClient();
 
-  // Get the wash record to verify ownership
-  console.log('Getting wash record to verify ownership');
-  const { data: washRecord, error: getError } = await authClient
-    .from('wash_history')
-    .select('clothing_item_id')
-    .eq('id', washId)
-    .single();
-
-  if (getError) {
-    console.log('Error retrieving wash record:', getError);
-    throw getError;
-  }
-  console.log('Retrieved wash record for clothing item ID:', washRecord.clothing_item_id);
-
   // Verify the item belongs to the user
   console.log('Verifying item belongs to the user');
   const { count, error: countError } = await authClient
     .from('clothing_items')
     .select('*', { count: 'exact', head: true })
-    .eq('id', washRecord.clothing_item_id)
+    .eq('id', clothingItemId)
     .eq('user_id', userId);
 
   if (countError) {
@@ -587,18 +702,93 @@ export const deleteWashRecord = async (washId: string): Promise<void> => {
     throw new Error('Item not found or does not belong to the user');
   }
 
-  // Delete the wash record
-  console.log('Deleting wash record from wash_history table');
+  // Find the wash record with the given clothing item ID and date
+  console.log('Finding wash record with clothing item ID and date');
+  const { data: washRecords, error: findError } = await authClient
+    .from('wash_history')
+    .select('id')
+    .eq('clothing_item_id', clothingItemId)
+    .eq('wash_date', washDate);
+
+  if (findError) {
+    console.log('Error finding wash record:', findError);
+    throw findError;
+  }
+
+  if (!washRecords || washRecords.length === 0) {
+    console.log('Wash record not found for the given clothing item ID and date');
+    throw new Error('Wash record not found for the given clothing item ID and date');
+  }
+
+  // Delete the wash record(s)
+  console.log('Deleting wash record(s) from wash_history table');
   const { error } = await authClient
     .from('wash_history')
     .delete()
-    .eq('id', washId);
+    .eq('clothing_item_id', clothingItemId)
+    .eq('wash_date', washDate);
 
   if (error) {
     console.log('Error deleting wash record:', error);
     throw error;
   }
-  console.log('Successfully deleted wash record');
+  console.log('Successfully deleted wash record(s)');
+
+  // Get the latest wash date after deletion
+  console.log('Getting latest wash date to calculate wear count');
+  const { data: latestWash, error: washError } = await authClient
+    .from('wash_history')
+    .select('wash_date')
+    .eq('clothing_item_id', clothingItemId)
+    .order('wash_date', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (washError && washError.code !== 'PGRST116') {
+    console.log('Error retrieving latest wash record:', washError);
+    throw washError;
+  }
+
+  // Get all wear records after the latest wash to calculate wear count
+  console.log('Calculating updated wear count');
+  let wearCount = 0;
+
+  if (latestWash) {
+    // If there's a wash record, count wears after the latest wash
+    const { data: wearRecordsAfterWash, error: wearCountError } = await authClient
+      .from('wear_history')
+      .select('id')
+      .eq('clothing_item_id', clothingItemId)
+      .gt('wear_date', latestWash.wash_date);
+
+    if (wearCountError) {
+      console.log('Error counting wear records after wash:', wearCountError);
+      throw wearCountError;
+    }
+
+    wearCount = wearRecordsAfterWash ? wearRecordsAfterWash.length : 0;
+  } else {
+    // If no wash record, count all wear records
+    const { data: allWearRecords, error: wearCountError } = await authClient
+      .from('wear_history')
+      .select('id')
+      .eq('clothing_item_id', clothingItemId);
+
+    if (wearCountError) {
+      console.log('Error counting all wear records:', wearCountError);
+      throw wearCountError;
+    }
+
+    wearCount = allWearRecords ? allWearRecords.length : 0;
+  }
+
+  // Update wear count on the clothing item
+  console.log('Updating wear count on clothing item');
+  await authClient
+    .from('clothing_items')
+    .update({ wear_count: wearCount })
+    .eq('id', clothingItemId);
+  console.log('Successfully updated wear count');
 };
 
 // Get all brands from the brands table

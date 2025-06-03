@@ -313,6 +313,11 @@ export default function ItemDetailScreen() {
   const getEfficiencyStatus = useCallback(() => {
     if (!itemStats) return { text: 'データなし', color: '#999' };
 
+    // 着用・洗濯履歴がない場合は判定を表示しない
+    if (itemStats.wearCount === 0 && itemStats.washCount === 0) {
+      return { text: '履歴なし', color: '#999' };
+    }
+
     const lowerThreshold = 0.8; // 閾値の80%
     const upperThreshold = 1.2; // 閾値の120%
 
@@ -483,16 +488,18 @@ export default function ItemDetailScreen() {
                   }
                 ]}
               />
-              {/* 現在の効率を示すインジケーター */}
-              <View
-                style={[
-                  styles.efficiencyIndicator,
-                  {
-                    left: `${100 - Math.min(itemStats.efficiency * 50, 100)}%`,  // 反転させた位置計算
-                    backgroundColor: efficiencyStatus.color
-                  }
-                ]}
-              />
+              {/* 現在の効率を示すインジケーター - 履歴がない場合は表示しない */}
+              {(itemStats.wearCount > 0 || itemStats.washCount > 0) && (
+                <View
+                  style={[
+                    styles.efficiencyIndicator,
+                    {
+                      left: `${100 - Math.min(itemStats.efficiency * 50, 100)}%`,  // 反転させた位置計算
+                      backgroundColor: efficiencyStatus.color
+                    }
+                  ]}
+                />
+              )}
               <View style={styles.efficiencyScale}>
                 <Text style={styles.efficiencyScaleText}>洗濯不足</Text>
                 <Text style={[styles.efficiencyScaleText, { position: 'absolute', left: '50%', transform: [{ translateX: -10 }] }]}>良好</Text>
@@ -501,11 +508,13 @@ export default function ItemDetailScreen() {
             </View>
 
             <Text style={styles.efficiencyDescription}>
-              {itemStats.efficiency >= 0.8 && itemStats.efficiency <= 1.2
-                ? 'このアイテムは最適な頻度で洗濯されています。このまま続けましょう！' 
-                : itemStats.efficiency < 0.8
-                  ? '洗濯頻度が高すぎる可能性があります。洗濯の間にもっと着用することで、衣類の寿命を延ばし、環境への影響を減らせます。'
-                  : '洗濯頻度が低すぎる可能性があります。衣類の清潔さを保つため、もう少し頻繁に洗濯することを検討してください。'}
+              {itemStats.wearCount === 0 && itemStats.washCount === 0
+                ? 'このアイテムはまだ着用・洗濯の記録がありません。着用と洗濯を記録すると、洗濯効率の分析が表示されます。'
+                : itemStats.efficiency >= 0.8 && itemStats.efficiency <= 1.2
+                  ? 'このアイテムは最適な頻度で洗濯されています。このまま続けましょう！' 
+                  : itemStats.efficiency < 0.8
+                    ? '洗濯頻度が高すぎる可能性があります。洗濯の間にもっと着用することで、衣類の寿命を延ばし、環境への影響を減らせます。'
+                    : '洗濯頻度が低すぎる可能性があります。衣類の清潔さを保つため、もう少し頻繁に洗濯することを検討してください。'}
             </Text>
 
             <View style={styles.efficiencyTip}>
@@ -535,7 +544,7 @@ export default function ItemDetailScreen() {
               <Text style={styles.patternLabel}>
                 最も着用する曜日
               </Text>
-              {mostWornDay ? (
+              {itemStats.wearCount > 0 && mostWornDay ? (
                 <Text style={styles.patternValue}>
                   {mostWornDay[0]}（{mostWornDay[1]}回）
                 </Text>
@@ -550,7 +559,7 @@ export default function ItemDetailScreen() {
               <Text style={styles.patternLabel}>
                 最も着用する月
               </Text>
-              {mostWornMonth ? (
+              {itemStats.wearCount > 0 && mostWornMonth ? (
                 <Text style={styles.patternValue}>
                   {mostWornMonth[0]}（{mostWornMonth[1]}回）
                 </Text>
@@ -565,9 +574,15 @@ export default function ItemDetailScreen() {
               <Text style={styles.patternLabel}>
                 平均着用間隔
               </Text>
-              <Text style={styles.patternValue}>
-                {itemStats.averageWearInterval.toFixed(1)}日
-              </Text>
+              {itemStats.wearCount > 1 ? (
+                <Text style={styles.patternValue}>
+                  {itemStats.averageWearInterval.toFixed(1)}日
+                </Text>
+              ) : (
+                <Text style={[styles.patternValue, { color: theme.text + "99" }]}>
+                  データなし
+                </Text>
+              )}
             </View>
 
             <View style={styles.patternItem}>
@@ -590,36 +605,48 @@ export default function ItemDetailScreen() {
             </Text>
           </View>
 
-          <View style={styles.chartContainer}>
-            {Object.entries(itemStats.wearsByMonth).map(([month, count]) => {
-              // Calculate bar height based on maximum value
-              const maxCount = Math.max(
-                ...Object.values(itemStats.wearsByMonth),
-                1 // Avoid division by zero
-              );
-              const heightPercentage = (count / maxCount) * 100;
+          {Object.keys(itemStats.wearsByMonth).length > 0 ? (
+            <View style={styles.chartContainer}>
+              {Object.entries(itemStats.wearsByMonth).map(([month, count]) => {
+                // Calculate bar height based on maximum value
+                const maxCount = Math.max(
+                  ...Object.values(itemStats.wearsByMonth),
+                  1 // Avoid division by zero
+                );
+                const heightPercentage = (count / maxCount) * 100;
 
-              return (
-                <View key={month} style={styles.chartBarContainer}>
-                  <Text style={styles.chartValue}>
-                    {count}
-                  </Text>
-                  <View
-                    style={[
-                      styles.chartBar,
-                      {
-                        height: `${heightPercentage}%`,
-                        backgroundColor: theme.primary || '#3498db',
-                      },
-                    ]}
-                  />
-                  <Text style={styles.chartLabel}>
-                    {month}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
+                return (
+                  <View key={month} style={styles.chartBarContainer}>
+                    <Text style={styles.chartValue}>
+                      {count}
+                    </Text>
+                    <View
+                      style={[
+                        styles.chartBar,
+                        {
+                          height: `${heightPercentage}%`,
+                          backgroundColor: theme.primary || '#3498db',
+                        },
+                      ]}
+                    />
+                    <Text style={styles.chartLabel}>
+                      {month}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={{ alignItems: 'center', padding: 20 }}>
+              <Ionicons name="information-circle-outline" size={24} color={theme.primary} />
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text, marginTop: 12, marginBottom: 8 }}>
+                着用データがありません
+              </Text>
+              <Text style={{ fontSize: 14, textAlign: 'center', color: theme.text + "99", paddingHorizontal: 16 }}>
+                このアイテムを着用すると、月別の着用回数データが表示されます。
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Environmental impact */}

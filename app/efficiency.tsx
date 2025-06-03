@@ -42,8 +42,10 @@ export default function EfficiencyScreen() {
 
   // Get status color
   const getStatusColor = (status: 'good' | 'underwashed' | 'overwashed', wearCount?: number, washCount?: number) => {
-    // 着用・洗濯履歴がない場合はグレーを返す
+    // 着用・洗濯履歴がない場合、または洗濯履歴が0件の場合はグレーを返す
     if (wearCount === 0 && washCount === 0) {
+      return '#999'; // Gray
+    } else if (washCount === 0) {
       return '#999'; // Gray
     }
 
@@ -57,9 +59,11 @@ export default function EfficiencyScreen() {
 
   // Get status text
   const getStatusText = (status: 'good' | 'underwashed' | 'overwashed', wearCount: number, washCount: number) => {
-    // 着用・洗濯履歴がない場合は特別なテキストを表示
+    // 着用・洗濯履歴がない場合、または洗濯履歴が0件の場合は特別なテキストを表示
     if (wearCount === 0 && washCount === 0) {
       return '履歴なし';
+    } else if (washCount === 0) {
+      return 'データなし';
     }
 
     switch (status) {
@@ -75,6 +79,8 @@ export default function EfficiencyScreen() {
     // 着用・洗濯履歴がない場合は特別なメッセージを表示
     if (wearCount === 0 && washCount === 0) {
       return 'このアイテムはまだ着用・洗濯の記録がありません。着用と洗濯を記録すると、洗濯効率の分析が表示されます。';
+    } else if (washCount === 0) {
+      return 'このアイテムはまだ洗濯の記録がありません。洗濯を記録すると、洗濯効率の分析が表示されます。';
     }
 
     switch (status) {
@@ -194,8 +200,8 @@ export default function EfficiencyScreen() {
                 }
               ]}
             />
-            {/* 現在の効率を示すインジケーター - 履歴がない場合は表示しない */}
-            {(item.wearCount > 0 || item.washCount > 0) && (
+            {/* 現在の効率を示すインジケーター - 履歴がない場合、または洗濯履歴が0件の場合は表示しない */}
+            {item.washCount > 0 && (
               <View
                 style={[
                   styles.efficiencyIndicator,
@@ -573,7 +579,7 @@ export default function EfficiencyScreen() {
                 <View style={styles.summaryItem}>
                   <View style={[styles.summaryBadge, { backgroundColor: '#f39c12' }]}>
                     <Text style={styles.summaryBadgeText}>
-                      {items.filter(item => item.status === 'underwashed' && (item.wearCount > 0 || item.washCount > 0)).length}
+                      {items.filter(item => item.status === 'underwashed' && item.washCount > 0).length}
                     </Text>
                   </View>
                   <Text style={[styles.summaryItemText, { color: theme.text }]}>
@@ -584,7 +590,7 @@ export default function EfficiencyScreen() {
                 <View style={styles.summaryItem}>
                   <View style={[styles.summaryBadge, { backgroundColor: '#27ae60' }]}>
                     <Text style={styles.summaryBadgeText}>
-                      {items.filter(item => item.status === 'good' && (item.wearCount > 0 || item.washCount > 0)).length}
+                      {items.filter(item => item.status === 'good' && item.washCount > 0).length}
                     </Text>
                   </View>
                   <Text style={[styles.summaryItemText, { color: theme.text }]}>
@@ -595,7 +601,7 @@ export default function EfficiencyScreen() {
                 <View style={styles.summaryItem}>
                   <View style={[styles.summaryBadge, { backgroundColor: '#e74c3c' }]}>
                     <Text style={styles.summaryBadgeText}>
-                      {items.filter(item => item.status === 'overwashed' && (item.wearCount > 0 || item.washCount > 0)).length}
+                      {items.filter(item => item.status === 'overwashed' && item.washCount > 0).length}
                     </Text>
                   </View>
                   <Text style={[styles.summaryItemText, { color: theme.text }]}>

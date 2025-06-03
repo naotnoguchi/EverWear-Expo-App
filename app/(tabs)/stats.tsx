@@ -715,7 +715,7 @@ export default function Stats() {
         </View>
         <View style={styles.efficiencyContainer}>
           {stats && stats.totalItems > 0 ? (
-            stats.totalWears === 0 && stats.totalWashes === 0 ? (
+            stats.totalWears === 0 || stats.totalWashes === 0 ? (
               <View style={{ alignItems: 'center', padding: 16 }}>
                 <Ionicons name="information-circle-outline" size={24} color={theme.primary} />
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text, marginTop: 12, marginBottom: 8 }}>

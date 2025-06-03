@@ -399,8 +399,8 @@ export async function getEfficiencyData(period: Period = '3months'): Promise<Eff
       const upperThreshold = 1.2; // 120% of threshold
       let status: 'good' | 'underwashed' | 'overwashed';
 
-      // If there's no wear and wash history, don't make a judgment
-      if (wearCount === 0 && washCount === 0) {
+      // If there's no wash history or no wear and wash history, don't make a judgment
+      if (washCount === 0 || (wearCount === 0 && washCount === 0)) {
         // Use 'good' as a default, but the UI will handle this special case
         status = 'good';
       } else if (efficiency >= lowerThreshold && efficiency <= upperThreshold) {

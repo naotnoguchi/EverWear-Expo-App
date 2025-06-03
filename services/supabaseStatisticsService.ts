@@ -1,5 +1,5 @@
 import { auth } from '../lib/authClient';
-import { db } from '../lib/dbClient';
+import { db, getAuthenticatedClient } from '../lib/dbClient';
 import { CategoryValue } from '../types/categories';
 import { AppClothingItem, toAppClothingItem } from '../types/database';
 import {
@@ -157,8 +157,11 @@ async function fetchClothingItemsWithHistory(): Promise<AppClothingItem[]> {
     throw new Error('User not authenticated');
   }
 
+  // Get authenticated client
+  const authClient = await getAuthenticatedClient();
+
   // Get clothing items
-  const { data: items, error } = await db
+  const { data: items, error } = await authClient
     .from('clothing_items')
     .select('*')
     .eq('user_id', userId);
@@ -169,14 +172,14 @@ async function fetchClothingItemsWithHistory(): Promise<AppClothingItem[]> {
   const result: AppClothingItem[] = [];
 
   for (const item of items) {
-    const { data: wearHistory, error: wearError } = await db
+    const { data: wearHistory, error: wearError } = await authClient
       .from('wear_history')
       .select('*')
       .eq('clothing_item_id', item.id);
 
     if (wearError) throw wearError;
 
-    const { data: washHistory, error: washError } = await db
+    const { data: washHistory, error: washError } = await authClient
       .from('wash_history')
       .select('*')
       .eq('clothing_item_id', item.id);
@@ -1090,8 +1093,11 @@ export async function getItemDetailStats(itemId: string): Promise<ItemDetailStat
       throw new Error('User not authenticated');
     }
 
+    // Get authenticated client
+    const authClient = await getAuthenticatedClient();
+
     // Get the clothing item
-    const { data: item, error } = await db
+    const { data: item, error } = await authClient
       .from('clothing_items')
       .select('*')
       .eq('id', itemId)
@@ -1101,7 +1107,7 @@ export async function getItemDetailStats(itemId: string): Promise<ItemDetailStat
     if (error) throw error;
 
     // Get wear history
-    const { data: wearHistory, error: wearError } = await db
+    const { data: wearHistory, error: wearError } = await authClient
       .from('wear_history')
       .select('*')
       .eq('clothing_item_id', itemId);
@@ -1109,7 +1115,7 @@ export async function getItemDetailStats(itemId: string): Promise<ItemDetailStat
     if (wearError) throw wearError;
 
     // Get wash history
-    const { data: washHistory, error: washError } = await db
+    const { data: washHistory, error: washError } = await authClient
       .from('wash_history')
       .select('*')
       .eq('clothing_item_id', itemId);

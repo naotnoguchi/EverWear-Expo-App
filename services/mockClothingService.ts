@@ -33,10 +33,10 @@ export const addClothingItem = async (item: Omit<AppClothingItem, 'id'>): Promis
 
   clothingItems.push(newItem);
 
-  // Add brand to the list if it doesn't exist
-  if (item.brand && !brands.includes(item.brand)) {
-    brands.push(item.brand);
-  }
+  // No longer adding brands to the list as they should be selected from master list
+  // if (item.brand && !brands.includes(item.brand)) {
+  //   brands.push(item.brand);
+  // }
 
   return { ...newItem };
 };
@@ -52,10 +52,10 @@ export const updateClothingItem = async (item: AppClothingItem): Promise<AppClot
 
   clothingItems[index] = { ...item };
 
-  // Add brand to the list if it doesn't exist
-  if (item.brand && !brands.includes(item.brand)) {
-    brands.push(item.brand);
-  }
+  // No longer adding brands to the list as they should be selected from master list
+  // if (item.brand && !brands.includes(item.brand)) {
+  //   brands.push(item.brand);
+  // }
 
   return { ...item };
 };

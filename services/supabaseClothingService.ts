@@ -1,31 +1,48 @@
-import { db } from '../lib/dbClient';
+import { db, getAuthenticatedClient } from '../lib/dbClient';
 import { auth } from '../lib/authClient';
 import { AppClothingItem, toAppClothingItem, toDbClothingItem, Brand, ExtendedBrand } from '../types/database';
 import { BrandCache } from '../lib/brandCache';
 
 // Get all clothing items for the current user
 export const getClothingItems = async (): Promise<AppClothingItem[]> => {
+  console.log('Fetching clothing items');
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
 
+  console.log('User authentication check for item retrieval');
   if (!userId) {
+    console.log('User not authenticated, cannot retrieve items');
     throw new Error('User not authenticated');
   }
 
+  // Get authenticated client
+  console.log('Getting authenticated client for database operations');
+  const authClient = await getAuthenticatedClient();
+
   // Get clothing items
-  const { data: items, error } = await db
+  console.log('Querying clothing_items table');
+  const { data: items, error } = await authClient
     .from('clothing_items')
     .select('*')
     .eq('user_id', userId);
 
-  if (error) throw error;
+  if (error) {
+    console.log('Error retrieving items:', error);
+    throw error;
+  }
+  console.log(`Retrieved ${items?.length || 0} items from database`);
 
   // Get all brands for lookup
-  const { data: brands, error: brandsError } = await db
+  console.log('Querying brands table for lookup');
+  const { data: brands, error: brandsError } = await authClient
     .from('brands')
     .select('id, name');
 
-  if (brandsError) throw brandsError;
+  if (brandsError) {
+    console.log('Error retrieving brands:', brandsError);
+    throw brandsError;
+  }
+  console.log(`Retrieved ${brands?.length || 0} brands from database`);
 
   // Create a map of brand IDs to brand names for quick lookup
   const brandMap = new Map();
@@ -34,22 +51,29 @@ export const getClothingItems = async (): Promise<AppClothingItem[]> => {
   });
 
   // Get wear and wash history for each item
+  console.log('Retrieving wear and wash history for each item');
   const result: AppClothingItem[] = [];
 
   for (const item of items) {
-    const { data: wearHistory, error: wearError } = await db
+    const { data: wearHistory, error: wearError } = await authClient
       .from('wear_history')
       .select('*')
       .eq('clothing_item_id', item.id);
 
-    if (wearError) throw wearError;
+    if (wearError) {
+      console.log('Error retrieving wear history:', wearError);
+      throw wearError;
+    }
 
-    const { data: washHistory, error: washError } = await db
+    const { data: washHistory, error: washError } = await authClient
       .from('wash_history')
       .select('*')
       .eq('clothing_item_id', item.id);
 
-    if (washError) throw washError;
+    if (washError) {
+      console.log('Error retrieving wash history:', washError);
+      throw washError;
+    }
 
     // Get the brand name from the map
     const brandName = item.brand_id ? brandMap.get(item.brand_id) || '' : '';
@@ -62,15 +86,23 @@ export const getClothingItems = async (): Promise<AppClothingItem[]> => {
 
 // Get a specific clothing item by ID
 export const getClothingItemById = async (id: string): Promise<AppClothingItem | null> => {
+  console.log('Fetching clothing item by ID:', id);
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
 
+  console.log('User authentication check for item retrieval');
   if (!userId) {
+    console.log('User not authenticated, cannot retrieve item');
     throw new Error('User not authenticated');
   }
 
+  // Get authenticated client
+  console.log('Getting authenticated client for database operations');
+  const authClient = await getAuthenticatedClient();
+
   // Get the clothing item
-  const { data: item, error } = await db
+  console.log('Querying clothing_items table for item:', id);
+  const { data: item, error } = await authClient
     .from('clothing_items')
     .select('*')
     .eq('id', id)
@@ -79,31 +111,45 @@ export const getClothingItemById = async (id: string): Promise<AppClothingItem |
 
   if (error) {
     if (error.code === 'PGRST116') {
+      console.log('Item not found:', id);
       return null; // Item not found
     }
+    console.log('Error retrieving item:', error);
     throw error;
   }
+  console.log('Retrieved item from database:', item.name);
 
   // Get wear history
-  const { data: wearHistory, error: wearError } = await db
+  console.log('Querying wear_history for item:', id);
+  const { data: wearHistory, error: wearError } = await authClient
     .from('wear_history')
     .select('*')
     .eq('clothing_item_id', id);
 
-  if (wearError) throw wearError;
+  if (wearError) {
+    console.log('Error retrieving wear history:', wearError);
+    throw wearError;
+  }
+  console.log(`Retrieved ${wearHistory?.length || 0} wear records`);
 
   // Get wash history
-  const { data: washHistory, error: washError } = await db
+  console.log('Querying wash_history for item:', id);
+  const { data: washHistory, error: washError } = await authClient
     .from('wash_history')
     .select('*')
     .eq('clothing_item_id', id);
 
-  if (washError) throw washError;
+  if (washError) {
+    console.log('Error retrieving wash history:', washError);
+    throw washError;
+  }
+  console.log(`Retrieved ${washHistory?.length || 0} wash records`);
 
   // Get brand name if brand_id exists
   let brandName = '';
   if (item.brand_id) {
-    const { data: brand, error: brandError } = await db
+    console.log('Querying brands table for brand ID:', item.brand_id);
+    const { data: brand, error: brandError } = await authClient
       .from('brands')
       .select('name')
       .eq('id', item.brand_id)
@@ -111,6 +157,9 @@ export const getClothingItemById = async (id: string): Promise<AppClothingItem |
 
     if (!brandError && brand) {
       brandName = brand.name;
+      console.log('Retrieved brand name:', brandName);
+    } else if (brandError) {
+      console.log('Error retrieving brand:', brandError);
     }
   }
 
@@ -119,51 +168,64 @@ export const getClothingItemById = async (id: string): Promise<AppClothingItem |
 
 // Add a new clothing item
 export const addClothingItem = async (item: Omit<AppClothingItem, 'id'>): Promise<AppClothingItem> => {
+  console.log('Starting to add new clothing item:', item.name);
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
 
+  console.log('User authentication check for item addition');
   if (!userId) {
+    console.log('User not authenticated, cannot add item');
     throw new Error('User not authenticated');
   }
 
-  // Find or create brand ID
+  // Get authenticated client
+  console.log('Getting authenticated client for database operations');
+  const authClient = await getAuthenticatedClient();
+
+  // Find brand ID
+  console.log('Processing brand information for item:', item.name);
   let brandId = null;
   if (item.brand) {
+    console.log('Brand specified:', item.brand);
     // Check if brand exists
-    const { data: existingBrand, error: brandError } = await db
+    console.log('Checking if brand exists in database');
+    const { data: existingBrand, error: brandError } = await authClient
       .from('brands')
       .select('id')
       .eq('name', item.brand)
       .single();
 
     if (!brandError && existingBrand) {
+      console.log('Existing brand found with ID:', existingBrand.id);
       brandId = existingBrand.id;
     } else {
-      // Create new brand
-      const { data: newBrand, error: createError } = await db
-        .from('brands')
-        .insert({ name: item.brand })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-      brandId = newBrand.id;
+      console.log('Brand not found in database:', item.brand);
+      // No longer creating new brands as they should be selected from master list
     }
+  } else {
+    console.log('No brand specified for item');
   }
 
   // Convert to DB format
+  console.log('Converting item to database format');
   const dbItem = toDbClothingItem(item, userId, brandId);
 
   // Insert the item
-  const { data, error } = await db
+  console.log('Inserting item into clothing_items table');
+  const { data, error } = await authClient
     .from('clothing_items')
     .insert(dbItem)
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.log('Error inserting item into database:', error);
+    throw error;
+  }
+  console.log('Successfully inserted item with ID:', data.id);
 
   // Return the new item with empty history arrays
+  console.log('Returning newly created item');
   return toAppClothingItem(data, [], [], item.brand);
 };
 
@@ -176,6 +238,10 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
     throw new Error('User not authenticated');
   }
 
+  // Get authenticated client
+  console.log('Getting authenticated client for database operations');
+  const authClient = await getAuthenticatedClient();
+
   // Get the current item to merge with updates
   const currentItem = await getClothingItemById(id);
   if (!currentItem) {
@@ -185,12 +251,12 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
   // Merge updates with current item
   const updatedItem = { ...currentItem, ...updates };
 
-  // Find or create brand ID if brand is being updated
+  // Find brand ID if brand is being updated
   let brandId = null;
   if (updates.brand !== undefined) {
     if (updates.brand) {
       // Check if brand exists
-      const { data: existingBrand, error: brandError } = await db
+      const { data: existingBrand, error: brandError } = await authClient
         .from('brands')
         .select('id')
         .eq('name', updates.brand)
@@ -199,20 +265,13 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
       if (!brandError && existingBrand) {
         brandId = existingBrand.id;
       } else {
-        // Create new brand
-        const { data: newBrand, error: createError } = await db
-          .from('brands')
-          .insert({ name: updates.brand })
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        brandId = newBrand.id;
+        // No longer creating new brands as they should be selected from master list
+        console.log('Brand not found in database:', updates.brand);
       }
     }
   } else {
     // If brand is not being updated, get the current brand_id
-    const { data: item, error: itemError } = await db
+    const { data: item, error: itemError } = await authClient
       .from('clothing_items')
       .select('brand_id')
       .eq('id', id)
@@ -227,7 +286,7 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
   const dbItem = toDbClothingItem(updatedItem, userId, brandId);
 
   // Update the item
-  const { data, error } = await db
+  const { data, error } = await authClient
     .from('clothing_items')
     .update(dbItem)
     .eq('id', id)
@@ -264,8 +323,11 @@ export const deleteClothingItem = async (id: string): Promise<void> => {
     throw new Error('User not authenticated');
   }
 
+  // Get authenticated client
+  const authClient = await getAuthenticatedClient();
+
   // Delete the item (cascade will handle related records)
-  const { error } = await db
+  const { error } = await authClient
     .from('clothing_items')
     .delete()
     .eq('id', id)
@@ -283,8 +345,11 @@ export const addWearRecord = async (clothingItemId: string, date: string): Promi
     throw new Error('User not authenticated');
   }
 
+  // Get authenticated client
+  const authClient = await getAuthenticatedClient();
+
   // Verify the item belongs to the user
-  const { count, error: countError } = await db
+  const { count, error: countError } = await authClient
     .from('clothing_items')
     .select('*', { count: 'exact', head: true })
     .eq('id', clothingItemId)
@@ -297,7 +362,7 @@ export const addWearRecord = async (clothingItemId: string, date: string): Promi
   }
 
   // Add wear record
-  const { error } = await db
+  const { error } = await authClient
     .from('wear_history')
     .insert({
       clothing_item_id: clothingItemId,
@@ -307,7 +372,7 @@ export const addWearRecord = async (clothingItemId: string, date: string): Promi
   if (error) throw error;
 
   // Update last_worn date on the clothing item
-  await db
+  await authClient
     .from('clothing_items')
     .update({ last_worn: date })
     .eq('id', clothingItemId);
@@ -322,8 +387,11 @@ export const deleteWearRecord = async (wearId: string): Promise<void> => {
     throw new Error('User not authenticated');
   }
 
+  // Get authenticated client
+  const authClient = await getAuthenticatedClient();
+
   // Get the wear record to verify ownership
-  const { data: wearRecord, error: getError } = await db
+  const { data: wearRecord, error: getError } = await authClient
     .from('wear_history')
     .select('clothing_item_id')
     .eq('id', wearId)
@@ -332,7 +400,7 @@ export const deleteWearRecord = async (wearId: string): Promise<void> => {
   if (getError) throw getError;
 
   // Verify the item belongs to the user
-  const { count, error: countError } = await db
+  const { count, error: countError } = await authClient
     .from('clothing_items')
     .select('*', { count: 'exact', head: true })
     .eq('id', wearRecord.clothing_item_id)
@@ -345,7 +413,7 @@ export const deleteWearRecord = async (wearId: string): Promise<void> => {
   }
 
   // Delete the wear record
-  const { error } = await db
+  const { error } = await authClient
     .from('wear_history')
     .delete()
     .eq('id', wearId);
@@ -353,7 +421,7 @@ export const deleteWearRecord = async (wearId: string): Promise<void> => {
   if (error) throw error;
 
   // Update last_worn date to the most recent wear record
-  const { data: latestWear, error: latestError } = await db
+  const { data: latestWear, error: latestError } = await authClient
     .from('wear_history')
     .select('date')
     .eq('clothing_item_id', wearRecord.clothing_item_id)
@@ -365,7 +433,7 @@ export const deleteWearRecord = async (wearId: string): Promise<void> => {
     throw latestError;
   }
 
-  await db
+  await authClient
     .from('clothing_items')
     .update({ 
       last_worn: latestWear ? latestWear.date : null 
@@ -382,8 +450,11 @@ export const addWashRecord = async (clothingItemId: string, date: string): Promi
     throw new Error('User not authenticated');
   }
 
+  // Get authenticated client
+  const authClient = await getAuthenticatedClient();
+
   // Verify the item belongs to the user
-  const { count, error: countError } = await db
+  const { count, error: countError } = await authClient
     .from('clothing_items')
     .select('*', { count: 'exact', head: true })
     .eq('id', clothingItemId)
@@ -396,7 +467,7 @@ export const addWashRecord = async (clothingItemId: string, date: string): Promi
   }
 
   // Add wash record
-  const { error } = await db
+  const { error } = await authClient
     .from('wash_history')
     .insert({
       clothing_item_id: clothingItemId,
@@ -415,8 +486,11 @@ export const deleteWashRecord = async (washId: string): Promise<void> => {
     throw new Error('User not authenticated');
   }
 
+  // Get authenticated client
+  const authClient = await getAuthenticatedClient();
+
   // Get the wash record to verify ownership
-  const { data: washRecord, error: getError } = await db
+  const { data: washRecord, error: getError } = await authClient
     .from('wash_history')
     .select('clothing_item_id')
     .eq('id', washId)
@@ -425,7 +499,7 @@ export const deleteWashRecord = async (washId: string): Promise<void> => {
   if (getError) throw getError;
 
   // Verify the item belongs to the user
-  const { count, error: countError } = await db
+  const { count, error: countError } = await authClient
     .from('clothing_items')
     .select('*', { count: 'exact', head: true })
     .eq('id', washRecord.clothing_item_id)
@@ -438,7 +512,7 @@ export const deleteWashRecord = async (washId: string): Promise<void> => {
   }
 
   // Delete the wash record
-  const { error } = await db
+  const { error } = await authClient
     .from('wash_history')
     .delete()
     .eq('id', washId);
@@ -465,8 +539,12 @@ export const getAllBrands = async (): Promise<string[]> => {
 
     console.log('Fetching all brands from brands table');
 
+    // Get authenticated client
+    console.log('Getting authenticated client for database operations');
+    const authClient = await getAuthenticatedClient();
+
     // キャッシュがない場合はSupabaseから取得
-    const { data, error } = await db
+    const { data, error } = await authClient
       .from('brands')
       .select('name')
       .order('name');
@@ -502,8 +580,12 @@ export const getExtendedBrands = async (): Promise<ExtendedBrand[]> => {
 
     console.log('Fetching extended brands from Supabase');
 
+    // Get authenticated client
+    console.log('Getting authenticated client for database operations');
+    const authClient = await getAuthenticatedClient();
+
     // Supabaseから拡張ブランド情報を取得
-    const { data, error } = await db
+    const { data, error } = await authClient
       .from('brands')
       .select('id, name, name_hiragana, name_english, search_terms')
       .order('name');

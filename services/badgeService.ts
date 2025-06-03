@@ -1,4 +1,4 @@
-import { db } from '../lib/dbClient';
+import { db, getAuthenticatedClient } from '../lib/dbClient';
 import { auth } from '../lib/authClient';
 import { Badge } from '../types/statistics';
 import { AppClothingItem } from '../types/database';
@@ -55,7 +55,10 @@ export async function fetchUserBadges(userId: string): Promise<Map<string, strin
   try {
     console.log('Fetching user badges for user ID:', userId);
 
-    const { data, error } = await db
+    // Get authenticated client
+    const authClient = await getAuthenticatedClient();
+
+    const { data, error } = await authClient
       .from('user_badges')
       .select('badge_id, earned_date')
       .eq('user_id', userId);
@@ -116,8 +119,11 @@ export async function saveNewlyEarnedBadges(userId: string, earnedBadges: Badge[
 
     console.log('Inserting badges into database:', badgesToInsert.length);
 
+    // Get authenticated client
+    const authClient = await getAuthenticatedClient();
+
     // Insert badges into the database
-    const { error } = await db
+    const { error } = await authClient
       .from('user_badges')
       .upsert(badgesToInsert, { onConflict: 'user_id,badge_id' });
 

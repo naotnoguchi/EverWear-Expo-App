@@ -8,6 +8,7 @@ import { useClothing } from '../contexts/ClothingContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { formatDateToLocalISOString, formatDateJapanese } from '../lib/dateUtils';
 import { CategoryValue } from '../types/categories';
+import { ActivityIndicator } from 'react-native';
 
 // 公開するメソッドの型定義
 export type ItemListRefType = {
@@ -33,7 +34,7 @@ interface ItemListProps {
 }
 
 const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) => {
-  const { clothingItems, wearItem, washItem } = useClothing();
+  const { clothingItems, wearItem, washItem, loading } = useClothing();
   const router = useRouter();
   const colorScheme = useColorScheme(); // 現在のカラースキーム（ライト/ダーク）を取得
   const theme = useTheme(); // テーマの取得
@@ -518,6 +519,18 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
       marginBottom: 20,
     },
   });
+
+  // ローディング中の表示
+  if (loading) {
+    return (
+      <View style={styles.emptyContainer}>
+        <ActivityIndicator size="large" color="#3498db" />
+        <Text style={styles.emptyText}>
+          データを読み込み中...
+        </Text>
+      </View>
+    );
+  }
 
   // データがない場合のフォールバック表示
   if (filteredAndSortedItems.length === 0) {

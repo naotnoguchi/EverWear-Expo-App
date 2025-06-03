@@ -41,7 +41,12 @@ export default function EfficiencyScreen() {
   };
 
   // Get status color
-  const getStatusColor = (status: 'good' | 'underwashed' | 'overwashed') => {
+  const getStatusColor = (status: 'good' | 'underwashed' | 'overwashed', wearCount?: number, washCount?: number) => {
+    // 着用・洗濯履歴がない場合はグレーを返す
+    if (wearCount === 0 && washCount === 0) {
+      return '#999'; // Gray
+    }
+
     switch (status) {
       case 'good': return '#27ae60'; // Green
       case 'underwashed': return '#f39c12'; // Orange
@@ -51,7 +56,12 @@ export default function EfficiencyScreen() {
   };
 
   // Get status text
-  const getStatusText = (status: 'good' | 'underwashed' | 'overwashed') => {
+  const getStatusText = (status: 'good' | 'underwashed' | 'overwashed', wearCount: number, washCount: number) => {
+    // 着用・洗濯履歴がない場合は特別なテキストを表示
+    if (wearCount === 0 && washCount === 0) {
+      return '履歴なし';
+    }
+
     switch (status) {
       case 'good': return '良好';
       case 'underwashed': return '洗濯不足';
@@ -61,7 +71,12 @@ export default function EfficiencyScreen() {
   };
 
   // Get efficiency message
-  const getEfficiencyMessage = (status: 'good' | 'underwashed' | 'overwashed') => {
+  const getEfficiencyMessage = (status: 'good' | 'underwashed' | 'overwashed', wearCount: number, washCount: number) => {
+    // 着用・洗濯履歴がない場合は特別なメッセージを表示
+    if (wearCount === 0 && washCount === 0) {
+      return 'このアイテムはまだ着用・洗濯の記録がありません。着用と洗濯を記録すると、洗濯効率の分析が表示されます。';
+    }
+
     switch (status) {
       case 'good':
         return '最適な洗濯頻度で使用されています。このまま続けましょう！';
@@ -127,8 +142,8 @@ export default function EfficiencyScreen() {
           </View>
 
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: getStatusColor(item.status) }]}>
-              {getStatusText(item.status)}
+            <Text style={[styles.statValue, { color: getStatusColor(item.status, item.wearCount, item.washCount) }]}>
+              {getStatusText(item.status, item.wearCount, item.washCount)}
             </Text>
             <Text style={[styles.statLabel, { color: theme.text + "99" }]}>
               効率
@@ -141,9 +156,9 @@ export default function EfficiencyScreen() {
             <Text style={[styles.efficiencyLabel, { color: theme.text }]}>
               効率
             </Text>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status, item.wearCount, item.washCount) }]}>
               <Text style={styles.statusText}>
-                {getStatusText(item.status)}
+                {getStatusText(item.status, item.wearCount, item.washCount)}
               </Text>
             </View>
           </View>
@@ -179,16 +194,18 @@ export default function EfficiencyScreen() {
                 }
               ]}
             />
-            {/* 現在の効率を示すインジケーター */}
-            <View
-              style={[
-                styles.efficiencyIndicator,
-                {
-                  left: `${100 - Math.min(item.efficiency * 50, 100)}%`,  // 反転させた位置計算
-                  backgroundColor: getStatusColor(item.status)
-                }
-              ]}
-            />
+            {/* 現在の効率を示すインジケーター - 履歴がない場合は表示しない */}
+            {(item.wearCount > 0 || item.washCount > 0) && (
+              <View
+                style={[
+                  styles.efficiencyIndicator,
+                  {
+                    left: `${100 - Math.min(item.efficiency * 50, 100)}%`,  // 反転させた位置計算
+                    backgroundColor: getStatusColor(item.status, item.wearCount, item.washCount)
+                  }
+                ]}
+              />
+            )}
             <View style={styles.efficiencyScale}>
               <Text style={styles.efficiencyScaleText}>洗濯不足</Text>
               <Text style={[styles.efficiencyScaleText, { position: 'absolute', left: '50%', transform: [{ translateX: -10 }] }]}>良好</Text>
@@ -197,7 +214,7 @@ export default function EfficiencyScreen() {
           </View>
 
           <Text style={[styles.efficiencyText, { color: theme.text + "99" }]}>
-            {getEfficiencyMessage(item.status)}
+            {getEfficiencyMessage(item.status, item.wearCount, item.washCount)}
           </Text>
         </View>
       </View>
@@ -556,7 +573,7 @@ export default function EfficiencyScreen() {
                 <View style={styles.summaryItem}>
                   <View style={[styles.summaryBadge, { backgroundColor: '#f39c12' }]}>
                     <Text style={styles.summaryBadgeText}>
-                      {items.filter(item => item.status === 'underwashed').length}
+                      {items.filter(item => item.status === 'underwashed' && (item.wearCount > 0 || item.washCount > 0)).length}
                     </Text>
                   </View>
                   <Text style={[styles.summaryItemText, { color: theme.text }]}>
@@ -567,7 +584,7 @@ export default function EfficiencyScreen() {
                 <View style={styles.summaryItem}>
                   <View style={[styles.summaryBadge, { backgroundColor: '#27ae60' }]}>
                     <Text style={styles.summaryBadgeText}>
-                      {items.filter(item => item.status === 'good').length}
+                      {items.filter(item => item.status === 'good' && (item.wearCount > 0 || item.washCount > 0)).length}
                     </Text>
                   </View>
                   <Text style={[styles.summaryItemText, { color: theme.text }]}>
@@ -578,7 +595,7 @@ export default function EfficiencyScreen() {
                 <View style={styles.summaryItem}>
                   <View style={[styles.summaryBadge, { backgroundColor: '#e74c3c' }]}>
                     <Text style={styles.summaryBadgeText}>
-                      {items.filter(item => item.status === 'overwashed').length}
+                      {items.filter(item => item.status === 'overwashed' && (item.wearCount > 0 || item.washCount > 0)).length}
                     </Text>
                   </View>
                   <Text style={[styles.summaryItemText, { color: theme.text }]}>

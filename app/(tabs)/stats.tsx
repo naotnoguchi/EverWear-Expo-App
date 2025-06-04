@@ -781,7 +781,7 @@ export default function Stats() {
                 <View style={[styles.impactIconContainer, { backgroundColor: 'rgba(52, 152, 219, 0.1)' }]}>
                   <Ionicons name="water" size={24} color="#3498db" />
                 </View>
-                <Text style={styles.impactValue}>{impactData.totalWashesReduced}</Text>
+                <Text style={styles.impactValue}>{impactData.totalWashesReduced.toFixed(1)}</Text>
                 <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>洗濯回数削減</Text>
               </View>
 
@@ -807,7 +807,7 @@ export default function Stats() {
             </View>
 
             <Text style={[styles.impactDescription, { color: theme.text + "CC" }]}>
-              「着用するたびに洗濯する」場合と比較して、あなたは{impactData.totalWashesReduced}回の洗濯を削減しました。
+              「着用するたびに洗濯する」場合と比較して、あなたは{impactData.totalWashesReduced.toFixed(1)}回の洗濯を削減しました。
               これは約{impactData.treeEquivalent}本の木を植えるのと同等のCO2削減効果があります。
             </Text>
           </View>

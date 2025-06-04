@@ -185,61 +185,78 @@ export const addClothingItem = async (item: Omit<AppClothingItem, 'id'>, imageUr
 
   // Upload image if provided
   let imageUrl = item.image;
+  let uploadedImageUrl: string | null = null;
+
   if (imageUri && imageUri !== item.image) {
     console.log('Uploading image for item:', item.name);
-    const uploadedUrl = await uploadImage(imageUri, userId);
-    if (uploadedUrl) {
-      imageUrl = uploadedUrl;
+    uploadedImageUrl = await uploadImage(imageUri, userId);
+    if (uploadedImageUrl) {
+      console.log('Image uploaded successfully');
+      imageUrl = uploadedImageUrl;
     } else {
-      console.log('Failed to upload image, using default or provided URL');
+      console.log('Failed to upload image');
+      throw new Error('画像のアップロードに失敗しました。もう一度お試しください。');
     }
   }
 
-  // Find brand ID
-  console.log('Processing brand information for item:', item.name);
-  let brandId = null;
-  if (item.brand) {
-    console.log('Brand specified:', item.brand);
-    // Check if brand exists
-    console.log('Checking if brand exists in database');
-    const { data: existingBrand, error: brandError } = await authClient
-      .from('brands')
-      .select('id')
-      .eq('name', item.brand)
+  try {
+    // Find brand ID
+    console.log('Processing brand information for item:', item.name);
+    let brandId = null;
+    if (item.brand) {
+      console.log('Brand specified:', item.brand);
+      // Check if brand exists
+      console.log('Checking if brand exists in database');
+      const { data: existingBrand, error: brandError } = await authClient
+        .from('brands')
+        .select('id')
+        .eq('name', item.brand)
+        .single();
+
+      if (!brandError && existingBrand) {
+        console.log('Existing brand found with ID:', existingBrand.id);
+        brandId = existingBrand.id;
+      } else {
+        console.log('Brand not found in database:', item.brand);
+        // No longer creating new brands as they should be selected from master list
+      }
+    } else {
+      console.log('No brand specified for item');
+    }
+
+    // Convert to DB format with the new image URL
+    console.log('Converting item to database format');
+    const dbItem = toDbClothingItem({...item, image: imageUrl}, userId, brandId);
+
+    // Insert the item
+    console.log('Inserting item into clothing_items table');
+    const { data, error } = await authClient
+      .from('clothing_items')
+      .insert(dbItem)
+      .select()
       .single();
 
-    if (!brandError && existingBrand) {
-      console.log('Existing brand found with ID:', existingBrand.id);
-      brandId = existingBrand.id;
-    } else {
-      console.log('Brand not found in database:', item.brand);
-      // No longer creating new brands as they should be selected from master list
+    if (error) {
+      console.log('Error inserting item into database:', error);
+      throw error;
     }
-  } else {
-    console.log('No brand specified for item');
-  }
+    console.log('Successfully inserted item with ID:', data.id);
 
-  // Convert to DB format with the new image URL
-  console.log('Converting item to database format');
-  const dbItem = toDbClothingItem({...item, image: imageUrl}, userId, brandId);
+    // Return the new item with empty history arrays
+    console.log('Returning newly created item');
+    return toAppClothingItem(data, [], [], item.brand);
+  } catch (error) {
+    // If there was an error and we uploaded an image, delete it
+    if (uploadedImageUrl && uploadedImageUrl.includes('supabase')) {
+      console.log('Rolling back: Deleting uploaded image due to error');
+      await deleteImage(uploadedImageUrl).catch(deleteError => {
+        console.error('Error deleting image during rollback:', deleteError);
+      });
+    }
 
-  // Insert the item
-  console.log('Inserting item into clothing_items table');
-  const { data, error } = await authClient
-    .from('clothing_items')
-    .insert(dbItem)
-    .select()
-    .single();
-
-  if (error) {
-    console.log('Error inserting item into database:', error);
+    // Re-throw the error
     throw error;
   }
-  console.log('Successfully inserted item with ID:', data.id);
-
-  // Return the new item with empty history arrays
-  console.log('Returning newly created item');
-  return toAppClothingItem(data, [], [], item.brand);
 };
 
 // Update an existing clothing item
@@ -263,85 +280,109 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
 
   // Upload new image if provided
   let imageUrl = updates.image || currentItem.image;
+  let uploadedImageUrl: string | null = null;
+
   if (imageUri && imageUri !== currentItem.image && !imageUri.startsWith('http')) {
     console.log('Uploading new image for item update');
-    const uploadedUrl = await uploadImage(imageUri, userId);
-    if (uploadedUrl) {
-      imageUrl = uploadedUrl;
+    uploadedImageUrl = await uploadImage(imageUri, userId);
+    if (uploadedImageUrl) {
+      console.log('Image uploaded successfully');
+      imageUrl = uploadedImageUrl;
+    } else {
+      console.log('Failed to upload new image');
+      throw new Error('画像のアップロードに失敗しました。もう一度お試しください。');
+    }
+  }
 
-      // Delete old image if it exists and is not a default image
-      if (currentItem.image && currentItem.image.includes('supabase')) {
-        await deleteImage(currentItem.image);
+  try {
+    // Merge updates with current item and new image URL
+    const updatedItem = { ...currentItem, ...updates, image: imageUrl };
+
+    // Find brand ID if brand is being updated
+    let brandId = null;
+    if (updates.brand !== undefined) {
+      if (updates.brand) {
+        // Check if brand exists
+        const { data: existingBrand, error: brandError } = await authClient
+          .from('brands')
+          .select('id')
+          .eq('name', updates.brand)
+          .single();
+
+        if (!brandError && existingBrand) {
+          brandId = existingBrand.id;
+        } else {
+          // No longer creating new brands as they should be selected from master list
+          console.log('Brand not found in database:', updates.brand);
+        }
       }
     } else {
-      console.log('Failed to upload new image, keeping existing image');
-    }
-  }
-
-  // Merge updates with current item and new image URL
-  const updatedItem = { ...currentItem, ...updates, image: imageUrl };
-
-  // Find brand ID if brand is being updated
-  let brandId = null;
-  if (updates.brand !== undefined) {
-    if (updates.brand) {
-      // Check if brand exists
-      const { data: existingBrand, error: brandError } = await authClient
-        .from('brands')
-        .select('id')
-        .eq('name', updates.brand)
+      // If brand is not being updated, get the current brand_id
+      const { data: item, error: itemError } = await authClient
+        .from('clothing_items')
+        .select('brand_id')
+        .eq('id', id)
         .single();
 
-      if (!brandError && existingBrand) {
-        brandId = existingBrand.id;
-      } else {
-        // No longer creating new brands as they should be selected from master list
-        console.log('Brand not found in database:', updates.brand);
+      if (!itemError && item) {
+        brandId = item.brand_id;
       }
     }
-  } else {
-    // If brand is not being updated, get the current brand_id
-    const { data: item, error: itemError } = await authClient
+
+    // Convert to DB format
+    const dbItem = toDbClothingItem(updatedItem, userId, brandId);
+
+    // Update the item
+    const { data, error } = await authClient
       .from('clothing_items')
-      .select('brand_id')
+      .update(dbItem)
       .eq('id', id)
+      .eq('user_id', userId)
+      .select()
       .single();
 
-    if (!itemError && item) {
-      brandId = item.brand_id;
+    if (error) {
+      console.log('Error updating item in database:', error);
+      throw error;
     }
+
+    // Get updated history
+    const { data: wearHistory, error: wearError } = await db
+      .from('wear_history')
+      .select('*')
+      .eq('clothing_item_id', id);
+
+    if (wearError) throw wearError;
+
+    const { data: washHistory, error: washError } = await db
+      .from('wash_history')
+      .select('*')
+      .eq('clothing_item_id', id);
+
+    if (washError) throw washError;
+
+    // If we got here, the update was successful, so we can delete the old image if needed
+    if (uploadedImageUrl && currentItem.image && currentItem.image.includes('supabase')) {
+      console.log('Deleting old image after successful update');
+      await deleteImage(currentItem.image).catch(deleteError => {
+        console.error('Error deleting old image:', deleteError);
+        // We don't throw here because the update was successful
+      });
+    }
+
+    return toAppClothingItem(data, wearHistory, washHistory, updatedItem.brand);
+  } catch (error) {
+    // If there was an error and we uploaded a new image, delete it
+    if (uploadedImageUrl && uploadedImageUrl.includes('supabase')) {
+      console.log('Rolling back: Deleting newly uploaded image due to error');
+      await deleteImage(uploadedImageUrl).catch(deleteError => {
+        console.error('Error deleting image during rollback:', deleteError);
+      });
+    }
+
+    // Re-throw the error
+    throw error;
   }
-
-  // Convert to DB format
-  const dbItem = toDbClothingItem(updatedItem, userId, brandId);
-
-  // Update the item
-  const { data, error } = await authClient
-    .from('clothing_items')
-    .update(dbItem)
-    .eq('id', id)
-    .eq('user_id', userId)
-    .select()
-    .single();
-
-  if (error) throw error;
-
-  // Get updated history
-  const { data: wearHistory, error: wearError } = await db
-    .from('wear_history')
-    .select('*')
-    .eq('clothing_item_id', id);
-
-  if (wearError) throw wearError;
-
-  const { data: washHistory, error: washError } = await db
-    .from('wash_history')
-    .select('*')
-    .eq('clothing_item_id', id);
-
-  if (washError) throw washError;
-
-  return toAppClothingItem(data, wearHistory, washHistory, updatedItem.brand);
 };
 
 // Delete a clothing item

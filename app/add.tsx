@@ -141,7 +141,20 @@ export default function AddItem() {
 
       // エラーメッセージを表示
       const errorMessage = error instanceof Error ? error.message : "アイテムの追加に失敗しました";
-      Alert.alert("エラー", errorMessage);
+      Alert.alert(
+        "エラー", 
+        errorMessage,
+        [
+          {
+            text: "再試行",
+            onPress: () => handleAddItem()
+          },
+          {
+            text: "キャンセル",
+            style: "cancel"
+          }
+        ]
+      );
     }
   };
 

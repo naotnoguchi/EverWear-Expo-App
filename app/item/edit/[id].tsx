@@ -207,7 +207,20 @@ export default function EditItem() {
 
       // エラーメッセージを表示
       const errorMessage = error instanceof Error ? error.message : "アイテムの更新に失敗しました";
-      Alert.alert("エラー", errorMessage);
+      Alert.alert(
+        "エラー", 
+        errorMessage,
+        [
+          {
+            text: "再試行",
+            onPress: () => handleUpdateItem()
+          },
+          {
+            text: "キャンセル",
+            style: "cancel"
+          }
+        ]
+      );
     }
   };
 

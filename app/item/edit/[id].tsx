@@ -18,6 +18,7 @@ import * as Haptics from "expo-haptics";
 import BrandSelector from "@/components/BrandSelector";
 import { useClothing } from "@/contexts/ClothingContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { showImagePickerOptions } from "@/lib/imageUtils";
 
 // カテゴリ定義
 const categories = [
@@ -41,6 +42,7 @@ export default function EditItem() {
   const [washThreshold, setWashThreshold] = useState("3");
   const [imageUrl, setImageUrl] = useState("");
   const [imageSelected, setImageSelected] = useState(false);
+  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [memo, setMemo] = useState("");
   const [condition, setCondition] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
@@ -182,7 +184,7 @@ export default function EditItem() {
 
     try {
       // ClothingContextのupdateItem関数を呼び出してアイテムを更新
-      await updateItem(updatedItem);
+      await updateItem(updatedItem, selectedImageUri);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -209,11 +211,18 @@ export default function EditItem() {
     }
   };
 
-  const handleSelectImage = () => {
-    // 実際のアプリでは画像ピッカーを開く
-    setImageSelected(true);
-    triggerHaptic();
-    Alert.alert("画像選択", "画像が選択されました");
+  const handleSelectImage = async () => {
+    try {
+      const uri = await showImagePickerOptions();
+      if (uri) {
+        setSelectedImageUri(uri);
+        setImageSelected(true);
+        triggerHaptic();
+      }
+    } catch (error) {
+      console.error('Error selecting image:', error);
+      Alert.alert("エラー", "画像の選択中にエラーが発生しました");
+    }
   };
 
   const handleCategorySelect = (category: string) => {
@@ -449,7 +458,7 @@ export default function EditItem() {
                 {imageSelected ? (
                   <>
                     <Image 
-                      source={{ uri: imageUrl }} 
+                      source={{ uri: selectedImageUri || imageUrl }} 
                       style={styles.selectedImage} 
                       resizeMode="cover"
                     />

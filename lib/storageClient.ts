@@ -1,49 +1,52 @@
+import { StorageClient } from '@supabase/storage-js';
+import { auth } from './authClient';
+
 // Environment variables
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// This is a placeholder for the actual storage client
-// It will be implemented later when we integrate with Supabase Storage
-export const storage = {
-  // Placeholder for the from method that would normally be used to access buckets
-  from: (bucket: string) => {
-    console.log(`[Storage Placeholder] Attempted to access bucket: ${bucket}`);
-    return {
-      upload: (path: string, file: any, options?: any) => {
-        console.log(`[Storage Placeholder] Attempted to upload to ${path}`);
-        return {
-          data: null,
-          error: new Error('Storage functionality not implemented yet')
-        };
-      },
-      download: (path: string) => {
-        console.log(`[Storage Placeholder] Attempted to download from ${path}`);
-        return {
-          data: null,
-          error: new Error('Storage functionality not implemented yet')
-        };
-      },
-      getPublicUrl: (path: string) => {
-        console.log(`[Storage Placeholder] Attempted to get public URL for ${path}`);
-        return {
-          data: { publicUrl: '' },
-          error: null
-        };
-      },
-      remove: (paths: string[]) => {
-        console.log(`[Storage Placeholder] Attempted to remove paths: ${paths.join(', ')}`);
-        return {
-          data: null,
-          error: new Error('Storage functionality not implemented yet')
-        };
-      },
-      list: (prefix?: string) => {
-        console.log(`[Storage Placeholder] Attempted to list with prefix: ${prefix || 'none'}`);
-        return {
-          data: null,
-          error: new Error('Storage functionality not implemented yet')
-        };
-      }
-    };
+// 衣類画像用のバケット名
+export const CLOTHING_BUCKET = 'clothing-images';
+
+// Initialize StorageClient
+export const storage = new StorageClient(`${supabaseUrl}/storage/v1`, {
+  apikey: supabaseAnonKey,
+  Authorization: `Bearer ${supabaseAnonKey}`
+});
+
+// Function to get headers with auth token if available
+const getAuthHeaders = async () => {
+  const { data } = await auth.getSession();
+  const accessToken = data.session?.access_token;
+
+  return {
+    apikey: supabaseAnonKey,
+    Authorization: `Bearer ${accessToken || supabaseAnonKey}`
+  };
+};
+
+// Function to get an authenticated storage client
+export const getAuthenticatedStorage = async () => {
+  const headers = await getAuthHeaders();
+  return new StorageClient(`${supabaseUrl}/storage/v1`, headers);
+};
+
+// 認証済みユーザー専用のURLを取得する関数
+export const getPrivateUrl = async (path: string): Promise<string | null> => {
+  try {
+    const authStorage = await getAuthenticatedStorage();
+    const { data, error } = await authStorage
+      .from(CLOTHING_BUCKET)
+      .createSignedUrl(path, 60 * 60); // 1時間有効
+
+    if (error) {
+      console.error('Error getting signed URL:', error);
+      return null;
+    }
+
+    return data.signedUrl;
+  } catch (error) {
+    console.error('Error in getPrivateUrl:', error);
+    return null;
   }
 };

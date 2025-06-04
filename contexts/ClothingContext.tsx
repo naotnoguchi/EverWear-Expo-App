@@ -13,8 +13,8 @@ interface ClothingContextType {
   error: string | null;
   wearItem: (id: string, date?: string) => Promise<boolean>; // 成功時はtrue、重複時はfalseを返す
   washItem: (id: string, date?: string) => Promise<boolean>; // 成功時はtrue、重複時はfalseを返す
-  addItem: (item: Omit<ClothingItem, 'id'>) => Promise<void>;
-  updateItem: (item: ClothingItem) => Promise<void>;
+  addItem: (item: Omit<ClothingItem, 'id'>, imageUri?: string) => Promise<void>;
+  updateItem: (item: ClothingItem, imageUri?: string) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
   deleteWearHistory: (itemId: string, date: string) => Promise<boolean>; // 成功時はtrue、失敗時はfalseを返す
   deleteWashHistory: (itemId: string, date: string) => Promise<boolean>; // 成功時はtrue、失敗時はfalseを返す
@@ -178,9 +178,9 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addItem = async (item: Omit<ClothingItem, 'id'>) => {
+  const addItem = async (item: Omit<ClothingItem, 'id'>, imageUri?: string) => {
     try {
-      await clothingService.addClothingItem(item);
+      await clothingService.addClothingItem(item, imageUri);
       // データを再読み込み
       await loadData();
     } catch (err) {
@@ -191,9 +191,9 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateItem = async (updatedItem: ClothingItem) => {
+  const updateItem = async (updatedItem: ClothingItem, imageUri?: string) => {
     try {
-      await clothingService.updateClothingItem(updatedItem.id, updatedItem);
+      await clothingService.updateClothingItem(updatedItem.id, updatedItem, imageUri);
       // データを再読み込み
       await loadData();
     } catch (err) {

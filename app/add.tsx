@@ -10,6 +10,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -17,6 +18,7 @@ import * as Haptics from "expo-haptics";
 import BrandSelector from "../components/BrandSelector";
 import { useClothing } from "../contexts/ClothingContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { showImagePickerOptions } from "../lib/imageUtils";
 
 // カテゴリ定義
 const categories = [
@@ -37,6 +39,7 @@ export default function AddItem() {
   const [brand, setBrand] = useState(""); // ブランド状態を追加
   const [washThreshold, setWashThreshold] = useState("3");
   const [imageSelected, setImageSelected] = useState(false);
+  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [memo, setMemo] = useState("");
   const [condition, setCondition] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
@@ -114,7 +117,7 @@ export default function AddItem() {
 
     try {
       // アイテムをデータストアに追加
-      await addItem(newItem);
+      await addItem(newItem, selectedImageUri);
 
       // 成功通知
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -142,11 +145,18 @@ export default function AddItem() {
     }
   };
 
-  const handleSelectImage = () => {
-    // 実際のアプリでは画像ピッカーを開く
-    setImageSelected(true);
-    triggerHaptic();
-    Alert.alert("画像選択", "画像が選択されました");
+  const handleSelectImage = async () => {
+    try {
+      const uri = await showImagePickerOptions();
+      if (uri) {
+        setSelectedImageUri(uri);
+        setImageSelected(true);
+        triggerHaptic();
+      }
+    } catch (error) {
+      console.error('Error selecting image:', error);
+      Alert.alert("エラー", "画像の選択中にエラーが発生しました");
+    }
   };
 
   const handleCategorySelect = (category: string) => {
@@ -379,10 +389,19 @@ export default function AddItem() {
                 activeOpacity={0.7}
               >
                 {imageSelected ? (
-                  <BlurView intensity={20} style={styles.blurContainer}>
-                    <Ionicons name="checkmark-circle" size={60} color="#fff" />
-                    <Text style={styles.imageSelectedText}>画像選択済み</Text>
-                  </BlurView>
+                  <>
+                    {selectedImageUri && (
+                      <Image 
+                        source={{ uri: selectedImageUri }} 
+                        style={{ width: '100%', height: '100%', position: 'absolute' }} 
+                        resizeMode="cover"
+                      />
+                    )}
+                    <BlurView intensity={20} style={styles.blurContainer}>
+                      <Ionicons name="camera" size={40} color="#fff" />
+                      <Text style={styles.imageSelectedText}>タップして画像を変更</Text>
+                    </BlurView>
+                  </>
                 ) : (
                   <>
                     <Ionicons name="camera" size={40} color="#3498db" />

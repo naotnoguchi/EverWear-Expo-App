@@ -2,6 +2,7 @@ import { db, getAuthenticatedClient } from '../lib/dbClient';
 import { auth } from '../lib/authClient';
 import { AppClothingItem, toAppClothingItem, toDbClothingItem, Brand, ExtendedBrand } from '../types/database';
 import { BrandCache } from '../lib/brandCache';
+import { uploadImage, deleteImage } from '../lib/imageUtils';
 
 // Get all clothing items for the current user
 export const getClothingItems = async (): Promise<AppClothingItem[]> => {
@@ -167,7 +168,7 @@ export const getClothingItemById = async (id: string): Promise<AppClothingItem |
 };
 
 // Add a new clothing item
-export const addClothingItem = async (item: Omit<AppClothingItem, 'id'>): Promise<AppClothingItem> => {
+export const addClothingItem = async (item: Omit<AppClothingItem, 'id'>, imageUri?: string): Promise<AppClothingItem> => {
   console.log('Starting to add new clothing item:', item.name);
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
@@ -181,6 +182,18 @@ export const addClothingItem = async (item: Omit<AppClothingItem, 'id'>): Promis
   // Get authenticated client
   console.log('Getting authenticated client for database operations');
   const authClient = await getAuthenticatedClient();
+
+  // Upload image if provided
+  let imageUrl = item.image;
+  if (imageUri && imageUri !== item.image) {
+    console.log('Uploading image for item:', item.name);
+    const uploadedUrl = await uploadImage(imageUri, userId);
+    if (uploadedUrl) {
+      imageUrl = uploadedUrl;
+    } else {
+      console.log('Failed to upload image, using default or provided URL');
+    }
+  }
 
   // Find brand ID
   console.log('Processing brand information for item:', item.name);
@@ -206,9 +219,9 @@ export const addClothingItem = async (item: Omit<AppClothingItem, 'id'>): Promis
     console.log('No brand specified for item');
   }
 
-  // Convert to DB format
+  // Convert to DB format with the new image URL
   console.log('Converting item to database format');
-  const dbItem = toDbClothingItem(item, userId, brandId);
+  const dbItem = toDbClothingItem({...item, image: imageUrl}, userId, brandId);
 
   // Insert the item
   console.log('Inserting item into clothing_items table');
@@ -230,7 +243,7 @@ export const addClothingItem = async (item: Omit<AppClothingItem, 'id'>): Promis
 };
 
 // Update an existing clothing item
-export const updateClothingItem = async (id: string, updates: Partial<AppClothingItem>): Promise<AppClothingItem> => {
+export const updateClothingItem = async (id: string, updates: Partial<AppClothingItem>, imageUri?: string): Promise<AppClothingItem> => {
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
 
@@ -248,8 +261,25 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
     throw new Error('Item not found');
   }
 
-  // Merge updates with current item
-  const updatedItem = { ...currentItem, ...updates };
+  // Upload new image if provided
+  let imageUrl = updates.image || currentItem.image;
+  if (imageUri && imageUri !== currentItem.image && !imageUri.startsWith('http')) {
+    console.log('Uploading new image for item update');
+    const uploadedUrl = await uploadImage(imageUri, userId);
+    if (uploadedUrl) {
+      imageUrl = uploadedUrl;
+
+      // Delete old image if it exists and is not a default image
+      if (currentItem.image && currentItem.image.includes('supabase')) {
+        await deleteImage(currentItem.image);
+      }
+    } else {
+      console.log('Failed to upload new image, keeping existing image');
+    }
+  }
+
+  // Merge updates with current item and new image URL
+  const updatedItem = { ...currentItem, ...updates, image: imageUrl };
 
   // Find brand ID if brand is being updated
   let brandId = null;
@@ -330,6 +360,20 @@ export const deleteClothingItem = async (id: string): Promise<void> => {
   console.log('Getting authenticated client for database operations');
   const authClient = await getAuthenticatedClient();
 
+  // Get the item to check if it has a custom image
+  console.log('Getting item details to check for custom image');
+  const { data: item, error: getError } = await authClient
+    .from('clothing_items')
+    .select('image_url')
+    .eq('id', id)
+    .eq('user_id', userId)
+    .single();
+
+  if (getError) {
+    console.log('Error retrieving item details:', getError);
+    throw getError;
+  }
+
   // Delete the item (cascade will handle related records)
   console.log('Deleting item from clothing_items table');
   const { error } = await authClient
@@ -343,6 +387,12 @@ export const deleteClothingItem = async (id: string): Promise<void> => {
     throw error;
   }
   console.log('Successfully deleted item with ID:', id);
+
+  // Delete the image if it exists and is stored in Supabase
+  if (item && item.image_url && item.image_url.includes('supabase')) {
+    console.log('Deleting associated image from storage');
+    await deleteImage(item.image_url);
+  }
 };
 
 // Add a wear record

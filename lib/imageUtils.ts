@@ -174,10 +174,12 @@ export const uploadImage = async (uri: string, userId: string): Promise<string |
           if (signedUrl) {
             return signedUrl;
           }
-          return filePath;
+          // 署名付きURLの取得に失敗した場合はエラーとして扱う
+          console.error('Failed to get signed URL, returning null');
+          return null;
         } catch (urlError) {
           console.error('Error getting private URL:', urlError);
-          return filePath;
+          return null;
         }
       } else {
         // アップロード失敗

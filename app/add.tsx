@@ -11,9 +11,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import BrandSelector from "../components/BrandSelector";
 import { useClothing } from "../contexts/ClothingContext";
@@ -43,6 +43,8 @@ export default function AddItem() {
   const [memo, setMemo] = useState("");
   const [condition, setCondition] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isButtonPressed, setIsButtonPressed] = useState(false);
 
   // 触覚フィードバック
   const triggerHaptic = () => {
@@ -116,11 +118,17 @@ export default function AddItem() {
     };
 
     try {
+      // ローディング状態を開始
+      setIsLoading(true);
+
       // アイテムをデータストアに追加
       await addItem(newItem, selectedImageUri);
 
       // 成功通知
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // ローディング状態を終了
+      setIsLoading(false);
 
       Alert.alert(
         "成功",
@@ -136,6 +144,9 @@ export default function AddItem() {
         ]
       );
     } catch (error) {
+      // ローディング状態を終了
+      setIsLoading(false);
+
       // エラー通知
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
@@ -228,7 +239,7 @@ export default function AddItem() {
       height: "100%",
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: "rgba(52, 152, 219, 0.6)",
+      backgroundColor: "rgba(52, 152, 219, 0.4)",
     },
     imageText: {
       marginTop: 12,
@@ -354,6 +365,13 @@ export default function AddItem() {
       shadowRadius: 8,
       elevation: 4,
     },
+    addButtonPressed: {
+      backgroundColor: "#2980b9", // ボタンが押されたときの色
+      transform: [{ scale: 0.98 }], // ボタンが押されたときに少し縮小
+    },
+    addButtonDisabled: {
+      backgroundColor: "#3498db99", // ボタンが無効のときの色
+    },
     addButtonIcon: {
       marginRight: 8,
     },
@@ -361,6 +379,9 @@ export default function AddItem() {
       color: "#fff",
       fontSize: 16,
       fontWeight: "bold",
+    },
+    loadingIndicator: {
+      marginRight: 8,
     },
   });
 
@@ -410,10 +431,10 @@ export default function AddItem() {
                         resizeMode="cover"
                       />
                     )}
-                    <BlurView intensity={20} style={styles.blurContainer}>
+                    <View style={styles.blurContainer}>
                       <Ionicons name="camera" size={40} color="#fff" />
                       <Text style={styles.imageSelectedText}>タップして画像を変更</Text>
-                    </BlurView>
+                    </View>
                   </>
                 ) : (
                   <>
@@ -610,11 +631,28 @@ export default function AddItem() {
 
             {/* 追加ボタン */}
             <TouchableOpacity
-              style={styles.addButton}
+              style={[
+                styles.addButton,
+                isLoading && styles.addButtonDisabled,
+                isButtonPressed && styles.addButtonPressed
+              ]}
               onPress={handleAddItem}
               activeOpacity={0.8}
+              disabled={isLoading}
+              pressRetentionOffset={{ top: 10, left: 10, bottom: 10, right: 10 }}
+              onPressIn={() => {
+                triggerHaptic();
+                setIsButtonPressed(true);
+              }}
+              onPressOut={() => {
+                setIsButtonPressed(false);
+              }}
             >
-              <Ionicons name="save-outline" size={20} color="#fff" /* Keep white for contrast on blue background */ style={styles.addButtonIcon} />
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#fff" style={styles.loadingIndicator} />
+              ) : (
+                <Ionicons name="save-outline" size={20} color="#fff" style={styles.addButtonIcon} />
+              )}
               <Text style={styles.addButtonText}>アイテムを追加</Text>
             </TouchableOpacity>
           </View>

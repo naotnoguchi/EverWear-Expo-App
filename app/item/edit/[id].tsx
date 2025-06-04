@@ -11,9 +11,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import BrandSelector from "@/components/BrandSelector";
 import { useClothing } from "@/contexts/ClothingContext";
@@ -46,6 +46,8 @@ export default function EditItem() {
   const [memo, setMemo] = useState("");
   const [condition, setCondition] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isButtonPressed, setIsButtonPressed] = useState(false);
 
   // 初期値を保存するための状態
   const [initialValues, setInitialValues] = useState({
@@ -183,10 +185,16 @@ export default function EditItem() {
     };
 
     try {
+      // ローディング状態を開始
+      setIsLoading(true);
+
       // ClothingContextのupdateItem関数を呼び出してアイテムを更新
       await updateItem(updatedItem, selectedImageUri);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // ローディング状態を終了
+      setIsLoading(false);
 
       Alert.alert(
         "成功",
@@ -202,6 +210,9 @@ export default function EditItem() {
         ]
       );
     } catch (error) {
+      // ローディング状態を終了
+      setIsLoading(false);
+
       // エラー通知
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
@@ -299,6 +310,7 @@ export default function EditItem() {
       height: "100%",
       justifyContent: "center",
       alignItems: "center",
+      backgroundColor: "rgba(52, 152, 219, 0.4)",
     },
     imageText: {
       marginTop: 12,
@@ -417,6 +429,18 @@ export default function EditItem() {
       justifyContent: "center",
       alignItems: "center",
       marginTop: 8,
+      shadowColor: "#3498db",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    addButtonPressed: {
+      backgroundColor: "#2980b9", // ボタンが押されたときの色
+      transform: [{ scale: 0.98 }], // ボタンが押されたときに少し縮小
+    },
+    addButtonDisabled: {
+      backgroundColor: "#3498db99", // ボタンが無効のときの色
     },
     addButtonIcon: {
       marginRight: 8,
@@ -425,6 +449,9 @@ export default function EditItem() {
       color: "#fff",
       fontSize: 16,
       fontWeight: "600",
+    },
+    loadingIndicator: {
+      marginRight: 8,
     },
   });
 
@@ -475,10 +502,10 @@ export default function EditItem() {
                       style={styles.selectedImage} 
                       resizeMode="cover"
                     />
-                    <BlurView intensity={20} style={styles.blurContainer}>
+                    <View style={styles.blurContainer}>
                       <Ionicons name="camera" size={40} color="#fff" />
                       <Text style={styles.imageSelectedText}>タップして画像を変更</Text>
-                    </BlurView>
+                    </View>
                   </>
                 ) : (
                   <>
@@ -675,11 +702,28 @@ export default function EditItem() {
 
             {/* 更新ボタン */}
             <TouchableOpacity
-              style={styles.addButton}
+              style={[
+                styles.addButton,
+                isLoading && styles.addButtonDisabled,
+                isButtonPressed && styles.addButtonPressed
+              ]}
               onPress={handleUpdateItem}
               activeOpacity={0.8}
+              disabled={isLoading}
+              pressRetentionOffset={{ top: 10, left: 10, bottom: 10, right: 10 }}
+              onPressIn={() => {
+                triggerHaptic();
+                setIsButtonPressed(true);
+              }}
+              onPressOut={() => {
+                setIsButtonPressed(false);
+              }}
             >
-              <Ionicons name="save-outline" size={20} color="#fff" /* Keep white for contrast on blue background */ style={styles.addButtonIcon} />
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#fff" style={styles.loadingIndicator} />
+              ) : (
+                <Ionicons name="save-outline" size={20} color="#fff" style={styles.addButtonIcon} />
+              )}
               <Text style={styles.addButtonText}>変更を保存</Text>
             </TouchableOpacity>
           </View>

@@ -579,7 +579,10 @@ export default function ItemDetail() {
       </Modal>
 
       <Image 
-        source={{ uri: imageUrl || item.image }} 
+        source={{ 
+          uri: imageUrl || item.image,
+          cacheKey: item?.image
+        }} 
         style={styles.itemImage} 
         contentFit="cover"
         transition={200}

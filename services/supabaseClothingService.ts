@@ -405,7 +405,7 @@ export const deleteClothingItem = async (id: string): Promise<void> => {
   console.log('Getting item details to check for custom image');
   const { data: item, error: getError } = await authClient
     .from('clothing_items')
-    .select('image_url')
+    .select('image_path')
     .eq('id', id)
     .eq('user_id', userId)
     .single();
@@ -429,10 +429,10 @@ export const deleteClothingItem = async (id: string): Promise<void> => {
   }
   console.log('Successfully deleted item with ID:', id);
 
-  // Delete the image if it exists and is stored in Supabase
-  if (item && item.image_url && item.image_url.includes('supabase')) {
+  // Delete the image if it exists
+  if (item && item.image_path) {
     console.log('Deleting associated image from storage');
-    await deleteImage(item.image_url);
+    await deleteImage(item.image_path);
   }
 };
 

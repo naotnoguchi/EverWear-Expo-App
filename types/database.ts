@@ -15,7 +15,7 @@ export interface ClothingItem {
   name: string;
   category: CategoryValue;
   brand_id: string | null;
-  image_url: string | null;
+  image_path: string | null; // Changed from image_url to image_path
   wear_count: number;
   wash_threshold: number;
   last_worn: string | null; // ISO date string
@@ -165,7 +165,7 @@ export const toAppClothingItem = (dbItem: ClothingItem, wearHistory: WearHistory
     name: dbItem.name,
     category: dbItem.category,
     brand: brandName || '',
-    image: dbItem.image_url || '',
+    image: dbItem.image_path || '',
     wearCount: dbItem.wear_count,
     washThreshold: dbItem.wash_threshold,
     lastWorn: dbItem.last_worn || '',
@@ -183,7 +183,7 @@ export const toDbClothingItem = (appItem: Partial<AppClothingItem>, userId: stri
     name: appItem.name || '',
     category: appItem.category || null,
     brand_id: brandId || null,
-    image_url: appItem.image || null,
+    image_path: appItem.image || null,
     wear_count: appItem.wearCount || 0,
     wash_threshold: appItem.washThreshold || 3,
     last_worn: appItem.lastWorn || null,

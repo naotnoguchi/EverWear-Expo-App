@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert, Modal, Platform, useColorScheme } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Platform, useColorScheme } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
 import { StatusBar } from 'expo-status-bar';
@@ -8,6 +9,7 @@ import ItemCalendar from "../../components/ItemCalendar";
 import { useClothing } from "../../contexts/ClothingContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { formatDateToLocalISOString, formatDateJapanese } from '../../lib/dateUtils';
+import { getImageUrl } from '../../lib/storageClient';
 
 // インターフェース定義
 interface ClothingItem {
@@ -34,6 +36,7 @@ export default function ItemDetail() {
   const [item, setItem] = useState<ClothingItem | null>(null);
   const colorScheme = useColorScheme(); // 現在のカラースキーム（ライト/ダーク）を取得
   const theme = useTheme(); // テーマの取得
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   // 日付選択用の状態
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -49,6 +52,23 @@ export default function ItemDetail() {
     const foundItem = clothingItems.find(item => item.id === id);
     setItem(foundItem || null);
   }, [id, clothingItems]);
+
+  // 画像URLを生成するためのuseEffect
+  useEffect(() => {
+    const loadImageUrl = async () => {
+      if (!item) return;
+
+      try {
+        const url = await getImageUrl(item.image);
+        setImageUrl(url);
+      } catch (error) {
+        console.error(`Error generating URL for item ${item.id}:`, error);
+        setImageUrl(item.image); // Fallback to the original path/URL
+      }
+    };
+
+    loadImageUrl();
+  }, [item]);
 
 
   // 日付選択の変更ハンドラー
@@ -559,9 +579,10 @@ export default function ItemDetail() {
       </Modal>
 
       <Image 
-        source={{ uri: item.image }} 
+        source={{ uri: imageUrl || item.image }} 
         style={styles.itemImage} 
-        resizeMode="cover"
+        contentFit="cover"
+        transition={200}
       />
 
       <View style={styles.detailsContainer}>

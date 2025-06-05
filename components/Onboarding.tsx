@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   Dimensions,
   FlatList,
-  Image,
   SafeAreaView,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useOnboarding } from '../contexts/OnboardingContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';

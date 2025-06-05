@@ -10,15 +10,16 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Image,
   ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import BrandSelector from "@/components/BrandSelector";
 import { useClothing } from "@/contexts/ClothingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { showImagePickerOptions } from "@/lib/imageUtils";
+import { getImageUrl } from "@/lib/storageClient";
 
 // カテゴリ定義
 const categories = [
@@ -41,6 +42,7 @@ export default function EditItem() {
   const [brand, setBrand] = useState(""); // ブランド状態を追加
   const [washThreshold, setWashThreshold] = useState("3");
   const [imageUrl, setImageUrl] = useState("");
+  const [signedImageUrl, setSignedImageUrl] = useState<string | null>(null);
   const [imageSelected, setImageSelected] = useState(false);
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [memo, setMemo] = useState("");
@@ -93,6 +95,23 @@ export default function EditItem() {
       });
     }
   }, [id, clothingItems]);
+
+  // 画像URLを生成するためのuseEffect
+  useEffect(() => {
+    const loadSignedImageUrl = async () => {
+      if (!imageUrl) return;
+
+      try {
+        const url = await getImageUrl(imageUrl);
+        setSignedImageUrl(url);
+      } catch (error) {
+        console.error(`Error generating signed URL:`, error);
+        setSignedImageUrl(imageUrl); // Fallback to the original path/URL
+      }
+    };
+
+    loadSignedImageUrl();
+  }, [imageUrl]);
 
   // 触覚フィードバック
   const triggerHaptic = () => {
@@ -498,9 +517,10 @@ export default function EditItem() {
                 {imageSelected ? (
                   <>
                     <Image 
-                      source={{ uri: selectedImageUri || imageUrl }} 
+                      source={{ uri: selectedImageUri || signedImageUrl || imageUrl }} 
                       style={styles.selectedImage} 
-                      resizeMode="cover"
+                      contentFit="cover"
+                      transition={200}
                     />
                     <View style={styles.blurContainer}>
                       <Ionicons name="camera" size={40} color="#fff" />

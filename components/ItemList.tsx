@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
-import { FlatList, TouchableOpacity, Text, View, Image, Alert, StyleSheet, Modal, Platform, useColorScheme } from "react-native";
+import { FlatList, TouchableOpacity, Text, View, Alert, StyleSheet, Modal, Platform, useColorScheme } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from 'expo-status-bar';
@@ -9,6 +10,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { formatDateToLocalISOString, formatDateJapanese } from '../lib/dateUtils';
 import { CategoryValue } from '../types/categories';
 import { ActivityIndicator } from 'react-native';
+import { getImageUrl, getPrivateUrls } from '../lib/storageClient';
 
 // 公開するメソッドの型定義
 export type ItemListRefType = {
@@ -62,6 +64,33 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
   const [showWearModal, setShowWearModal] = useState(false);
   const [showWashModal, setShowWashModal] = useState(false);
 
+  // 画像URL管理用の状態
+  const [imageUrls, setImageUrls] = useState<Record<string, string | null>>({});
+
+  // 画像URLを生成するためのuseEffect
+  useEffect(() => {
+    const loadImageUrls = async () => {
+      if (!clothingItems.length) return;
+
+      // 既存のURLをクリア
+      const newImageUrls: Record<string, string | null> = {};
+
+      // 各アイテムの画像パスからURLを生成
+      for (const item of clothingItems) {
+        try {
+          const url = await getImageUrl(item.image);
+          newImageUrls[item.id] = url;
+        } catch (error) {
+          console.error(`Error generating URL for item ${item.id}:`, error);
+          newImageUrls[item.id] = null;
+        }
+      }
+
+      setImageUrls(newImageUrls);
+    };
+
+    loadImageUrls();
+  }, [clothingItems]);
 
   // カテゴリでフィルタリングおよび着用メーターの長さが長い順にソートを適用
   const getFilteredAndSortedItems = () => {
@@ -219,9 +248,10 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
         activeOpacity={0.7}
       >
         <Image
-          source={{ uri: item.image }}
+          source={{ uri: imageUrls[item.id] || item.image }}
           style={styles.itemImage}
-          resizeMode="cover"
+          contentFit="cover"
+          transition={200}
         />
         <View style={styles.contentContainer}>
           <View style={styles.itemDetails}>

@@ -17,7 +17,7 @@ CREATE TABLE clothing_items (
   name TEXT NOT NULL,
   category TEXT NOT NULL,
   brand_id UUID REFERENCES brands(id),
-  image_url TEXT,
+  image_path TEXT,
   wear_count INTEGER DEFAULT 0,
   wash_threshold INTEGER DEFAULT 3,
   last_worn DATE,

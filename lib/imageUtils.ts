@@ -9,6 +9,21 @@ import {
 } from './storageClient';
 import { auth } from './authClient';
 
+// UUIDを生成するヘルパー関数
+const generateUUID = (): string => {
+  // タイムスタンプ部分（最初の8文字 + 中間の4文字 + 次の4文字）
+  const timestamp = Date.now().toString(16).padStart(12, '0');
+
+  // ランダム部分（残りの16文字）
+  const randomPart = Array.from({ length: 16 }, () => 
+    Math.floor(Math.random() * 16).toString(16)
+  ).join('');
+
+  // UUID形式に整形: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  return `${timestamp.slice(0, 8)}-${timestamp.slice(8, 12)}-4${randomPart.slice(0, 3)}-${
+    (8 + Math.floor(Math.random() * 4)).toString(16)}${randomPart.slice(3, 6)}-${randomPart.slice(6, 18)}`;
+};
+
 // Environment variables
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -127,8 +142,9 @@ export const uploadImage = async (uri: string, userId: string): Promise<string |
     // ファイル拡張子を取得
     const extension = getFileExtension(uri);
 
-    // ファイル名を生成（ユーザーIDとタイムスタンプを含む）
-    const fileName = `${userId}_${Date.now()}.${extension}`;
+    // ファイル名を生成（ユーザーIDとUUIDを含む）
+    const uuid = generateUUID();
+    const fileName = `${uuid}.${extension}`;
     const filePath = `${userId}/${fileName}`; // ユーザーIDでフォルダ分け
 
     // ファイルの内容を取得
@@ -168,19 +184,8 @@ export const uploadImage = async (uri: string, userId: string): Promise<string |
         // アップロード成功
         console.log('Upload successful');
 
-        // 認証済みURLを取得（プライベートアクセス用）
-        try {
-          const signedUrl = await getPrivateUrl(filePath);
-          if (signedUrl) {
-            return signedUrl;
-          }
-          // 署名付きURLの取得に失敗した場合はエラーとして扱う
-          console.error('Failed to get signed URL, returning null');
-          return null;
-        } catch (urlError) {
-          console.error('Error getting private URL:', urlError);
-          return null;
-        }
+        // パスを返す（署名付きURLではなく）
+        return filePath;
       } else {
         // アップロード失敗
         console.error('Upload failed with status:', uploadResult.status);
@@ -197,12 +202,20 @@ export const uploadImage = async (uri: string, userId: string): Promise<string |
 };
 
 // 画像を削除する関数
-export const deleteImage = async (imageUrl: string): Promise<boolean> => {
+export const deleteImage = async (imagePath: string): Promise<boolean> => {
   try {
-    // URLからファイルパスを抽出
-    const urlObj = new URL(imageUrl);
-    const pathParts = urlObj.pathname.split('/');
-    const filePath = pathParts.slice(pathParts.indexOf('object') + 1).join('/');
+    // 入力がURLの場合はパスを抽出
+    let filePath = imagePath;
+    if (imagePath.startsWith('http')) {
+      try {
+        const urlObj = new URL(imagePath);
+        const pathParts = urlObj.pathname.split('/');
+        filePath = pathParts.slice(pathParts.indexOf('object') + 1).join('/');
+      } catch (parseError) {
+        console.error('Error parsing URL:', parseError);
+        return false;
+      }
+    }
 
     if (!filePath) return false;
 

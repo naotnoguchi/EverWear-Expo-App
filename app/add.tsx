@@ -106,7 +106,7 @@ export default function AddItem() {
       name: name,
       category: selectedCategory,
       brand: brand,
-      image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=776&q=80", // ダミー画像URL
+      image: "", // 空の文字列を設定（アップロード後にパスが設定される）
       washThreshold: Number(washThreshold),
       lastWorn: "",
       wearCount: 0,

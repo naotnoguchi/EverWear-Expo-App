@@ -50,3 +50,38 @@ export const getPrivateUrl = async (path: string): Promise<string | null> => {
     return null;
   }
 };
+
+// 複数の画像パスから署名付きURLを一括取得する関数
+export const getPrivateUrls = async (paths: string[]): Promise<(string | null)[]> => {
+  if (!paths || paths.length === 0) return [];
+
+  try {
+    const authStorage = await getAuthenticatedStorage();
+    const { data, error } = await authStorage
+      .from(CLOTHING_BUCKET)
+      .createSignedUrls(paths, 60 * 60); // 1時間有効
+
+    if (error) {
+      console.error('Error getting signed URLs:', error);
+      return paths.map(() => null);
+    }
+
+    return data.map(item => item.signedUrl);
+  } catch (error) {
+    console.error('Error in getPrivateUrls:', error);
+    return paths.map(() => null);
+  }
+};
+
+// 画像パスからURLを取得する関数（既存のURLはそのまま返す）
+export const getImageUrl = async (imagePath: string | null): Promise<string | null> => {
+  if (!imagePath) return null;
+
+  // 既にURLの場合はそのまま返す
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+
+  // パスの場合は署名付きURLを取得
+  return await getPrivateUrl(imagePath);
+};

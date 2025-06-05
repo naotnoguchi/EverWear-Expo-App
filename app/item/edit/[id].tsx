@@ -517,7 +517,10 @@ export default function EditItem() {
                 {imageSelected ? (
                   <>
                     <Image 
-                      source={{ uri: selectedImageUri || signedImageUrl || imageUrl }} 
+                      source={{ 
+                        uri: selectedImageUri || signedImageUrl || imageUrl,
+                        cacheKey: imageUrl
+                      }} 
                       style={styles.selectedImage} 
                       contentFit="cover"
                       transition={200}

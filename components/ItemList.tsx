@@ -248,7 +248,10 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
         activeOpacity={0.7}
       >
         <Image
-          source={{ uri: imageUrls[item.id] || item.image }}
+          source={{ 
+            uri: imageUrls[item.id] || item.image,
+            cacheKey: item.image
+          }}
           style={styles.itemImage}
           contentFit="cover"
           transition={200}

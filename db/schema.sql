@@ -313,3 +313,500 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- Note: No conditions for efficient-washer as it has special logic in the code
+
+-- Function to add a wear record and return the updated item
+CREATE OR REPLACE FUNCTION public.add_wear_record_and_return_item(
+  item_id_param UUID,
+  wear_date_param DATE,
+  user_id_param UUID
+)
+RETURNS TABLE (
+  id UUID,
+  name TEXT,
+  category TEXT,
+  brand_id UUID,
+  brand_name TEXT,
+  image_path TEXT,
+  wear_count INTEGER,
+  wash_threshold INTEGER,
+  last_worn DATE,
+  memo TEXT,
+  condition TEXT,
+  purchase_price NUMERIC,
+  created_at TIMESTAMP WITH TIME ZONE,
+  updated_at TIMESTAMP WITH TIME ZONE,
+  wear_history JSONB,
+  wash_history JSONB
+) 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  item_exists INTEGER;
+  latest_wash_date DATE;
+  new_wear_count INTEGER;
+BEGIN
+  -- Verify the item belongs to the user
+  SELECT COUNT(*) INTO item_exists
+  FROM clothing_items
+  WHERE clothing_items.id = item_id_param AND user_id = user_id_param;
+
+  IF item_exists = 0 THEN
+    RAISE EXCEPTION 'Item not found or does not belong to the user';
+  END IF;
+
+  -- Add wear record
+  INSERT INTO wear_history (clothing_item_id, wear_date)
+  VALUES (item_id_param, wear_date_param);
+
+  -- Get the latest wash date
+  SELECT MAX(wash_date) INTO latest_wash_date
+  FROM wash_history
+  WHERE clothing_item_id = item_id_param;
+
+  -- Calculate wear count
+  IF latest_wash_date IS NOT NULL THEN
+    -- Count wears after the latest wash
+    SELECT COUNT(*) INTO new_wear_count
+    FROM wear_history
+    WHERE clothing_item_id = item_id_param
+    AND wear_date > latest_wash_date;
+  ELSE
+    -- Count all wears
+    SELECT COUNT(*) INTO new_wear_count
+    FROM wear_history
+    WHERE clothing_item_id = item_id_param;
+  END IF;
+
+  -- Update the clothing item
+  UPDATE clothing_items
+  SET last_worn = wear_date_param,
+      wear_count = new_wear_count,
+      updated_at = NOW()
+  WHERE clothing_items.id = item_id_param;
+
+  -- Return the updated item with history
+  RETURN QUERY
+  SELECT 
+    ci.id,
+    ci.name,
+    ci.category,
+    ci.brand_id,
+    b.name as brand_name,
+    ci.image_path,
+    ci.wear_count,
+    ci.wash_threshold,
+    ci.last_worn,
+    ci.memo,
+    ci.condition,
+    ci.purchase_price,
+    ci.created_at,
+    ci.updated_at,
+    (
+      SELECT COALESCE(jsonb_agg(wh.wear_date ORDER BY wh.wear_date DESC), '[]'::jsonb)
+      FROM wear_history wh
+      WHERE wh.clothing_item_id = ci.id
+    ) as wear_history,
+    (
+      SELECT COALESCE(jsonb_agg(wh.wash_date ORDER BY wh.wash_date DESC), '[]'::jsonb)
+      FROM wash_history wh
+      WHERE wh.clothing_item_id = ci.id
+    ) as wash_history
+  FROM 
+    clothing_items ci
+  LEFT JOIN 
+    brands b ON ci.brand_id = b.id
+  WHERE 
+    ci.id = item_id_param;
+END;
+$$;
+
+-- Function to delete a wear record and return the updated item
+CREATE OR REPLACE FUNCTION public.delete_wear_record_and_return_item(
+  item_id_param UUID,
+  wear_date_param DATE,
+  user_id_param UUID
+)
+RETURNS TABLE (
+  id UUID,
+  name TEXT,
+  category TEXT,
+  brand_id UUID,
+  brand_name TEXT,
+  image_path TEXT,
+  wear_count INTEGER,
+  wash_threshold INTEGER,
+  last_worn DATE,
+  memo TEXT,
+  condition TEXT,
+  purchase_price NUMERIC,
+  created_at TIMESTAMP WITH TIME ZONE,
+  updated_at TIMESTAMP WITH TIME ZONE,
+  wear_history JSONB,
+  wash_history JSONB
+) 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  item_exists INTEGER;
+  record_exists INTEGER;
+  latest_wash_date DATE;
+  new_last_worn DATE;
+  new_wear_count INTEGER;
+BEGIN
+  -- Verify the item belongs to the user
+  SELECT COUNT(*) INTO item_exists
+  FROM clothing_items
+  WHERE clothing_items.id = item_id_param AND user_id = user_id_param;
+
+  IF item_exists = 0 THEN
+    RAISE EXCEPTION 'Item not found or does not belong to the user';
+  END IF;
+
+  -- Verify the wear record exists
+  SELECT COUNT(*) INTO record_exists
+  FROM wear_history
+  WHERE clothing_item_id = item_id_param AND wear_date = wear_date_param;
+
+  IF record_exists = 0 THEN
+    RAISE EXCEPTION 'Wear record not found for the given clothing item ID and date';
+  END IF;
+
+  -- Delete the wear record
+  DELETE FROM wear_history
+  WHERE clothing_item_id = item_id_param AND wear_date = wear_date_param;
+
+  -- Get the latest wear date after deletion
+  SELECT MAX(wear_date) INTO new_last_worn
+  FROM wear_history
+  WHERE clothing_item_id = item_id_param;
+
+  -- Get the latest wash date
+  SELECT MAX(wash_date) INTO latest_wash_date
+  FROM wash_history
+  WHERE clothing_item_id = item_id_param;
+
+  -- Calculate wear count
+  IF latest_wash_date IS NOT NULL THEN
+    -- Count wears after the latest wash
+    SELECT COUNT(*) INTO new_wear_count
+    FROM wear_history
+    WHERE clothing_item_id = item_id_param
+    AND wear_date > latest_wash_date;
+  ELSE
+    -- Count all wears
+    SELECT COUNT(*) INTO new_wear_count
+    FROM wear_history
+    WHERE clothing_item_id = item_id_param;
+  END IF;
+
+  -- Update the clothing item
+  UPDATE clothing_items
+  SET last_worn = new_last_worn,
+      wear_count = new_wear_count,
+      updated_at = NOW()
+  WHERE clothing_items.id = item_id_param;
+
+  -- Return the updated item with history
+  RETURN QUERY
+  SELECT 
+    ci.id,
+    ci.name,
+    ci.category,
+    ci.brand_id,
+    b.name as brand_name,
+    ci.image_path,
+    ci.wear_count,
+    ci.wash_threshold,
+    ci.last_worn,
+    ci.memo,
+    ci.condition,
+    ci.purchase_price,
+    ci.created_at,
+    ci.updated_at,
+    (
+      SELECT COALESCE(jsonb_agg(wh.wear_date ORDER BY wh.wear_date DESC), '[]'::jsonb)
+      FROM wear_history wh
+      WHERE wh.clothing_item_id = ci.id
+    ) as wear_history,
+    (
+      SELECT COALESCE(jsonb_agg(wh.wash_date ORDER BY wh.wash_date DESC), '[]'::jsonb)
+      FROM wash_history wh
+      WHERE wh.clothing_item_id = ci.id
+    ) as wash_history
+  FROM 
+    clothing_items ci
+  LEFT JOIN 
+    brands b ON ci.brand_id = b.id
+  WHERE 
+    ci.id = item_id_param;
+END;
+$$;
+
+-- Function to add a wash record and return the updated item
+CREATE OR REPLACE FUNCTION public.add_wash_record_and_return_item(
+  item_id_param UUID,
+  wash_date_param DATE,
+  user_id_param UUID
+)
+RETURNS TABLE (
+  id UUID,
+  name TEXT,
+  category TEXT,
+  brand_id UUID,
+  brand_name TEXT,
+  image_path TEXT,
+  wear_count INTEGER,
+  wash_threshold INTEGER,
+  last_worn DATE,
+  memo TEXT,
+  condition TEXT,
+  purchase_price NUMERIC,
+  created_at TIMESTAMP WITH TIME ZONE,
+  updated_at TIMESTAMP WITH TIME ZONE,
+  wear_history JSONB,
+  wash_history JSONB
+) 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  item_exists INTEGER;
+  new_wear_count INTEGER;
+BEGIN
+  -- Verify the item belongs to the user
+  SELECT COUNT(*) INTO item_exists
+  FROM clothing_items
+  WHERE clothing_items.id = item_id_param AND user_id = user_id_param;
+
+  IF item_exists = 0 THEN
+    RAISE EXCEPTION 'Item not found or does not belong to the user';
+  END IF;
+
+  -- Add wash record
+  INSERT INTO wash_history (clothing_item_id, wash_date)
+  VALUES (item_id_param, wash_date_param);
+
+  -- Calculate wear count (wears after this wash)
+  SELECT COUNT(*) INTO new_wear_count
+  FROM wear_history
+  WHERE clothing_item_id = item_id_param
+  AND wear_date > wash_date_param;
+
+  -- Update the clothing item
+  UPDATE clothing_items
+  SET wear_count = new_wear_count,
+      updated_at = NOW()
+  WHERE clothing_items.id = item_id_param;
+
+  -- Return the updated item with history
+  RETURN QUERY
+  SELECT 
+    ci.id,
+    ci.name,
+    ci.category,
+    ci.brand_id,
+    b.name as brand_name,
+    ci.image_path,
+    ci.wear_count,
+    ci.wash_threshold,
+    ci.last_worn,
+    ci.memo,
+    ci.condition,
+    ci.purchase_price,
+    ci.created_at,
+    ci.updated_at,
+    (
+      SELECT COALESCE(jsonb_agg(wh.wear_date ORDER BY wh.wear_date DESC), '[]'::jsonb)
+      FROM wear_history wh
+      WHERE wh.clothing_item_id = ci.id
+    ) as wear_history,
+    (
+      SELECT COALESCE(jsonb_agg(wh.wash_date ORDER BY wh.wash_date DESC), '[]'::jsonb)
+      FROM wash_history wh
+      WHERE wh.clothing_item_id = ci.id
+    ) as wash_history
+  FROM 
+    clothing_items ci
+  LEFT JOIN 
+    brands b ON ci.brand_id = b.id
+  WHERE 
+    ci.id = item_id_param;
+END;
+$$;
+
+-- Function to delete a wash record and return the updated item
+CREATE OR REPLACE FUNCTION public.delete_wash_record_and_return_item(
+  item_id_param UUID,
+  wash_date_param DATE,
+  user_id_param UUID
+)
+RETURNS TABLE (
+  id UUID,
+  name TEXT,
+  category TEXT,
+  brand_id UUID,
+  brand_name TEXT,
+  image_path TEXT,
+  wear_count INTEGER,
+  wash_threshold INTEGER,
+  last_worn DATE,
+  memo TEXT,
+  condition TEXT,
+  purchase_price NUMERIC,
+  created_at TIMESTAMP WITH TIME ZONE,
+  updated_at TIMESTAMP WITH TIME ZONE,
+  wear_history JSONB,
+  wash_history JSONB
+) 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  item_exists INTEGER;
+  record_exists INTEGER;
+  latest_wash_date DATE;
+  new_wear_count INTEGER;
+BEGIN
+  -- Verify the item belongs to the user
+  SELECT COUNT(*) INTO item_exists
+  FROM clothing_items
+  WHERE clothing_items.id = item_id_param AND user_id = user_id_param;
+
+  IF item_exists = 0 THEN
+    RAISE EXCEPTION 'Item not found or does not belong to the user';
+  END IF;
+
+  -- Verify the wash record exists
+  SELECT COUNT(*) INTO record_exists
+  FROM wash_history
+  WHERE clothing_item_id = item_id_param AND wash_date = wash_date_param;
+
+  IF record_exists = 0 THEN
+    RAISE EXCEPTION 'Wash record not found for the given clothing item ID and date';
+  END IF;
+
+  -- Delete the wash record
+  DELETE FROM wash_history
+  WHERE clothing_item_id = item_id_param AND wash_date = wash_date_param;
+
+  -- Get the latest wash date after deletion
+  SELECT MAX(wash_date) INTO latest_wash_date
+  FROM wash_history
+  WHERE clothing_item_id = item_id_param;
+
+  -- Calculate wear count
+  IF latest_wash_date IS NOT NULL THEN
+    -- Count wears after the latest wash
+    SELECT COUNT(*) INTO new_wear_count
+    FROM wear_history
+    WHERE clothing_item_id = item_id_param
+    AND wear_date > latest_wash_date;
+  ELSE
+    -- Count all wears
+    SELECT COUNT(*) INTO new_wear_count
+    FROM wear_history
+    WHERE clothing_item_id = item_id_param;
+  END IF;
+
+  -- Update the clothing item
+  UPDATE clothing_items
+  SET wear_count = new_wear_count,
+      updated_at = NOW()
+  WHERE clothing_items.id = item_id_param;
+
+  -- Return the updated item with history
+  RETURN QUERY
+  SELECT 
+    ci.id,
+    ci.name,
+    ci.category,
+    ci.brand_id,
+    b.name as brand_name,
+    ci.image_path,
+    ci.wear_count,
+    ci.wash_threshold,
+    ci.last_worn,
+    ci.memo,
+    ci.condition,
+    ci.purchase_price,
+    ci.created_at,
+    ci.updated_at,
+    (
+      SELECT COALESCE(jsonb_agg(wh.wear_date ORDER BY wh.wear_date DESC), '[]'::jsonb)
+      FROM wear_history wh
+      WHERE wh.clothing_item_id = ci.id
+    ) as wear_history,
+    (
+      SELECT COALESCE(jsonb_agg(wh.wash_date ORDER BY wh.wash_date DESC), '[]'::jsonb)
+      FROM wash_history wh
+      WHERE wh.clothing_item_id = ci.id
+    ) as wash_history
+  FROM 
+    clothing_items ci
+  LEFT JOIN 
+    brands b ON ci.brand_id = b.id
+  WHERE 
+    ci.id = item_id_param;
+END;
+$$;
+
+-- Function to get clothing items with their history in a single query
+CREATE OR REPLACE FUNCTION public.get_clothing_items_with_history(user_id_param UUID)
+RETURNS TABLE (
+  item_id UUID,
+  name TEXT,
+  category TEXT,
+  brand_id UUID,
+  brand_name TEXT,
+  image_path TEXT,
+  wear_count INTEGER,
+  wash_threshold INTEGER,
+  last_worn DATE,
+  memo TEXT,
+  condition TEXT,
+  purchase_price NUMERIC,
+  created_at TIMESTAMP WITH TIME ZONE,
+  updated_at TIMESTAMP WITH TIME ZONE,
+  wear_dates JSONB,
+  wash_dates JSONB
+) 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    ci.id as item_id,
+    ci.name,
+    ci.category,
+    ci.brand_id,
+    b.name as brand_name,
+    ci.image_path,
+    ci.wear_count,
+    ci.wash_threshold,
+    ci.last_worn,
+    ci.memo,
+    ci.condition,
+    ci.purchase_price,
+    ci.created_at,
+    ci.updated_at,
+    (
+      SELECT COALESCE(jsonb_agg(wh.wear_date ORDER BY wh.wear_date DESC), '[]'::jsonb)
+      FROM wear_history wh
+      WHERE wh.clothing_item_id = ci.id
+    ) as wear_dates,
+    (
+      SELECT COALESCE(jsonb_agg(wh.wash_date ORDER BY wh.wash_date DESC), '[]'::jsonb)
+      FROM wash_history wh
+      WHERE wh.clothing_item_id = ci.id
+    ) as wash_dates
+  FROM 
+    clothing_items ci
+  LEFT JOIN 
+    brands b ON ci.brand_id = b.id
+  WHERE 
+    ci.user_id = user_id_param;
+END;
+$$;

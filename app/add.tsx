@@ -1,5 +1,5 @@
 import { Stack, useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Text,
   View,
@@ -32,8 +32,13 @@ const categories = [
 
 export default function AddItem() {
   const router = useRouter();
-  const { addItem } = useClothing();
+  const { addItem, loadBrands } = useClothing();
   const theme = useTheme();
+
+  // ブランド情報を読み込む
+  useEffect(() => {
+    loadBrands();
+  }, [loadBrands]);
   const [name, setName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [brand, setBrand] = useState(""); // ブランド状態を追加

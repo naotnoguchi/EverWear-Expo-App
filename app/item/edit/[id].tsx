@@ -35,7 +35,7 @@ const categories = [
 export default function EditItem() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { clothingItems, updateItem } = useClothing();
+  const { clothingItems, updateItem, loadBrands } = useClothing();
   const theme = useTheme();
   const [name, setName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -63,6 +63,11 @@ export default function EditItem() {
     condition: "",
     purchasePrice: ""
   });
+
+  // ブランド情報を読み込む
+  useEffect(() => {
+    loadBrands();
+  }, [loadBrands]);
 
   // 初期データの読み込み
   useEffect(() => {

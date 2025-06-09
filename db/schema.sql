@@ -810,3 +810,66 @@ BEGIN
     ci.user_id = user_id_param;
 END;
 $$;
+
+-- Function to get a single clothing item with its history by ID
+CREATE OR REPLACE FUNCTION public.get_clothing_item_by_id_with_history(
+  item_id_param UUID,
+  user_id_param UUID
+)
+RETURNS TABLE (
+  item_id UUID,
+  name TEXT,
+  category TEXT,
+  brand_id UUID,
+  brand_name TEXT,
+  image_path TEXT,
+  wear_count INTEGER,
+  wash_threshold INTEGER,
+  last_worn DATE,
+  memo TEXT,
+  condition TEXT,
+  purchase_price NUMERIC,
+  created_at TIMESTAMP WITH TIME ZONE,
+  updated_at TIMESTAMP WITH TIME ZONE,
+  wear_dates JSONB,
+  wash_dates JSONB
+) 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    ci.id as item_id,
+    ci.name,
+    ci.category,
+    ci.brand_id,
+    b.name as brand_name,
+    ci.image_path,
+    ci.wear_count,
+    ci.wash_threshold,
+    ci.last_worn,
+    ci.memo,
+    ci.condition,
+    ci.purchase_price,
+    ci.created_at,
+    ci.updated_at,
+    (
+      SELECT COALESCE(jsonb_agg(wh.wear_date ORDER BY wh.wear_date DESC), '[]'::jsonb)
+      FROM wear_history wh
+      WHERE wh.clothing_item_id = ci.id
+    ) as wear_dates,
+    (
+      SELECT COALESCE(jsonb_agg(wh.wash_date ORDER BY wh.wash_date DESC), '[]'::jsonb)
+      FROM wash_history wh
+      WHERE wh.clothing_item_id = ci.id
+    ) as wash_dates
+  FROM 
+    clothing_items ci
+  LEFT JOIN 
+    brands b ON ci.brand_id = b.id
+  WHERE 
+    ci.id = item_id_param AND
+    ci.user_id = user_id_param;
+END;
+$$;

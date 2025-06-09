@@ -52,6 +52,7 @@ export const getClothingItemsWithHistory = async (): Promise<AppClothingItem[]> 
 };
 
 // Get all clothing items for the current user
+/*
 export const getClothingItems = async (): Promise<AppClothingItem[]> => {
   console.log('Fetching clothing items');
   const { data: session } = await auth.getSession();
@@ -131,6 +132,7 @@ export const getClothingItems = async (): Promise<AppClothingItem[]> => {
 
   return result;
 };
+*/
 
 // Get a specific clothing item by ID
 export const getClothingItemById = async (id: string): Promise<AppClothingItem | null> => {
@@ -148,70 +150,44 @@ export const getClothingItemById = async (id: string): Promise<AppClothingItem |
   console.log('Getting authenticated client for database operations');
   const authClient = await getAuthenticatedClient();
 
-  // Get the clothing item
-  console.log('Querying clothing_items table for item:', id);
-  const { data: item, error } = await authClient
-    .from('clothing_items')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', userId)
-    .single();
+  // Get the clothing item with history in a single RPC call
+  console.log('Calling get_clothing_item_by_id_with_history RPC function');
+  const { data, error } = await authClient
+    .rpc('get_clothing_item_by_id_with_history', {
+      item_id_param: id,
+      user_id_param: userId
+    });
 
   if (error) {
-    if (error.code === 'PGRST116') {
-      console.log('Item not found:', id);
-      return null; // Item not found
-    }
-    console.log('Error retrieving item:', error);
+    console.log('Error retrieving item with history:', error);
     throw error;
   }
+
+  // Check if item was found
+  if (!data || data.length === 0) {
+    console.log('Item not found:', id);
+    return null;
+  }
+
+  const item = data[0];
   console.log('Retrieved item from database:', item.name);
 
-  // Get wear history
-  console.log('Querying wear_history for item:', id);
-  const { data: wearHistory, error: wearError } = await authClient
-    .from('wear_history')
-    .select('*')
-    .eq('clothing_item_id', id);
-
-  if (wearError) {
-    console.log('Error retrieving wear history:', wearError);
-    throw wearError;
-  }
-  console.log(`Retrieved ${wearHistory?.length || 0} wear records`);
-
-  // Get wash history
-  console.log('Querying wash_history for item:', id);
-  const { data: washHistory, error: washError } = await authClient
-    .from('wash_history')
-    .select('*')
-    .eq('clothing_item_id', id);
-
-  if (washError) {
-    console.log('Error retrieving wash history:', washError);
-    throw washError;
-  }
-  console.log(`Retrieved ${washHistory?.length || 0} wash records`);
-
-  // Get brand name if brand_id exists
-  let brandName = '';
-  if (item.brand_id) {
-    console.log('Querying brands table for brand ID:', item.brand_id);
-    const { data: brand, error: brandError } = await authClient
-      .from('brands')
-      .select('name')
-      .eq('id', item.brand_id)
-      .single();
-
-    if (!brandError && brand) {
-      brandName = brand.name;
-      console.log('Retrieved brand name:', brandName);
-    } else if (brandError) {
-      console.log('Error retrieving brand:', brandError);
-    }
-  }
-
-  return toAppClothingItem(item, wearHistory, washHistory, brandName);
+  // Convert the data to AppClothingItem format
+  return {
+    id: item.item_id,
+    name: item.name,
+    category: item.category,
+    brand: item.brand_name || '',
+    image: item.image_path || '',
+    wearCount: item.wear_count,
+    washThreshold: item.wash_threshold,
+    lastWorn: item.last_worn || '',
+    memo: item.memo || '',
+    condition: item.condition || '',
+    purchasePrice: item.purchase_price,
+    wearHistory: Array.isArray(item.wear_dates) ? item.wear_dates : [],
+    washHistory: Array.isArray(item.wash_dates) ? item.wash_dates : []
+  };
 };
 
 // Add a new clothing item
@@ -393,21 +369,6 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
       throw error;
     }
 
-    // Get updated history
-    const { data: wearHistory, error: wearError } = await db
-      .from('wear_history')
-      .select('*')
-      .eq('clothing_item_id', id);
-
-    if (wearError) throw wearError;
-
-    const { data: washHistory, error: washError } = await db
-      .from('wash_history')
-      .select('*')
-      .eq('clothing_item_id', id);
-
-    if (washError) throw washError;
-
     // If we got here, the update was successful, so we can delete the old image if needed
     if (uploadedImageUrl && currentItem.image && currentItem.image.includes('supabase')) {
       console.log('Deleting old image after successful update');
@@ -417,7 +378,9 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
       });
     }
 
-    return toAppClothingItem(data, wearHistory, washHistory, updatedItem.brand);
+    // Return the updated item with empty history arrays since we don't need the history data
+    // for just updating the clothing item
+    return toAppClothingItem(data, [], [], updatedItem.brand);
   } catch (error) {
     // If there was an error and we uploaded a new image, delete it
     if (uploadedImageUrl && uploadedImageUrl.includes('supabase')) {

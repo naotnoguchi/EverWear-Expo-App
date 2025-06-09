@@ -15,11 +15,13 @@ export const getClothingItemsWithHistory = async (): Promise<AppClothingItem[]> 
 };
 
 // Get all clothing items
+/*
 export const getClothingItems = async (): Promise<AppClothingItem[]> => {
   // Simulate network delay
   await simulateNetworkDelay();
   return [...clothingItems];
 };
+*/
 
 // Get a single clothing item by ID
 export const getClothingItemById = async (id: string): Promise<AppClothingItem | null> => {

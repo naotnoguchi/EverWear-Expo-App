@@ -1,15 +1,14 @@
 // utils/statisticsCalculator.ts
-import { AppClothingItem } from '../types/database';
-import { 
-  BasicStats, 
-  RankingItem, 
-  EfficiencyItem, 
-  ImpactData, 
-  Badge, 
-  ItemDetailStats,
-  Period 
-} from '../types/statistics';
 import { CategoryValue } from '../types/categories';
+import { AppClothingItem } from '../types/database';
+import {
+    BasicStats,
+    EfficiencyItem,
+    ImpactData,
+    ItemDetailStats,
+    Period,
+    RankingItem
+} from '../types/statistics';
 
 // Helper function to filter items by period
 export const filterByPeriod = (dates: string[], period: Period): string[] => {
@@ -183,14 +182,18 @@ export function calculateRankingData(
     return sortOrder === 'most' ? bWears - aWears : aWears - bWears;
   });
 
+  // 最大着用回数を計算（パーセンテージ計算用）
+  const maxWearCount = Math.max(...sortedItems.map(item => item.filteredWearHistory.length), 1);
+
   // ランキングアイテムに変換
-  const rankingItems: RankingItem[] = sortedItems.map((item, index) => ({
+  const rankingItems: RankingItem[] = sortedItems.map(item => ({
     id: item.id,
-    rank: index + 1,
     name: item.name,
     category: item.category,
-    image: item.image,
-    wears: item.filteredWearHistory.length
+    brand: item.brand,
+    imageUrl: item.image,
+    wearCount: item.filteredWearHistory.length,
+    percentageOfMax: Math.round((item.filteredWearHistory.length / maxWearCount) * 100)
   }));
 
   console.log(`ランキングデータ計算完了: ${rankingItems.length}件のアイテム`);

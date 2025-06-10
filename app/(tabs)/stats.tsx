@@ -1,12 +1,12 @@
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../contexts/ThemeContext";
-import { useTabReset } from "../../contexts/TabResetContext";
-import { useStatistics } from "../../contexts/StatisticsContext";
-import { useRef, useEffect, useState, useCallback } from "react";
-import { Period } from "../../services/statisticsServiceFactory";
-import { router } from "expo-router";
 import { Image } from "expo-image";
+import { router } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useStatistics } from "../../contexts/StatisticsContext";
+import { useTabReset } from "../../contexts/TabResetContext";
+import { useTheme } from "../../contexts/ThemeContext";
+import { Period } from "../../services/statisticsServiceFactory";
 
 export default function Stats() {
   const theme = useTheme();
@@ -360,11 +360,7 @@ export default function Stats() {
       fontSize: 12,
       marginBottom: 4,
     },
-    wearCountContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    wearCount: {
+    itemWears: {
       fontSize: 12,
       fontWeight: 'bold',
       color: "#3498db",
@@ -642,8 +638,6 @@ export default function Stats() {
         </View>
       </View>
 
-
-
       {/* Ranking section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
@@ -684,16 +678,16 @@ export default function Stats() {
                   <Text style={[styles.itemCategory, { color: theme.text + "99" }]}>
                     {item.brand ? `${item.brand} / ${item.category}` : item.category}
                   </Text>
-                  <View style={styles.wearCountContainer}>
-                    <Text style={styles.wearCount}>{item.wearCount}回</Text>
-                    <View style={styles.barContainer}>
-                      <View 
-                        style={[
-                          styles.bar, 
-                          { width: `${item.percentageOfMax}%`, backgroundColor: "#3498db" }
-                        ]} 
-                      />
-                    </View>
+                  <Text style={[styles.itemWears, { color: theme.text }]}>
+                    {item.wearCount}回着用
+                  </Text>
+                  <View style={styles.barContainer}>
+                    <View 
+                      style={[
+                        styles.bar, 
+                        { width: `${item.percentageOfMax}%`, backgroundColor: theme.primary }
+                      ]} 
+                    />
                   </View>
                 </View>
               </TouchableOpacity>
@@ -805,8 +799,9 @@ export default function Stats() {
                   <Ionicons name="cash" size={24} color="#f1c40f" />
                 </View>
                 <Text style={styles.impactValue}>
-                  {/* 節約金額の計算（仮の値） */}
-                  {Math.round(impactData.waterSaved * 0.2 + impactData.energySaved * 25)}円
+                  {((impactData.waterSaved.cost || 0) + 
+                    (impactData.electricitySaved.cost || 0) + 
+                    (impactData.detergentSaved.cost || 0)).toLocaleString()}円
                 </Text>
                 <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>節約金額</Text>
               </View>
@@ -814,7 +809,7 @@ export default function Stats() {
 
             <Text style={[styles.impactDescription, { color: theme.text + "CC" }]}>
               「着用するたびに洗濯する」場合と比較して、あなたは{impactData.totalWashesReduced.toFixed(1)}回の洗濯を削減しました。
-              これは約{Math.round(impactData.co2Reduced / 20)}本の木を植えるのと同等のCO2削減効果があります。
+              これは約{impactData.treeEquivalent.toFixed(1)}本の木を植えるのと同等のCO2削減効果があります。
             </Text>
           </View>
         ) : (

@@ -38,10 +38,10 @@ export interface RankingItem {
   id: string;
   name: string;
   category: CategoryValue;
-  brand?: string; // Added brand property
+  brand?: string;
   imageUrl: string;
   wearCount: number;
-  percentageOfMax: number; // For bar visualization (0-100)
+  percentageOfMax: number;
 }
 
 // Efficiency data for items

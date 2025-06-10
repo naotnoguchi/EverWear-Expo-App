@@ -1,12 +1,12 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
-import { useTheme } from "../contexts/ThemeContext";
-import { useState, useEffect, useCallback } from "react";
-import { RankingItem, Period } from "../services/statisticsServiceFactory";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { CategoryValue } from "../types/categories";
 import { router, Stack } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../contexts/StatisticsContext";
+import { useTheme } from "../contexts/ThemeContext";
+import { Period, RankingItem } from "../services/statisticsServiceFactory";
+import { CategoryValue } from "../types/categories";
 
 export default function RankingScreen() {
   const theme = useTheme();

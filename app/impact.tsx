@@ -1,20 +1,29 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Share } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { useState, useEffect, useCallback } from "react";
-import { statisticsService, ImpactData, Period } from "../services/statisticsServiceFactory";
+import { Period } from "../services/statisticsServiceFactory";
+import { useStatistics } from "../contexts/StatisticsContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
 
 export default function ImpactScreen() {
   const theme = useTheme();
 
-  // State
-  const [impact, setImpact] = useState<ImpactData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState<Period>('3months');
+  // 統計コンテキストを使用
+  const {
+    impactData: impact,
+    loading: { impactData: isLoading },
+    error: { impactData: contextError },
+    period,
+    setPeriod,
+    fetchImpactData
+  } = useStatistics();
 
-  // Handle sharing environmental impact data
+  // ローディングとエラーの状態
+  const loading = isLoading;
+  const error = contextError;
+
+  // 環境影響データを共有
   const handleShare = async () => {
     try {
       const shareMessage = `
@@ -37,11 +46,11 @@ ClothesManagerAppで洋服の寿命を延ばしながら環境にも貢献しよ
         title: '私の環境貢献度'
       });
     } catch (error) {
-      console.error('Error sharing:', error);
+      console.error('共有エラー:', error);
     }
   };
 
-  // Modal visibility states
+  // モーダル表示状態
   const [showWashInfoModal, setShowWashInfoModal] = useState(false);
   const [showWaterInfoModal, setShowWaterInfoModal] = useState(false);
   const [showElectricityInfoModal, setShowElectricityInfoModal] = useState(false);
@@ -50,29 +59,24 @@ ClothesManagerAppで洋服の寿命を延ばしながら環境にも貢献しよ
   const [showDetergentInfoModal, setShowDetergentInfoModal] = useState(false);
   const [showLifespanInfoModal, setShowLifespanInfoModal] = useState(false);
 
-  // Fetch impact data
+  // 環境影響データを取得
   const fetchImpact = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const data = await statisticsService.getImpactData(period);
-      setImpact(data);
+      await fetchImpactData(period);
     } catch (err) {
-      console.error('Error fetching impact data:', err);
-      setError('環境影響データの取得に失敗しました。後でもう一度お試しください。');
-    } finally {
-      setLoading(false);
+      console.error('環境影響データの取得エラー:', err);
     }
-  }, [period]);
+  }, [fetchImpactData, period]);
 
-  // Load data on mount and when period changes
+  // マウント時とperiod変更時にデータを取得
   useEffect(() => {
     fetchImpact();
   }, [fetchImpact]);
 
-  // Handle period change
+  // 期間変更の処理
   const handlePeriodChange = (newPeriod: Period) => {
     setPeriod(newPeriod);
+    fetchImpact();
   };
 
   // Period options

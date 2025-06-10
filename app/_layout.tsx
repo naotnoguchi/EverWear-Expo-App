@@ -8,6 +8,7 @@ import { OnboardingProvider, useOnboarding } from '../contexts/OnboardingContext
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { TabResetProvider } from '../contexts/TabResetContext';
+import { StatisticsProvider } from '../contexts/StatisticsContext';
 import { Platform, StyleSheet, useColorScheme } from 'react-native';
 import Onboarding from '../components/Onboarding';
 import { useTheme } from "@/contexts/ThemeContext";
@@ -170,7 +171,9 @@ export default function RootLayout() {
           <ClothingProvider>
             <ThemeProvider>
               <TabResetProvider>
-                <MainApp />
+                <StatisticsProvider>
+                  <MainApp />
+                </StatisticsProvider>
               </TabResetProvider>
             </ThemeProvider>
           </ClothingProvider>

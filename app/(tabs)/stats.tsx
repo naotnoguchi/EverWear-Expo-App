@@ -2,8 +2,9 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useTabReset } from "../../contexts/TabResetContext";
+import { useStatistics } from "../../contexts/StatisticsContext";
 import { useRef, useEffect, useState, useCallback } from "react";
-import { statisticsService, BasicStats, Period, RankingItem, ImpactData, Badge } from "../../services/statisticsServiceFactory";
+import { Period } from "../../services/statisticsServiceFactory";
 import { router } from "expo-router";
 import { Image } from "expo-image";
 
@@ -12,15 +13,33 @@ export default function Stats() {
   const scrollViewRef = useRef<ScrollView>(null);
   const { registerResetFunction } = useTabReset();
 
-  // State for statistics data
-  const [stats, setStats] = useState<BasicStats | null>(null);
-  const [topItems, setTopItems] = useState<RankingItem[]>([]);
-  const [impactData, setImpactData] = useState<ImpactData | null>(null);
-  const [recentBadge, setRecentBadge] = useState<Badge | null>(null);
-  const [badges, setBadges] = useState<Badge[]>([]); // この行を追加
-  const [loading, setLoading] = useState(true);
+  // 統計コンテキストを使用
+  const { 
+    basicStats: stats, 
+    rankingData,
+    impactData, 
+    badges,
+    loading: contextLoading, 
+    error: contextError,
+    period,
+    setPeriod,
+    fetchBasicStats,
+    fetchRankingData,
+    fetchImpactData,
+    fetchBadges
+  } = useStatistics();
 
-  // Get efficiency status color
+  // トップ5アイテムと最新バッジの状態
+  const [topItems, setTopItems] = useState<typeof rankingData>([]);
+  const [recentBadge, setRecentBadge] = useState<typeof badges[0] | null>(null);
+
+  // ローディングとエラーの状態をコンテキストから取得
+  const loading = contextLoading.basicStats || contextLoading.rankingData || 
+                  contextLoading.impactData || contextLoading.badges;
+  const error = contextError.basicStats || contextError.rankingData || 
+                contextError.impactData || contextError.badges;
+
+  // 効率ステータスの色を取得
   const getEfficiencyStatusColor = (status: string) => {
     switch (status) {
       case '良好': return '#27ae60'; // Green
@@ -29,73 +48,61 @@ export default function Stats() {
       default: return '#3498db'; // Blue
     }
   };
-  const [period, setPeriod] = useState<Period>('3months');
-  const [error, setError] = useState<string | null>(null);
 
-  // Fetch statistics data
+  // 統計データを取得
   const fetchStats = useCallback(async (selectedPeriod: Period = period) => {
     try {
-      setLoading(true);
-      setError(null);
+      // 各種統計データを並行して取得
+      await Promise.all([
+        fetchBasicStats(selectedPeriod),
+        fetchRankingData(selectedPeriod, 'most'),
+        fetchImpactData(selectedPeriod),
+        fetchBadges()
+      ]);
+    } catch (err) {
+      console.error('統計データの取得エラー:', err);
+    }
+  }, [fetchBasicStats, fetchRankingData, fetchImpactData, fetchBadges, period]);
 
-      // Fetch basic stats
-      const basicData = await statisticsService.getBasicStats(selectedPeriod);
-      setStats(basicData);
-
-      // Fetch top 5 items by wear count
-      const rankingData = await statisticsService.getRankingData(selectedPeriod, 'most');
+  // ランキングデータとバッジデータが更新されたときにトップ5と最新バッジを更新
+  useEffect(() => {
+    if (rankingData.length > 0) {
       setTopItems(rankingData.slice(0, 5));
+    }
+  }, [rankingData]);
 
-      // Fetch impact data
-      const impact = await statisticsService.getImpactData(selectedPeriod);
-      setImpactData(impact);
-
-      // Fetch badges and get the most recent one
-      const badgesData = await statisticsService.getBadges() || [];
-      console.log('Stats screen - getBadges result:', 
-        `count=${badgesData.length},`, 
-        `earned=${badgesData.filter(b => b.isEarned).length},`,
-        `categories=${Object.keys(badgesData.reduce((acc, b) => {
-          acc[b.category] = true;
-          return acc;
-        }, {})).join(',')}`
-      );
-      setBadges(badgesData); // この行を追加
-      const earnedBadges = badgesData.filter(badge => badge.isEarned);
+  useEffect(() => {
+    if (badges.length > 0) {
+      const earnedBadges = badges.filter(badge => badge.isEarned);
       if (earnedBadges.length > 0) {
-        // Sort by earned date (most recent first)
+        // 獲得日で並べ替え（最新順）
         const sortedBadges = [...earnedBadges].sort((a, b) => {
           if (!a.earnedDate || !b.earnedDate) return 0;
           return new Date(b.earnedDate).getTime() - new Date(a.earnedDate).getTime();
         });
         setRecentBadge(sortedBadges[0]);
       }
-    } catch (err) {
-      console.error('Error fetching statistics:', err);
-      setError('統計データの取得に失敗しました。後でもう一度お試しください。');
-    } finally {
-      setLoading(false);
     }
-  }, [period]);
+  }, [badges]);
 
-  // Load statistics on mount and when period changes
+  // マウント時とperiod変更時にデータを取得
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
 
-  // Register the reset function with the TabResetContext
+  // タブリセット関数を登録
   useEffect(() => {
     registerResetFunction("stats", () => {
-      // Scroll to the top
+      // 一番上にスクロール
       if (scrollViewRef.current) {
         scrollViewRef.current.scrollTo({ y: 0, animated: true });
       }
-      // Refresh data
+      // データを更新
       fetchStats();
     });
   }, [registerResetFunction, fetchStats]);
 
-  // Handle period change
+  // 期間変更の処理
   const handlePeriodChange = (newPeriod: Period) => {
     setPeriod(newPeriod);
     fetchStats(newPeriod);

@@ -1,7 +1,8 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { useState, useEffect, useCallback } from "react";
-import { statisticsService, EfficiencyItem, Period } from "../services/statisticsServiceFactory";
+import { Period } from "../services/statisticsServiceFactory";
+import { useStatistics } from "../contexts/StatisticsContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, Stack } from "expo-router";
@@ -9,35 +10,38 @@ import { router, Stack } from "expo-router";
 export default function EfficiencyScreen() {
   const theme = useTheme();
 
-  // State
-  const [items, setItems] = useState<EfficiencyItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState<Period>('3months');
+  // 統計コンテキストを使用
+  const {
+    efficiencyData: items,
+    loading: { efficiencyData: isLoading },
+    error: { efficiencyData: contextError },
+    period,
+    setPeriod,
+    fetchEfficiencyData
+  } = useStatistics();
 
-  // Fetch efficiency data
+  // ローディングとエラーの状態
+  const loading = isLoading;
+  const error = contextError;
+
+  // 効率データを取得
   const fetchEfficiency = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const data = await statisticsService.getEfficiencyData(period);
-      setItems(data);
+      await fetchEfficiencyData(period);
     } catch (err) {
-      console.error('Error fetching efficiency data:', err);
-      setError('効率データの取得に失敗しました。後でもう一度お試しください。');
-    } finally {
-      setLoading(false);
+      console.error('効率データの取得エラー:', err);
     }
-  }, [period]);
+  }, [fetchEfficiencyData, period]);
 
-  // Load data on mount and when period changes
+  // マウント時とperiod変更時にデータを取得
   useEffect(() => {
     fetchEfficiency();
   }, [fetchEfficiency]);
 
-  // Handle period change
+  // 期間変更の処理
   const handlePeriodChange = (newPeriod: Period) => {
     setPeriod(newPeriod);
+    fetchEfficiency();
   };
 
   // Get status color

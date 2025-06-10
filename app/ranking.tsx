@@ -1,56 +1,65 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { useState, useEffect, useCallback } from "react";
-import { statisticsService, RankingItem, Period } from "../services/statisticsServiceFactory";
+import { RankingItem, Period } from "../services/statisticsServiceFactory";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { CategoryValue } from "../types/categories";
 import { router, Stack } from "expo-router";
+import { useStatistics } from "../contexts/StatisticsContext";
 
 export default function RankingScreen() {
   const theme = useTheme();
 
-  // State
-  const [items, setItems] = useState<RankingItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState<Period>('3months');
+  // 統計コンテキストを使用
+  const {
+    rankingData: items,
+    loading: { rankingData: isLoading },
+    error: { rankingData: contextError },
+    period,
+    setPeriod,
+    fetchRankingData
+  } = useStatistics();
+
+  // ローディングとエラーの状態
+  const loading = isLoading;
+  const error = contextError;
+
+  // ローカル状態（コンテキストにない状態）
   const [sortOrder, setSortOrder] = useState<'most' | 'least'>('most');
   const [selectedCategory, setSelectedCategory] = useState<CategoryValue>(null);
 
-  // Fetch ranking data
+  // ランキングデータを取得
   const fetchRanking = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const data = await statisticsService.getRankingData(period, sortOrder, selectedCategory);
-      setItems(data);
+      await fetchRankingData(period, sortOrder, selectedCategory);
     } catch (err) {
-      console.error('Error fetching ranking data:', err);
-      setError('ランキングデータの取得に失敗しました。後でもう一度お試しください。');
-    } finally {
-      setLoading(false);
+      console.error('ランキングデータの取得エラー:', err);
     }
-  }, [period, sortOrder, selectedCategory]);
+  }, [fetchRankingData, period, sortOrder, selectedCategory]);
 
-  // Load data on mount and when filters change
+  // マウント時とフィルター変更時にデータを取得
   useEffect(() => {
     fetchRanking();
   }, [fetchRanking]);
 
-  // Handle period change
+  // 期間変更の処理
   const handlePeriodChange = (newPeriod: Period) => {
     setPeriod(newPeriod);
+    fetchRanking();
   };
 
-  // Handle sort order change
+  // ソート順変更の処理
   const handleSortOrderChange = () => {
-    setSortOrder(sortOrder === 'most' ? 'least' : 'most');
+    const newSortOrder = sortOrder === 'most' ? 'least' : 'most';
+    setSortOrder(newSortOrder);
+    fetchRanking();
   };
 
-  // Handle category change
+  // カテゴリ変更の処理
   const handleCategoryChange = (category: CategoryValue) => {
     setSelectedCategory(category);
+    fetchRanking();
   };
 
   // Render item

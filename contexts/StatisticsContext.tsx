@@ -8,11 +8,17 @@ import {
   ImpactData, 
   Badge, 
   ItemDetailStats,
-  Period,
-  clearBaseDataCache
+  Period
 } from '../services/statisticsServiceFactory';
 import { CategoryValue } from '../types/categories';
-import { eventBus, EventType } from '../services/eventBus';
+import { useClothing } from './ClothingContext';
+import { 
+  calculateBasicStats,
+  calculateRankingData,
+  calculateEfficiencyData,
+  calculateImpactData,
+  calculateItemDetailStats
+} from '../utils/statisticsCalculator';
 
 // コンテキストの型定義
 interface StatisticsContextType {
@@ -72,6 +78,9 @@ const StatisticsContext = createContext<StatisticsContextType | undefined>(undef
 
 // プロバイダーコンポーネント
 export function StatisticsProvider({ children }: { children: React.ReactNode }) {
+  // ClothingContextからデータを取得
+  const { clothingItems, loading: clothingLoading } = useClothing();
+
   // データの状態
   const [basicStats, setBasicStats] = useState<BasicStats | null>(null);
   const [rankingData, setRankingData] = useState<RankingItem[]>([]);
@@ -105,85 +114,152 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
   const [sortOrder, setSortOrder] = useState<'most' | 'least'>('most');
   const [categoryFilter, setCategoryFilter] = useState<CategoryValue>(null);
 
-  // 基本統計データを取得
+  // 基本統計データを計算
   const fetchBasicStats = useCallback(async (selectedPeriod: Period = period) => {
-    console.log(`StatisticsContext: 基本統計データの取得開始 (期間=${selectedPeriod})`);
+    console.log(`StatisticsContext: 基本統計データの計算開始 (期間=${selectedPeriod})`);
     try {
       setLoading(prev => ({ ...prev, basicStats: true }));
       setError(prev => ({ ...prev, basicStats: null }));
 
-      const data = await statisticsService.getBasicStats(selectedPeriod);
-      console.log(`StatisticsContext: 基本統計データの取得成功 (アイテム数=${data.totalItems}, 着用回数=${data.totalWears}, 洗濯回数=${data.totalWashes})`);
+      // ClothingContextのデータを使用して計算
+      if (clothingItems.length === 0 && !clothingLoading) {
+        console.log('StatisticsContext: アイテムデータがありません');
+        setBasicStats({
+          totalItems: 0,
+          totalWears: 0,
+          totalWashes: 0,
+          averageWearsBetweenWashes: 0,
+          mostWornCategory: null,
+          mostWornItem: { id: '', name: '', wears: 0 },
+          leastWornItem: { id: '', name: '', wears: 0 },
+          categoryBreakdown: [],
+          monthlyWears: [],
+          averageWashThreshold: 0
+        });
+        return;
+      }
+
+      if (clothingLoading) {
+        console.log('StatisticsContext: アイテムデータ読み込み中...');
+        return;
+      }
+
+      const data = calculateBasicStats(clothingItems, selectedPeriod);
+      console.log(`StatisticsContext: 基本統計データの計算成功 (アイテム数=${data.totalItems}, 着用回数=${data.totalWears}, 洗濯回数=${data.totalWashes})`);
       setBasicStats(data);
     } catch (err) {
-      console.error('StatisticsContext: 基本統計データの取得エラー:', err);
-      setError(prev => ({ ...prev, basicStats: '基本統計データの読み込みに失敗しました' }));
+      console.error('StatisticsContext: 基本統計データの計算エラー:', err);
+      setError(prev => ({ ...prev, basicStats: '基本統計データの計算に失敗しました' }));
     } finally {
       setLoading(prev => ({ ...prev, basicStats: false }));
     }
-  }, [period]);
+  }, [period, clothingItems, clothingLoading]);
 
-  // ランキングデータを取得
+  // ランキングデータを計算
   const fetchRankingData = useCallback(async (
     selectedPeriod: Period = period,
     selectedSortOrder: 'most' | 'least' = sortOrder,
     selectedCategory: CategoryValue = categoryFilter
   ) => {
-    console.log(`StatisticsContext: ランキングデータの取得開始 (期間=${selectedPeriod}, 並び順=${selectedSortOrder}, カテゴリ=${selectedCategory || 'すべて'})`);
+    console.log(`StatisticsContext: ランキングデータの計算開始 (期間=${selectedPeriod}, 並び順=${selectedSortOrder}, カテゴリ=${selectedCategory || 'すべて'})`);
     try {
       setLoading(prev => ({ ...prev, rankingData: true }));
       setError(prev => ({ ...prev, rankingData: null }));
 
-      const data = await statisticsService.getRankingData(
+      // ClothingContextのデータを使用して計算
+      if (clothingItems.length === 0 && !clothingLoading) {
+        console.log('StatisticsContext: アイテムデータがありません');
+        setRankingData([]);
+        return;
+      }
+
+      if (clothingLoading) {
+        console.log('StatisticsContext: アイテムデータ読み込み中...');
+        return;
+      }
+
+      const data = calculateRankingData(
+        clothingItems, 
         selectedPeriod, 
         selectedSortOrder, 
         selectedCategory
       );
-      console.log(`StatisticsContext: ランキングデータの取得成功 (${data.length}件のアイテム)`);
+      console.log(`StatisticsContext: ランキングデータの計算成功 (${data.length}件のアイテム)`);
       setRankingData(data);
     } catch (err) {
-      console.error('StatisticsContext: ランキングデータの取得エラー:', err);
-      setError(prev => ({ ...prev, rankingData: 'ランキングデータの読み込みに失敗しました' }));
+      console.error('StatisticsContext: ランキングデータの計算エラー:', err);
+      setError(prev => ({ ...prev, rankingData: 'ランキングデータの計算に失敗しました' }));
     } finally {
       setLoading(prev => ({ ...prev, rankingData: false }));
     }
-  }, [period, sortOrder, categoryFilter]);
+  }, [period, sortOrder, categoryFilter, clothingItems, clothingLoading]);
 
-  // 効率データを取得
+  // 効率データを計算
   const fetchEfficiencyData = useCallback(async (selectedPeriod: Period = period) => {
-    console.log(`StatisticsContext: 効率データの取得開始 (期間=${selectedPeriod})`);
+    console.log(`StatisticsContext: 効率データの計算開始 (期間=${selectedPeriod})`);
     try {
       setLoading(prev => ({ ...prev, efficiencyData: true }));
       setError(prev => ({ ...prev, efficiencyData: null }));
 
-      const data = await statisticsService.getEfficiencyData(selectedPeriod);
-      console.log(`StatisticsContext: 効率データの取得成功 (${data.length}件のアイテム)`);
+      // ClothingContextのデータを使用して計算
+      if (clothingItems.length === 0 && !clothingLoading) {
+        console.log('StatisticsContext: アイテムデータがありません');
+        setEfficiencyData([]);
+        return;
+      }
+
+      if (clothingLoading) {
+        console.log('StatisticsContext: アイテムデータ読み込み中...');
+        return;
+      }
+
+      const data = calculateEfficiencyData(clothingItems, selectedPeriod);
+      console.log(`StatisticsContext: 効率データの計算成功 (${data.length}件のアイテム)`);
       setEfficiencyData(data);
     } catch (err) {
-      console.error('StatisticsContext: 効率データの取得エラー:', err);
-      setError(prev => ({ ...prev, efficiencyData: '効率データの読み込みに失敗しました' }));
+      console.error('StatisticsContext: 効率データの計算エラー:', err);
+      setError(prev => ({ ...prev, efficiencyData: '効率データの計算に失敗しました' }));
     } finally {
       setLoading(prev => ({ ...prev, efficiencyData: false }));
     }
-  }, [period]);
+  }, [period, clothingItems, clothingLoading]);
 
-  // 環境影響データを取得
+  // 環境影響データを計算
   const fetchImpactData = useCallback(async (selectedPeriod: Period = period) => {
-    console.log(`StatisticsContext: 環境影響データの取得開始 (期間=${selectedPeriod})`);
+    console.log(`StatisticsContext: 環境影響データの計算開始 (期間=${selectedPeriod})`);
     try {
       setLoading(prev => ({ ...prev, impactData: true }));
       setError(prev => ({ ...prev, impactData: null }));
 
-      const data = await statisticsService.getImpactData(selectedPeriod);
-      console.log(`StatisticsContext: 環境影響データの取得成功 (洗濯削減=${data.totalWashesReduced.toFixed(1)}回, CO2削減=${data.co2Reduced.toFixed(1)}kg)`);
+      // ClothingContextのデータを使用して計算
+      if (clothingItems.length === 0 && !clothingLoading) {
+        console.log('StatisticsContext: アイテムデータがありません');
+        setImpactData({
+          totalWears: 0,
+          totalWashes: 0,
+          totalWashesReduced: 0,
+          waterSaved: 0,
+          energySaved: 0,
+          co2Reduced: 0
+        });
+        return;
+      }
+
+      if (clothingLoading) {
+        console.log('StatisticsContext: アイテムデータ読み込み中...');
+        return;
+      }
+
+      const data = calculateImpactData(clothingItems, selectedPeriod);
+      console.log(`StatisticsContext: 環境影響データの計算成功 (洗濯削減=${data.totalWashesReduced.toFixed(1)}回, CO2削減=${data.co2Reduced.toFixed(1)}kg)`);
       setImpactData(data);
     } catch (err) {
-      console.error('StatisticsContext: 環境影響データの取得エラー:', err);
-      setError(prev => ({ ...prev, impactData: '環境影響データの読み込みに失敗しました' }));
+      console.error('StatisticsContext: 環境影響データの計算エラー:', err);
+      setError(prev => ({ ...prev, impactData: '環境影響データの計算に失敗しました' }));
     } finally {
       setLoading(prev => ({ ...prev, impactData: false }));
     }
-  }, [period]);
+  }, [period, clothingItems, clothingLoading]);
 
   // バッジデータを取得
   const fetchBadges = useCallback(async () => {
@@ -203,9 +279,9 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
-  // アイテム詳細統計を取得
+  // アイテム詳細統計を計算
   const fetchItemDetailStats = useCallback(async (itemId: string): Promise<ItemDetailStats | null> => {
-    console.log(`StatisticsContext: アイテム詳細統計の取得開始 (ID=${itemId})`);
+    console.log(`StatisticsContext: アイテム詳細統計の計算開始 (ID=${itemId})`);
     try {
       // すでにキャッシュにあるか確認
       if (itemDetailStats.has(itemId)) {
@@ -213,9 +289,22 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
         return itemDetailStats.get(itemId) || null;
       }
 
-      console.log(`StatisticsContext: アイテム詳細統計をサービスから取得 (ID=${itemId})`);
-      const data = await statisticsService.getItemDetailStats(itemId);
-      console.log(`StatisticsContext: アイテム詳細統計の取得成功 (ID=${itemId}, 着用回数=${data.wearCount}, 洗濯回数=${data.washCount})`);
+      // ClothingContextのデータを使用して計算
+      if (clothingLoading) {
+        console.log('StatisticsContext: アイテムデータ読み込み中...');
+        return null;
+      }
+
+      // 対象のアイテムを検索
+      const item = clothingItems.find(item => item.id === itemId);
+      if (!item) {
+        console.log(`StatisticsContext: アイテムが見つかりません (ID=${itemId})`);
+        return null;
+      }
+
+      console.log(`StatisticsContext: アイテム詳細統計を計算 (ID=${itemId})`);
+      const data = calculateItemDetailStats(item);
+      console.log(`StatisticsContext: アイテム詳細統計の計算成功 (ID=${itemId}, 着用回数=${data.wearCount}, 洗濯回数=${data.washCount})`);
 
       // キャッシュを更新
       setItemDetailStats(prev => {
@@ -227,20 +316,16 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
 
       return data;
     } catch (err) {
-      console.error(`StatisticsContext: アイテム詳細統計の取得エラー (ID: ${itemId}):`, err);
+      console.error(`StatisticsContext: アイテム詳細統計の計算エラー (ID: ${itemId}):`, err);
       return null;
     }
-  }, [itemDetailStats]);
+  }, [itemDetailStats, clothingItems, clothingLoading]);
 
   // すべてのデータを更新
   const refreshAllData = useCallback(async () => {
     console.log('StatisticsContext: すべての統計データの更新開始');
 
-    // 基礎データのキャッシュをクリア
-    console.log('StatisticsContext: 基礎データのキャッシュをクリア');
-    clearBaseDataCache();
-
-    console.log('StatisticsContext: 各種統計データの並列取得を開始');
+    console.log('StatisticsContext: 各種統計データの並列計算を開始');
     await Promise.all([
       fetchBasicStats(),
       fetchRankingData(),
@@ -253,8 +338,6 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
 
   // キャッシュをクリア
   const clearCache = useCallback(() => {
-    console.log('StatisticsContext: すべての統計キャッシュをクリア');
-    statisticsService.clearCache();
     console.log('StatisticsContext: コンテキスト内の統計データをリセット');
     setBasicStats(null);
     setRankingData([]);
@@ -267,105 +350,56 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
 
   // 期間が変更されたときのエフェクト
   useEffect(() => {
-    // 期間が変更されたときに自動的にデータを再取得しない
-    // 各画面がマウントされたとき、または期間が変更されたときに必要なデータを取得する
-    // これにより、表示されていない画面のデータを不必要に取得することを防ぐ
+    // 期間が変更されたときに自動的にデータを再計算しない
+    // 各画面がマウントされたとき、または期間が変更されたときに必要なデータを計算する
+    // これにより、表示されていない画面のデータを不必要に計算することを防ぐ
   }, [period]);
 
-  // イベントリスナーを設定するエフェクト
+  // clothingItemsが変更されたときのエフェクト
   useEffect(() => {
-    console.log('StatisticsContext: イベントリスナーを設定');
+    console.log('StatisticsContext: clothingItemsが変更されました、表示中の統計データを更新');
 
-    // データ変更イベントのリスナーを登録
-    const eventTypes: EventType[] = [
-      'item-added',
-      'item-updated',
-      'item-deleted',
-      'wear-added',
-      'wear-deleted',
-      'wash-added',
-      'wash-deleted',
-      'data-refreshed'
-    ];
+    // 現在表示中の統計データのみを更新
+    const updatePromises: Promise<void>[] = [];
 
-    // 各イベントタイプに対するリスナーを登録
-    const unsubscribers = eventTypes.map(eventType => {
-      return eventBus.subscribe(eventType, (data) => {
-        console.log(`StatisticsContext: "${eventType}" イベントを受信`, data);
+    // 基本統計データが読み込まれている場合は更新
+    if (basicStats !== null) {
+      console.log('StatisticsContext: 基本統計データを更新');
+      updatePromises.push(fetchBasicStats());
+    }
 
-        // イベントに応じてキャッシュをクリアし、必要に応じてデータを更新
-        clearBaseDataCache();
+    // ランキングデータが読み込まれている場合は更新
+    if (rankingData.length > 0) {
+      console.log('StatisticsContext: ランキングデータを更新');
+      updatePromises.push(fetchRankingData());
+    }
 
-        // 現在表示中の統計データのみを更新（バックグラウンド更新）
-        const updatePromises: Promise<void>[] = [];
+    // 効率データが読み込まれている場合は更新
+    if (efficiencyData.length > 0) {
+      console.log('StatisticsContext: 効率データを更新');
+      updatePromises.push(fetchEfficiencyData());
+    }
 
-        // 基本統計データが読み込まれている場合は更新
-        if (basicStats !== null) {
-          console.log('StatisticsContext: 基本統計データをバックグラウンドで更新');
-          updatePromises.push(fetchBasicStats());
-        }
+    // 環境影響データが読み込まれている場合は更新
+    if (impactData !== null) {
+      console.log('StatisticsContext: 環境影響データを更新');
+      updatePromises.push(fetchImpactData());
+    }
 
-        // ランキングデータが読み込まれている場合は更新
-        if (rankingData.length > 0) {
-          console.log('StatisticsContext: ランキングデータをバックグラウンドで更新');
-          updatePromises.push(fetchRankingData());
-        }
+    // アイテム詳細統計のキャッシュをクリア
+    if (itemDetailStats.size > 0) {
+      console.log('StatisticsContext: アイテム詳細統計のキャッシュをクリア');
+      setItemDetailStats(new Map());
+    }
 
-        // 効率データが読み込まれている場合は更新
-        if (efficiencyData.length > 0) {
-          console.log('StatisticsContext: 効率データをバックグラウンドで更新');
-          updatePromises.push(fetchEfficiencyData());
-        }
+    // すべての更新を並行して実行
+    if (updatePromises.length > 0) {
+      Promise.all(updatePromises)
+        .then(() => console.log('StatisticsContext: clothingItems変更による更新が完了'))
+        .catch(err => console.error('StatisticsContext: 更新中にエラー:', err));
+    }
+  }, [clothingItems]);
 
-        // 環境影響データが読み込まれている場合は更新
-        if (impactData !== null) {
-          console.log('StatisticsContext: 環境影響データをバックグラウンドで更新');
-          updatePromises.push(fetchImpactData());
-        }
-
-        // バッジデータが読み込まれている場合は更新
-        if (badges.length > 0) {
-          console.log('StatisticsContext: バッジデータをバックグラウンドで更新');
-          updatePromises.push(fetchBadges());
-        }
-
-        // アイテム詳細統計のキャッシュをクリア（特定のアイテムが更新された場合）
-        if (data && data.itemId && itemDetailStats.has(data.itemId)) {
-          console.log(`StatisticsContext: アイテム詳細統計のキャッシュをクリア (ID=${data.itemId})`);
-          setItemDetailStats(prev => {
-            const newMap = new Map(prev);
-            newMap.delete(data.itemId);
-            return newMap;
-          });
-        }
-
-        // すべての更新を並行して実行
-        if (updatePromises.length > 0) {
-          Promise.all(updatePromises)
-            .then(() => console.log('StatisticsContext: イベントによるバックグラウンド更新が完了'))
-            .catch(err => console.error('StatisticsContext: バックグラウンド更新中にエラー:', err));
-        }
-      });
-    });
-
-    // クリーンアップ関数
-    return () => {
-      console.log('StatisticsContext: イベントリスナーをクリーンアップ');
-      unsubscribers.forEach(unsubscribe => unsubscribe());
-    };
-  }, [
-    basicStats, 
-    rankingData, 
-    efficiencyData, 
-    impactData, 
-    badges, 
-    itemDetailStats, 
-    fetchBasicStats, 
-    fetchRankingData, 
-    fetchEfficiencyData, 
-    fetchImpactData, 
-    fetchBadges
-  ]);
 
   // コンテキスト値を提供
   const contextValue: StatisticsContextType = {

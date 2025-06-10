@@ -283,7 +283,7 @@ export default function BadgesOverviewScreen() {
                   )}
                   {badge.isEarned && (
                     <View style={styles.earnedIndicator}>
-                      <Ionicons name="checkmark-circle" size={16} color={theme.success} /> {/* Use theme success color */}
+                      <Ionicons name="checkmark-circle" size={16} color={theme.success} />
                     </View>
                   )}
                 </View>

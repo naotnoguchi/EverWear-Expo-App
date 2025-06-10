@@ -426,7 +426,7 @@ export default function ItemDetailScreen() {
 
             <View style={styles.statItem}>
               <Text style={styles.statValue}>
-                {itemStats.wearPerWash.toFixed(1)}
+                {(itemStats.wearPerWash || 0).toFixed(1)}
               </Text>
               <Text style={styles.statLabel}>
                 着用/洗濯
@@ -584,7 +584,7 @@ export default function ItemDetailScreen() {
               </Text>
               {itemStats.wearCount > 1 ? (
                 <Text style={styles.patternValue}>
-                  {itemStats.averageWearInterval.toFixed(1)}日
+                  {(itemStats.averageWearInterval || 0).toFixed(1)}日
                 </Text>
               ) : (
                 <Text style={[styles.patternValue, { color: theme.text + "99" }]}>
@@ -678,7 +678,7 @@ export default function ItemDetailScreen() {
                 <Ionicons name="water" size={24} color="#3498db" />
               </View>
               <Text style={styles.impactValue}>
-                {itemStats.waterSaved.toFixed(1)}L
+                {(itemStats.waterSaved || 0).toFixed(1)}L
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={styles.impactLabel}>節水量</Text>
@@ -696,7 +696,7 @@ export default function ItemDetailScreen() {
                 <Ionicons name="flash" size={24} color="#27ae60" />
               </View>
               <Text style={styles.impactValue}>
-                {itemStats.energySaved.toFixed(1)}kWh
+                {(itemStats.energySaved || 0).toFixed(1)}kWh
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={styles.impactLabel}>節電量</Text>
@@ -714,7 +714,7 @@ export default function ItemDetailScreen() {
                 <Ionicons name="cloud" size={24} color="#e74c3c" />
               </View>
               <Text style={styles.impactValue}>
-                {itemStats.co2Reduced.toFixed(1)}kg
+                {(itemStats.co2Reduced || 0).toFixed(1)}kg
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={styles.impactLabel}>CO2削減量</Text>

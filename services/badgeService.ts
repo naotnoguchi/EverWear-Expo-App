@@ -4,46 +4,67 @@ import { Badge } from '../types/statistics';
 import { AppClothingItem } from '../types/database';
 import { CategoryValue } from '../types/categories';
 
-// Fetch badge definitions from the database
-export async function fetchBadgeDefinitions(): Promise<any[]> {
+// Fetch badge definitions and conditions from the database in a single query
+export async function fetchBadgeData(): Promise<{ definitions: any[], conditions: any[] }> {
   try {
-    console.log('Fetching badge definitions from database');
+    console.log('Fetching badge data (definitions and conditions) from database');
 
-    const { data, error } = await db
+    // Fetch badge definitions with their conditions using a JOIN query
+    const { data: definitionsWithConditions, error: definitionsError } = await db
       .from('badge_definitions')
-      .select('*')
+      .select(`
+        *,
+        badge_conditions(*)
+      `)
       .eq('is_active', true)
       .order('display_order');
 
-    if (error) {
-      console.error('Error fetching badge definitions:', error);
-      throw error;
+    if (definitionsError) {
+      console.error('Error fetching badge definitions with conditions:', definitionsError);
+      throw definitionsError;
     }
 
-    console.log('Fetched badge definitions:', data?.length || 0);
-    return data || [];
+    // Extract definitions and conditions from the joined result
+    const definitions = definitionsWithConditions || [];
+    const conditions: any[] = [];
+
+    // Extract conditions from each definition
+    definitions.forEach(def => {
+      if (def.badge_conditions && Array.isArray(def.badge_conditions)) {
+        conditions.push(...def.badge_conditions);
+        // Remove the conditions from the definition to keep the structure clean
+        delete def.badge_conditions;
+      }
+    });
+
+    console.log('Fetched badge data:', 
+      `definitions=${definitions.length},`,
+      `conditions=${conditions.length}`);
+
+    return { definitions, conditions };
+  } catch (e) {
+    console.error('Exception in fetchBadgeData:', e);
+    return { definitions: [], conditions: [] };
+  }
+}
+
+// Legacy functions for backward compatibility
+export async function fetchBadgeDefinitions(): Promise<any[]> {
+  try {
+    console.log('Using fetchBadgeData instead of fetchBadgeDefinitions');
+    const { definitions } = await fetchBadgeData();
+    return definitions;
   } catch (e) {
     console.error('Exception in fetchBadgeDefinitions:', e);
     return [];
   }
 }
 
-// Fetch badge conditions from the database
 export async function fetchBadgeConditions(): Promise<any[]> {
   try {
-    console.log('Fetching badge conditions from database');
-
-    const { data, error } = await db
-      .from('badge_conditions')
-      .select('*');
-
-    if (error) {
-      console.error('Error fetching badge conditions:', error);
-      throw error;
-    }
-
-    console.log('Fetched badge conditions:', data?.length || 0);
-    return data || [];
+    console.log('Using fetchBadgeData instead of fetchBadgeConditions');
+    const { conditions } = await fetchBadgeData();
+    return conditions;
   } catch (e) {
     console.error('Exception in fetchBadgeConditions:', e);
     return [];

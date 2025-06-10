@@ -17,5 +17,3 @@ export {
   Period
 } from '../types/statistics';
 
-// Re-export clearBaseDataCache from supabaseService
-export const { clearBaseDataCache } = supabaseService;

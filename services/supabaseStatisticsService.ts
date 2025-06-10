@@ -19,6 +19,7 @@ import {
   fetchUserBadges,
   saveNewlyEarnedBadges
 } from './badgeService';
+import { getClothingItemsWithHistory, getSingleItemWithHistory } from './supabaseDataService';
 
 // Helper function to filter items by period
 const filterByPeriod = (dates: string[], period: Period): string[] => {
@@ -148,64 +149,70 @@ class StatisticsCache {
   }
 }
 
-// Helper function to fetch all clothing items with their wear and wash history
-async function fetchClothingItemsWithHistory(): Promise<AppClothingItem[]> {
-  const { data: session } = await auth.getSession();
-  const userId = session?.session?.user?.id;
+// 基礎データのキャッシュ
+let baseDataCache: {
+  data: AppClothingItem[] | null;
+  timestamp: number;
+} = {
+  data: null,
+  timestamp: 0
+};
 
-  if (!userId) {
-    throw new Error('User not authenticated');
+// 基礎データを取得する一元化された関数
+async function fetchBaseStatisticsData(): Promise<AppClothingItem[]> {
+  console.log('統計基礎データの取得開始');
+  // キャッシュが有効かチェック（5分間有効）
+  const cacheIsValid = baseDataCache.data !== null && 
+                     (Date.now() - baseDataCache.timestamp < 5 * 60 * 1000);
+
+  if (cacheIsValid) {
+    console.log('統計基礎データのキャッシュが有効、キャッシュから返却');
+    return baseDataCache.data!;
   }
 
-  // Get authenticated client
-  const authClient = await getAuthenticatedClient();
+  console.log('統計基礎データのキャッシュが無効、データを再取得');
+  // キャッシュが無効な場合、データを取得
+  const items = await getClothingItemsWithHistory();
 
-  // Get clothing items
-  const { data: items, error } = await authClient
-    .from('clothing_items')
-    .select('*')
-    .eq('user_id', userId);
+  // キャッシュを更新
+  baseDataCache = {
+    data: items,
+    timestamp: Date.now()
+  };
+  console.log(`統計基礎データの取得完了: ${items.length}件のアイテムデータを取得`);
 
-  if (error) throw error;
-
-  // Get wear and wash history for each item
-  const result: AppClothingItem[] = [];
-
-  for (const item of items) {
-    const { data: wearHistory, error: wearError } = await authClient
-      .from('wear_history')
-      .select('*')
-      .eq('clothing_item_id', item.id);
-
-    if (wearError) throw wearError;
-
-    const { data: washHistory, error: washError } = await authClient
-      .from('wash_history')
-      .select('*')
-      .eq('clothing_item_id', item.id);
-
-    if (washError) throw washError;
-
-    result.push(toAppClothingItem(item, wearHistory, washHistory));
-  }
-
-  return result;
+  return items;
 }
+
+// 単一アイテムとその履歴を取得する関数
+async function fetchSingleItemWithHistory(itemId: string): Promise<AppClothingItem> {
+  const item = await getSingleItemWithHistory(itemId);
+  if (!item) {
+    throw new Error('Item not found');
+  }
+  return item;
+}
+
 
 // Get basic statistics
 export async function getBasicStats(period: Period = '3months'): Promise<BasicStats> {
+  console.log(`基本統計データの取得開始: 期間=${period}`);
   const cache = StatisticsCache.getInstance();
   const cachedData = cache.get<BasicStats>('basicStats', period);
 
   if (cachedData) {
+    console.log('基本統計データのキャッシュが有効、キャッシュから返却');
     return cachedData;
   }
 
   try {
-    // Fetch real data from Supabase
-    const items = await fetchClothingItemsWithHistory();
+    console.log('基本統計データのキャッシュが無効、計算を開始');
+    // 一元化された関数を使用してデータを取得
+    const items = await fetchBaseStatisticsData();
+    console.log(`基本統計の計算: ${items.length}件のアイテムデータを使用`);
 
     // Filter items by period
+    console.log(`期間フィルター適用: ${period}`);
     const filteredItems = items.map(item => ({
       ...item,
       filteredWearHistory: filterByPeriod(item.wearHistory, period),
@@ -215,11 +222,14 @@ export async function getBasicStats(period: Period = '3months'): Promise<BasicSt
     // Calculate total wears and washes in the period
     const totalWears = filteredItems.reduce((sum, item) => sum + item.filteredWearHistory.length, 0);
     const totalWashes = filteredItems.reduce((sum, item) => sum + item.filteredWashHistory.length, 0);
+    console.log(`集計結果: 総着用回数=${totalWears}, 総洗濯回数=${totalWashes}`);
 
     // Calculate average wears between washes
     const averageWearsBetweenWashes = totalWashes > 0 ? parseFloat((totalWears / totalWashes).toFixed(1)) : 0;
+    console.log(`平均着用回数/洗濯=${averageWearsBetweenWashes}`);
 
     // Find most worn category
+    console.log('カテゴリ別着用回数の集計');
     const categoryWears: Record<CategoryValue, number> = {};
     filteredItems.forEach(item => {
       const category = item.category;
@@ -232,8 +242,10 @@ export async function getBasicStats(period: Period = '3months'): Promise<BasicSt
           .sort((a, b) => b[1] - a[1])
           .map(entry => entry[0] as CategoryValue)[0]
       : null;
+    console.log(`最も着用されたカテゴリ: ${mostWornCategory || 'なし'}`);
 
     // Find most and least worn items
+    console.log('着用回数によるアイテムのソート');
     const sortedItems = [...filteredItems].sort(
       (a, b) => b.filteredWearHistory.length - a.filteredWearHistory.length
     );
@@ -250,7 +262,11 @@ export async function getBasicStats(period: Period = '3months'): Promise<BasicSt
       wears: sortedItems[sortedItems.length - 1].filteredWearHistory.length
     } : { id: '', name: '', wears: 0 };
 
+    console.log(`最も着用されたアイテム: ${mostWornItem.name}(${mostWornItem.wears}回)`);
+    console.log(`最も着用されていないアイテム: ${leastWornItem.name}(${leastWornItem.wears}回)`);
+
     // Calculate category breakdown
+    console.log('カテゴリ別アイテム数の集計');
     const categories: Record<CategoryValue, number> = {};
     items.forEach(item => {
       const category = item.category;
@@ -266,6 +282,7 @@ export async function getBasicStats(period: Period = '3months'): Promise<BasicSt
     }));
 
     // Calculate monthly wears
+    console.log('月別着用回数の集計');
     const monthlyWears: Record<string, number> = {};
     const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
 
@@ -287,10 +304,12 @@ export async function getBasicStats(period: Period = '3months'): Promise<BasicSt
     });
 
     // Calculate average wash threshold
+    console.log('平均洗濯閾値の計算');
     const totalThreshold = filteredItems.reduce((sum, item) => sum + (item.washThreshold || 0), 0);
     const averageWashThreshold = filteredItems.length > 0
       ? parseFloat((totalThreshold / filteredItems.length).toFixed(1))
       : 3; // Default value of 3
+    console.log(`平均洗濯閾値=${averageWashThreshold}`);
 
     const stats: BasicStats = {
       totalItems,
@@ -305,10 +324,11 @@ export async function getBasicStats(period: Period = '3months'): Promise<BasicSt
       monthlyWears: monthlyWearsArray
     };
 
+    console.log('基本統計データの計算完了、キャッシュに保存');
     cache.set('basicStats', stats, period);
     return stats;
   } catch (error) {
-    console.error('Error fetching basic stats:', error);
+    console.error('基本統計データの取得エラー:', error);
     throw error;
   }
 }
@@ -319,19 +339,23 @@ export async function getRankingData(
   sortOrder: 'most' | 'least' = 'most',
   category: CategoryValue = null
 ): Promise<RankingItem[]> {
+  console.log(`ランキングデータの取得開始: 期間=${period}, 並び順=${sortOrder}, カテゴリ=${category || 'すべて'}`);
   const cacheKey = `${period}-${sortOrder}-${category || 'all'}`;
   const cache = StatisticsCache.getInstance();
   const cachedData = cache.get<RankingItem[]>('rankingData', cacheKey);
 
   if (cachedData) {
+    console.log(`ランキングデータのキャッシュが有効、キャッシュから返却: ${cachedData.length}件`);
     return cachedData;
   }
 
   try {
-    // Fetch real data from Supabase
-    const items = await fetchClothingItemsWithHistory();
+    console.log('ランキングデータのキャッシュが無効、計算を開始');
+    // 一元化された関数を使用してデータを取得
+    const items = await fetchBaseStatisticsData();
 
     // Filter items by period and category
+    console.log(`アイテムのフィルタリング: カテゴリ=${category || 'すべて'}`);
     let filteredItems = items
       .filter(item => category === null || item.category === category)
       .map(item => ({
@@ -339,7 +363,10 @@ export async function getRankingData(
         filteredWearHistory: filterByPeriod(item.wearHistory, period)
       }));
 
+    console.log(`フィルタリング後のアイテム数: ${filteredItems.length}件`);
+
     // Sort by wear count
+    console.log(`着用回数による${sortOrder === 'most' ? '降順' : '昇順'}ソート`);
     filteredItems = filteredItems.sort((a, b) => {
       const diff = b.filteredWearHistory.length - a.filteredWearHistory.length;
       return sortOrder === 'most' ? diff : -diff;
@@ -350,8 +377,10 @@ export async function getRankingData(
       ...filteredItems.map(item => item.filteredWearHistory.length),
       1 // Avoid division by zero
     );
+    console.log(`最大着用回数: ${maxWearCount}回`);
 
     // Convert to RankingItem format
+    console.log('RankingItem形式への変換');
     const rankingData = filteredItems.map(item => ({
       id: item.id,
       name: item.name,
@@ -362,28 +391,34 @@ export async function getRankingData(
       percentageOfMax: Math.round((item.filteredWearHistory.length / maxWearCount) * 100)
     }));
 
+    console.log(`ランキングデータの計算完了: ${rankingData.length}件のデータを生成`);
     cache.set('rankingData', rankingData, cacheKey);
     return rankingData;
   } catch (error) {
-    console.error('Error fetching ranking data:', error);
+    console.error('ランキングデータの取得エラー:', error);
     throw error;
   }
 }
 
 // Get efficiency data
 export async function getEfficiencyData(period: Period = '3months'): Promise<EfficiencyItem[]> {
+  console.log(`効率データの取得開始: 期間=${period}`);
   const cache = StatisticsCache.getInstance();
   const cachedData = cache.get<EfficiencyItem[]>('efficiencyData', period);
 
   if (cachedData) {
+    console.log(`効率データのキャッシュが有効、キャッシュから返却: ${cachedData.length}件`);
     return cachedData;
   }
 
   try {
-    // Fetch real data from Supabase
-    const items = await fetchClothingItemsWithHistory();
+    console.log('効率データのキャッシュが無効、計算を開始');
+    // 一元化された関数を使用してデータを取得
+    const items = await fetchBaseStatisticsData();
+    console.log(`効率データの計算: ${items.length}件のアイテムデータを使用`);
 
     // Filter items by period
+    console.log(`期間フィルター適用: ${period}`);
     const filteredItems = items.map(item => {
       const filteredWearHistory = filterByPeriod(item.wearHistory, period);
       const filteredWashHistory = filterByPeriod(item.washHistory, period);
@@ -411,6 +446,8 @@ export async function getEfficiencyData(period: Period = '3months'): Promise<Eff
         status = 'underwashed'; // Not washing frequently enough
       }
 
+      console.log(`アイテム効率計算: ID=${item.id}, 名前=${item.name}, 着用=${wearCount}, 洗濯=${washCount}, 効率=${efficiency.toFixed(2)}, 状態=${status}`);
+
       return {
         id: item.id,
         name: item.name,
@@ -426,30 +463,37 @@ export async function getEfficiencyData(period: Period = '3months'): Promise<Eff
     });
 
     // Sort by efficiency (highest first)
+    console.log('効率によるアイテムのソート');
     const efficiencyData = filteredItems.sort((a, b) => b.efficiency - a.efficiency);
 
+    console.log(`効率データの計算完了: ${efficiencyData.length}件のデータを生成`);
     cache.set('efficiencyData', efficiencyData, period);
     return efficiencyData;
   } catch (error) {
-    console.error('Error fetching efficiency data:', error);
+    console.error('効率データの取得エラー:', error);
     throw error;
   }
 }
 
 // Get impact data
 export async function getImpactData(period: Period = '3months'): Promise<ImpactData> {
+  console.log(`環境影響データの取得開始: 期間=${period}`);
   const cache = StatisticsCache.getInstance();
   const cachedData = cache.get<ImpactData>('impactData', period);
 
   if (cachedData) {
+    console.log('環境影響データのキャッシュが有効、キャッシュから返却');
     return cachedData;
   }
 
   try {
-    // Fetch real data from Supabase
-    const items = await fetchClothingItemsWithHistory();
+    console.log('環境影響データのキャッシュが無効、計算を開始');
+    // 一元化された関数を使用してデータを取得
+    const items = await fetchBaseStatisticsData();
+    console.log(`環境影響データの計算: ${items.length}件のアイテムデータを使用`);
 
     // Constants for impact calculations
+    console.log('環境影響計算の定数を設定');
     const ELECTRICITY_PER_WASH = 0.5; // kWh
     const ELECTRICITY_COST_PER_KWH = 25; // yen
     const WATER_PER_WASH = 50; // liters
@@ -461,6 +505,7 @@ export async function getImpactData(period: Period = '3months'): Promise<ImpactD
     const ITEMS_PER_WASH_LOAD = 5; // average items per wash load
 
     // Filter items by period
+    console.log(`期間フィルター適用: ${period}`);
     const filteredItems = items.map(item => {
       const filteredWearHistory = filterByPeriod(item.wearHistory, period);
       const filteredWashHistory = filterByPeriod(item.washHistory, period);
@@ -481,28 +526,35 @@ export async function getImpactData(period: Period = '3months'): Promise<ImpactD
 
     // Calculate total washes reduced
     const totalWashesReduced = filteredItems.reduce((sum, item) => sum + (item.washesReduced || 0), 0);
+    console.log(`総洗濯回数削減: ${totalWashesReduced.toFixed(1)}回`);
 
     // Calculate resource savings
+    console.log('資源節約効果の計算');
     const electricitySaved = {
       amount: parseFloat((totalWashesReduced * ELECTRICITY_PER_WASH).toFixed(1)),
       cost: Math.round(totalWashesReduced * ELECTRICITY_PER_WASH * ELECTRICITY_COST_PER_KWH)
     };
+    console.log(`電気節約: ${electricitySaved.amount}kWh (${electricitySaved.cost}円)`);
 
     const waterSaved = {
       amount: Math.round(totalWashesReduced * WATER_PER_WASH),
       cost: Math.round(totalWashesReduced * WATER_PER_WASH * WATER_COST_PER_1000L / 1000)
     };
+    console.log(`水節約: ${waterSaved.amount}L (${waterSaved.cost}円)`);
 
     const detergentSaved = {
       amount: Math.round(totalWashesReduced * DETERGENT_PER_WASH),
       cost: Math.round(totalWashesReduced * DETERGENT_PER_WASH * DETERGENT_COST_PER_BOTTLE / 800)
     };
+    console.log(`洗剤節約: ${detergentSaved.amount}ml (${detergentSaved.cost}円)`);
 
     // Calculate CO2 reduction
     const co2Reduced = parseFloat((electricitySaved.amount * CO2_PER_KWH).toFixed(1));
     const treeEquivalent = parseFloat((co2Reduced * TREES_PER_KG_CO2).toFixed(1));
+    console.log(`CO2削減: ${co2Reduced}kg (植樹相当: ${treeEquivalent}本)`);
 
     // Calculate monthly impact
+    console.log('月別環境影響の計算');
     const monthlyImpact: { month: string; washesReduced: number; co2Reduced: number }[] = [];
     const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
     const monthlyWashesReduced: Record<string, number> = {};
@@ -542,6 +594,7 @@ export async function getImpactData(period: Period = '3months'): Promise<ImpactD
 
     // Sort by month
     monthlyImpact.sort((a, b) => months.indexOf(a.month) - months.indexOf(b.month));
+    console.log(`月別データ生成: ${monthlyImpact.length}ヶ月分のデータを計算`);
 
     const impactData: ImpactData = {
       totalWashesReduced,
@@ -553,10 +606,11 @@ export async function getImpactData(period: Period = '3months'): Promise<ImpactD
       monthlyImpact
     };
 
+    console.log('環境影響データの計算完了、キャッシュに保存');
     cache.set('impactData', impactData, period);
     return impactData;
   } catch (error) {
-    console.error('Error fetching impact data:', error);
+    console.error('環境影響データの取得エラー:', error);
     throw error;
   }
 }
@@ -588,8 +642,8 @@ export async function getBadges(): Promise<Badge[]> {
       return defaultBadges;
     }
 
-    // Fetch items with history
-    const items = await fetchClothingItemsWithHistory();
+    // 一元化された関数を使用してデータを取得
+    const items = await fetchBaseStatisticsData();
 
     // Calculate statistics for badge evaluation
     const totalItems = items.length;
@@ -1081,61 +1135,49 @@ function createDefaultBadges(items?: AppClothingItem[], stats?: any): Badge[] {
 
 // Get item detail statistics
 export async function getItemDetailStats(itemId: string): Promise<ItemDetailStats> {
+  console.log(`アイテム詳細統計の取得開始: ID=${itemId}`);
   const cache = StatisticsCache.getInstance();
   const cachedData = cache.get<ItemDetailStats>('itemDetailStats', itemId);
 
   if (cachedData) {
+    console.log('アイテム詳細統計のキャッシュが有効、キャッシュから返却');
     return cachedData;
   }
 
   try {
-    // Fetch the specific item with its history
-    const { data: session } = await auth.getSession();
-    const userId = session?.session?.user?.id;
+    console.log('アイテム詳細統計のキャッシュが無効、計算を開始');
+    // アイテムデータを取得
+    let appItem: AppClothingItem;
 
-    if (!userId) {
-      throw new Error('User not authenticated');
+    // まず、キャッシュされた基礎データから該当アイテムを探す
+    if (baseDataCache.data) {
+      console.log('基礎データキャッシュから該当アイテムを検索');
+      const cachedItem = baseDataCache.data.find(item => item.id === itemId);
+      if (cachedItem) {
+        // キャッシュから見つかった場合はそれを使用
+        console.log('基礎データキャッシュから該当アイテムを発見、キャッシュから使用');
+        appItem = cachedItem;
+      } else {
+        // キャッシュに見つからない場合は個別に取得
+        console.log('基礎データキャッシュに該当アイテムがないため個別に取得');
+        appItem = await fetchSingleItemWithHistory(itemId);
+      }
+    } else {
+      // 基礎データのキャッシュがない場合は個別に取得
+      console.log('基礎データキャッシュが存在しないため個別に取得');
+      appItem = await fetchSingleItemWithHistory(itemId);
     }
 
-    // Get authenticated client
-    const authClient = await getAuthenticatedClient();
-
-    // Get the clothing item
-    const { data: item, error } = await authClient
-      .from('clothing_items')
-      .select('*')
-      .eq('id', itemId)
-      .eq('user_id', userId)
-      .single();
-
-    if (error) throw error;
-
-    // Get wear history
-    const { data: wearHistory, error: wearError } = await authClient
-      .from('wear_history')
-      .select('*')
-      .eq('clothing_item_id', itemId);
-
-    if (wearError) throw wearError;
-
-    // Get wash history
-    const { data: washHistory, error: washError } = await authClient
-      .from('wash_history')
-      .select('*')
-      .eq('clothing_item_id', itemId);
-
-    if (washError) throw washError;
-
-    // Convert to app format
-    const appItem = toAppClothingItem(item, wearHistory, washHistory);
-
     // Calculate statistics
+    console.log(`アイテム統計の計算: 着用履歴=${appItem.wearHistory.length}件, 洗濯履歴=${appItem.washHistory.length}件`);
     const wearCount = appItem.wearHistory.length;
     const washCount = appItem.washHistory.length;
     const wearPerWash = washCount > 0 ? parseFloat((wearCount / washCount).toFixed(1)) : wearCount;
     const efficiency = appItem.washThreshold > 0 ? parseFloat((wearPerWash / appItem.washThreshold).toFixed(2)) : 0;
+    console.log(`基本効率計算: 着用回数=${wearCount}, 洗濯回数=${washCount}, 着用/洗濯=${wearPerWash}, 効率=${efficiency}`);
 
     // Calculate wear by day of week
+    console.log('曜日別着用回数の集計');
     const wearsByDay: { [day: string]: number } = {
       '日曜日': 0, '月曜日': 0, '火曜日': 0, '水曜日': 0, '木曜日': 0, '金曜日': 0, '土曜日': 0
     };
@@ -1147,8 +1189,10 @@ export async function getItemDetailStats(itemId: string): Promise<ItemDetailStat
       const day = dayNames[date.getDay()];
       wearsByDay[day]++;
     });
+    console.log('曜日別着用回数:', wearsByDay);
 
     // Calculate wear by month
+    console.log('月別着用回数の集計');
     const wearsByMonth: { [month: string]: number } = {};
     const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
 
@@ -1157,8 +1201,10 @@ export async function getItemDetailStats(itemId: string): Promise<ItemDetailStat
       const month = months[date.getMonth()];
       wearsByMonth[month] = (wearsByMonth[month] || 0) + 1;
     });
+    console.log('月別着用回数:', wearsByMonth);
 
     // Calculate wear trend (last 6 months)
+    console.log('過去6ヶ月の着用・洗濯トレンドの計算');
     const now = new Date();
     const wearTrend: { period: string; count: number }[] = [];
     const washTrend: { period: string; count: number }[] = [];
@@ -1167,6 +1213,7 @@ export async function getItemDetailStats(itemId: string): Promise<ItemDetailStat
       const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthName = months[month.getMonth()];
       const monthYear = `${monthName} ${month.getFullYear()}`;
+      console.log(`トレンド計算対象月: ${monthYear}`);
 
       // Count wears in this month
       const wearsInMonth = appItem.wearHistory.filter(dateStr => {
@@ -1180,11 +1227,14 @@ export async function getItemDetailStats(itemId: string): Promise<ItemDetailStat
         return date.getMonth() === month.getMonth() && date.getFullYear() === month.getFullYear();
       }).length;
 
+      console.log(`${monthName}の着用回数: ${wearsInMonth}, 洗濯回数: ${washesInMonth}`);
       wearTrend.push({ period: monthName, count: wearsInMonth });
       washTrend.push({ period: monthName, count: washesInMonth });
     }
+    console.log('トレンドデータ生成完了');
 
     // Calculate average wear interval
+    console.log('平均着用間隔の計算');
     let averageWearInterval = 0;
     if (appItem.wearHistory.length > 1) {
       const sortedWears = [...appItem.wearHistory].sort();
@@ -1203,9 +1253,13 @@ export async function getItemDetailStats(itemId: string): Promise<ItemDetailStat
       }
 
       averageWearInterval = intervals > 0 ? parseFloat((totalDays / intervals).toFixed(1)) : 0;
+      console.log(`平均着用間隔: ${averageWearInterval}日 (総日数=${totalDays}, 間隔数=${intervals})`);
+    } else {
+      console.log('着用履歴が1件以下のため平均着用間隔は計算できません');
     }
 
     // Calculate environmental impact
+    console.log('環境影響データの計算');
     const ELECTRICITY_PER_WASH = 0.5; // kWh
     const WATER_PER_WASH = 50; // liters
     const CO2_PER_KWH = 0.5; // kg
@@ -1214,25 +1268,35 @@ export async function getItemDetailStats(itemId: string): Promise<ItemDetailStat
     // If we washed after every wear, we would have wearCount washes
     // Instead, we only have washCount washes
     const washesReduced = Math.max(0, (wearCount - washCount) / ITEMS_PER_WASH_LOAD);
+    console.log(`洗濯回数削減: ${washesReduced.toFixed(2)}回 (着用=${wearCount}, 洗濯=${washCount}, 1回あたり${ITEMS_PER_WASH_LOAD}アイテム)`);
 
     const waterSaved = Math.round(washesReduced * WATER_PER_WASH);
     const energySaved = parseFloat((washesReduced * ELECTRICITY_PER_WASH).toFixed(1));
     const co2Reduced = parseFloat((energySaved * CO2_PER_KWH).toFixed(1));
+    console.log(`環境影響: 節水=${waterSaved}L, 節電=${energySaved}kWh, CO2削減=${co2Reduced}kg`);
 
     // Calculate optimized threshold based on usage pattern
+    console.log('最適化された洗濯閾値の計算');
     let optimizedThreshold = appItem.washThreshold;
     if (washCount > 0) {
       // If actual wears between washes is consistently different from threshold,
       // suggest an optimized threshold
       const actualWearsBetweenWashes = wearPerWash;
       const thresholdDiff = Math.abs(actualWearsBetweenWashes - appItem.washThreshold);
+      console.log(`実際の着用/洗濯=${actualWearsBetweenWashes}, 現在の閾値=${appItem.washThreshold}, 差=${thresholdDiff}`);
 
       if (thresholdDiff > 1) {
         // Round to nearest integer
         optimizedThreshold = Math.round(actualWearsBetweenWashes);
+        console.log(`閾値の差が1より大きいため、最適化された閾値を提案: ${optimizedThreshold}`);
+      } else {
+        console.log('現在の閾値は適切なため、最適化は不要');
       }
+    } else {
+      console.log('洗濯履歴がないため、閾値の最適化は行いません');
     }
 
+    console.log('アイテム詳細統計オブジェクトの作成');
     const itemDetailStats: ItemDetailStats = {
       id: appItem.id,
       name: appItem.name,
@@ -1255,18 +1319,28 @@ export async function getItemDetailStats(itemId: string): Promise<ItemDetailStat
       optimizedThreshold: optimizedThreshold !== appItem.washThreshold ? optimizedThreshold : undefined
     };
 
+    console.log('アイテム詳細統計をキャッシュに保存');
     cache.set('itemDetailStats', itemDetailStats, itemId);
     return itemDetailStats;
   } catch (error) {
-    console.error('Error fetching item detail stats:', error);
+    console.error('アイテム詳細統計の取得エラー:', error);
     throw error;
   }
+}
+
+// キャッシュをクリアする関数
+export function clearBaseDataCache(): void {
+  baseDataCache = {
+    data: null,
+    timestamp: 0
+  };
 }
 
 // Clear all cache
 export function clearCache(): void {
   const cache = StatisticsCache.getInstance();
   cache.clear();
+  clearBaseDataCache();
 }
 
 // Clear specific cache entry

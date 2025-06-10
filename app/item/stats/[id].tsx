@@ -1,21 +1,25 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal } from "react-native";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { statisticsService, ItemDetailStats } from "../../../services/statisticsServiceFactory";
+import { ItemDetailStats } from "../../../services/statisticsServiceFactory";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useLocalSearchParams, Stack } from "expo-router";
+import { useStatistics } from "../../../contexts/StatisticsContext";
 
 export default function ItemDetailScreen() {
   const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  // State
+  // 統計コンテキストを使用
+  const { fetchItemDetailStats } = useStatistics();
+
+  // ローカル状態
   const [itemStats, setItemStats] = useState<ItemDetailStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Modal visibility states
+  // モーダル表示状態
   const [showWashInfoModal, setShowWashInfoModal] = useState(false);
   const [showWaterInfoModal, setShowWaterInfoModal] = useState(false);
   const [showEnergyInfoModal, setShowEnergyInfoModal] = useState(false);
@@ -287,22 +291,22 @@ export default function ItemDetailScreen() {
     },
   }), [theme]);
 
-  // Fetch item detail data
+  // アイテム詳細データを取得
   const fetchItemDetail = useCallback(async () => {
     if (!id) return;
 
     try {
       setLoading(true);
       setError(null);
-      const data = await statisticsService.getItemDetailStats(id);
+      const data = await fetchItemDetailStats(id);
       setItemStats(data);
     } catch (err) {
-      console.error('Error fetching item detail data:', err);
+      console.error('アイテム詳細データの取得エラー:', err);
       setError('アイテム詳細データの取得に失敗しました。後でもう一度お試しください。');
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, fetchItemDetailStats]);
 
   // Load data on mount
   useEffect(() => {

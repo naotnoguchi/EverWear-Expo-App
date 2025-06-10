@@ -3,52 +3,12 @@ import { auth } from '../lib/authClient';
 import { AppClothingItem, toAppClothingItem, toDbClothingItem, Brand, ExtendedBrand } from '../types/database';
 import { BrandCache } from '../lib/brandCache';
 import { uploadImage, deleteImage } from '../lib/imageUtils';
+import { getClothingItemsWithHistory as getItemsWithHistory, getSingleItemWithHistory } from './supabaseDataService';
 
 // Get all clothing items with their history in a single query (optimized)
 export const getClothingItemsWithHistory = async (): Promise<AppClothingItem[]> => {
-  console.log('Fetching clothing items with history in a single query');
-  const { data: session } = await auth.getSession();
-  const userId = session?.session?.user?.id;
-
-  if (!userId) {
-    console.log('User not authenticated, cannot retrieve items');
-    throw new Error('User not authenticated');
-  }
-
-  // Get authenticated client
-  const authClient = await getAuthenticatedClient();
-
-  // Single RPC call to get data
-  const { data, error } = await authClient
-    .rpc('get_clothing_items_with_history', { user_id_param: userId });
-
-  if (error) {
-    console.log('Error retrieving items with history:', error);
-    throw error;
-  }
-
-  console.log(`Retrieved ${data?.length || 0} items with history from database`);
-
-  // Convert data to AppClothingItem format
-  const result: AppClothingItem[] = data.map(item => {
-    return {
-      id: item.item_id,
-      name: item.name,
-      category: item.category,
-      brand: item.brand_name || '',
-      image: item.image_path || '',
-      wearCount: item.wear_count,
-      washThreshold: item.wash_threshold,
-      lastWorn: item.last_worn || '',
-      memo: item.memo || '',
-      condition: item.condition || '',
-      purchasePrice: item.purchase_price,
-      wearHistory: Array.isArray(item.wear_dates) ? item.wear_dates : [],
-      washHistory: Array.isArray(item.wash_dates) ? item.wash_dates : []
-    };
-  });
-
-  return result;
+  console.log('衣類サービス: 共通データサービスを使用してアイテムと履歴を取得');
+  return await getItemsWithHistory();
 };
 
 // Get all clothing items for the current user
@@ -136,58 +96,8 @@ export const getClothingItems = async (): Promise<AppClothingItem[]> => {
 
 // Get a specific clothing item by ID
 export const getClothingItemById = async (id: string): Promise<AppClothingItem | null> => {
-  console.log('Fetching clothing item by ID:', id);
-  const { data: session } = await auth.getSession();
-  const userId = session?.session?.user?.id;
-
-  console.log('User authentication check for item retrieval');
-  if (!userId) {
-    console.log('User not authenticated, cannot retrieve item');
-    throw new Error('User not authenticated');
-  }
-
-  // Get authenticated client
-  console.log('Getting authenticated client for database operations');
-  const authClient = await getAuthenticatedClient();
-
-  // Get the clothing item with history in a single RPC call
-  console.log('Calling get_clothing_item_by_id_with_history RPC function');
-  const { data, error } = await authClient
-    .rpc('get_clothing_item_by_id_with_history', {
-      item_id_param: id,
-      user_id_param: userId
-    });
-
-  if (error) {
-    console.log('Error retrieving item with history:', error);
-    throw error;
-  }
-
-  // Check if item was found
-  if (!data || data.length === 0) {
-    console.log('Item not found:', id);
-    return null;
-  }
-
-  const item = data[0];
-  console.log('Retrieved item from database:', item.name);
-
-  // Convert the data to AppClothingItem format
-  return {
-    id: item.item_id,
-    name: item.name,
-    category: item.category,
-    brand: item.brand_name || '',
-    image: item.image_path || '',
-    wearCount: item.wear_count,
-    washThreshold: item.wash_threshold,
-    lastWorn: item.last_worn || '',
-    memo: item.memo || '',
-    condition: item.condition || '',
-    purchasePrice: item.purchase_price,
-    wearHistory: Array.isArray(item.wear_dates) ? item.wear_dates : [],
-    washHistory: Array.isArray(item.wash_dates) ? item.wash_dates : []
-  };
+  console.log('衣類サービス: 共通データサービスを使用して単一アイテムと履歴を取得:', id);
+  return await getSingleItemWithHistory(id);
 };
 
 // Add a new clothing item

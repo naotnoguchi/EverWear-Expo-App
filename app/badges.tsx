@@ -1,50 +1,51 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { useState, useEffect, useCallback } from "react";
-import { statisticsService, Badge } from "../services/statisticsServiceFactory";
+import { Badge } from "../services/statisticsServiceFactory";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, router } from "expo-router";
+import { useStatistics } from "../contexts/StatisticsContext";
 
 export default function BadgesScreen() {
   const theme = useTheme();
 
-  // State
-  const [badges, setBadges] = useState<Badge[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // 統計コンテキストを使用
+  const {
+    badges,
+    loading: { badges: isLoading },
+    error: { badges: contextError },
+    fetchBadges
+  } = useStatistics();
+
+  // ローディングとエラーの状態
+  const loading = isLoading;
+  const error = contextError;
+
+  // ローカル状態（コンテキストにない状態）
   const [selectedCategory, setSelectedCategory] = useState<Badge['category'] | 'all'>('all');
   const [showEarned, setShowEarned] = useState<'all' | 'earned' | 'unearned'>('all');
 
-  // Fetch badges data
-  const fetchBadges = useCallback(async () => {
+  // バッジデータを取得
+  const fetchBadgesData = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const data = await statisticsService.getBadges();
-      // Ensure data is an array before using array methods
-      const badgesArray = Array.isArray(data) ? data : [];
-      console.log('Badges screen - getBadges result:', 
-        `count=${badgesArray.length},`, 
-        `earned=${badgesArray.filter(b => b.isEarned).length},`,
-        `categories=${Object.keys(badgesArray.reduce((acc, b) => {
+      await fetchBadges();
+      console.log('バッジ画面 - バッジデータ取得結果:', 
+        `総数=${badges.length},`, 
+        `獲得済み=${badges.filter(b => b.isEarned).length},`,
+        `カテゴリ=${Object.keys(badges.reduce((acc, b) => {
           acc[b.category] = true;
           return acc;
         }, {})).join(',')}`
       );
-      setBadges(badgesArray);
     } catch (err) {
-      console.error('Error fetching badges data:', err);
-      setError('バッジデータの取得に失敗しました。後でもう一度お試しください。');
-      setBadges([]);
-    } finally {
-      setLoading(false);
+      console.error('バッジデータの取得エラー:', err);
     }
-  }, []);
+  }, [fetchBadges, badges.length]);
 
-  // Load data on mount
+  // マウント時にデータを取得
   useEffect(() => {
-    fetchBadges();
-  }, [fetchBadges]);
+    fetchBadgesData();
+  }, [fetchBadgesData]);
 
   // Filter badges based on selected category and earned status
   // Ensure badges is an array before filtering
@@ -395,7 +396,7 @@ export default function BadgesScreen() {
       <View style={[styles.container, styles.centerContent]}>
         <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
         <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchBadges}>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchBadgesData}>
           <Text style={styles.retryButtonText}>再試行</Text>
         </TouchableOpacity>
       </View>

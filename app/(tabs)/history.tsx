@@ -1,25 +1,26 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Text,
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  SectionList,
+  Alert,
   Animated,
   Easing,
   LayoutAnimation,
-  Platform,
-  UIManager,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  useWindowDimensions, Alert,
+  Platform,
+  SectionList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  useWindowDimensions,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useClothing } from '../../contexts/ClothingContext';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useTabReset } from '../../contexts/TabResetContext';
-import { router } from "expo-router";
 import HistoryCalendar, { HistoryCalendarRefType } from "../../components/HistoryCalendar";
+import { useClothing } from '../../contexts/ClothingContext';
+import { useTabReset } from '../../contexts/TabResetContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { formatDateJapanese } from '../../lib/dateUtils';
 
 // React Native の LayoutAnimation を有効化（Android用）
@@ -50,35 +51,44 @@ interface HistorySection {
 // 実際の履歴データを生成する関数
 const generateHistoryData = (clothingItems: any[]): HistoryItem[] => {
   const historyItems: HistoryItem[] = [];
+  const processedDates = new Set<string>(); // 処理済みの日付を追跡
 
   clothingItems.forEach(item => {
     // 着用履歴を追加
     if (item.wearHistory && item.wearHistory.length > 0) {
-      item.wearHistory.forEach((date: string) => {
-        historyItems.push({
-          id: `wear-${item.id}-${date}`,
-          itemId: item.id,
-          itemName: item.name,
-          category: item.category,
-          brand: item.brand, // ブランド情報を追加
-          eventType: "wear",
-          date: date
-        });
+      item.wearHistory.forEach((date: string, index: number) => {
+        const uniqueId = `wear-${item.id}-${date}-${index}`; // インデックスを追加して一意性を確保
+        if (!processedDates.has(uniqueId)) {
+          historyItems.push({
+            id: uniqueId,
+            itemId: item.id,
+            itemName: item.name,
+            category: item.category,
+            brand: item.brand,
+            eventType: "wear",
+            date: date
+          });
+          processedDates.add(uniqueId);
+        }
       });
     }
 
     // 洗濯履歴を追加
     if (item.washHistory && item.washHistory.length > 0) {
-      item.washHistory.forEach((date: string) => {
-        historyItems.push({
-          id: `wash-${item.id}-${date}`,
-          itemId: item.id,
-          itemName: item.name,
-          category: item.category,
-          brand: item.brand, // ブランド情報を追加
-          eventType: "wash",
-          date: date
-        });
+      item.washHistory.forEach((date: string, index: number) => {
+        const uniqueId = `wash-${item.id}-${date}-${index}`; // インデックスを追加して一意性を確保
+        if (!processedDates.has(uniqueId)) {
+          historyItems.push({
+            id: uniqueId,
+            itemId: item.id,
+            itemName: item.name,
+            category: item.category,
+            brand: item.brand,
+            eventType: "wash",
+            date: date
+          });
+          processedDates.add(uniqueId);
+        }
       });
     }
   });

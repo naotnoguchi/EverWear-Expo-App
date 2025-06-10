@@ -3,8 +3,6 @@ import React, { createContext, useState, useContext, ReactNode, useEffect, useCa
 import { clothingService, AppClothingItem } from '../services/clothingServiceFactory';
 import { formatDateToLocalISOString, formatDateJapanese } from '../lib/dateUtils';
 import { ExtendedBrand } from '../types/database';
-import { clearBaseDataCache } from '../services/statisticsServiceFactory';
-import { eventBus } from '../services/eventBus';
 
 // Use AppClothingItem from our database types
 type ClothingItem = AppClothingItem;
@@ -121,14 +119,9 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
 
   // データを再読み込みする関数
   const refreshData = useCallback(async () => {
-    // 統計データのキャッシュをクリア
-    clearBaseDataCache();
-
     // 衣類アイテムデータを再読み込み
     await loadData();
 
-    // データ更新イベントを発行
-    eventBus.publish('data-refreshed');
   }, [loadData]);
 
   // ソート設定を更新する関数
@@ -197,11 +190,6 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       // 状態を更新
       updateItemInState(updatedItem);
 
-      // 統計データのキャッシュをクリア
-      clearBaseDataCache();
-
-      // 着用記録追加イベントを発行
-      eventBus.publish('wear-added', { itemId: id, date: recordDate });
 
       return true;
     } catch (err) {
@@ -234,11 +222,6 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       // 状態を更新
       updateItemInState(updatedItem);
 
-      // 統計データのキャッシュをクリア
-      clearBaseDataCache();
-
-      // 洗濯記録追加イベントを発行
-      eventBus.publish('wash-added', { itemId: id, date: recordDate });
 
       return true;
     } catch (err) {
@@ -256,11 +239,6 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       // 新しいアイテムを状態に追加
       addItemToState(newItem);
 
-      // 統計データのキャッシュをクリア
-      clearBaseDataCache();
-
-      // アイテム追加イベントを発行
-      eventBus.publish('item-added', { itemId: newItem.id, item: newItem });
     } catch (err) {
       console.error('Failed to add item:', err);
       setError('アイテムの追加に失敗しました');
@@ -277,11 +255,6 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       // 状態内のアイテムを更新
       updateItemInState(result);
 
-      // 統計データのキャッシュをクリア
-      clearBaseDataCache();
-
-      // アイテム更新イベントを発行
-      eventBus.publish('item-updated', { itemId: result.id, item: result });
     } catch (err) {
       console.error('Failed to update item:', err);
       setError('アイテムの更新に失敗しました');
@@ -298,11 +271,6 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       // 状態からアイテムを削除
       removeItemFromState(id);
 
-      // 統計データのキャッシュをクリア
-      clearBaseDataCache();
-
-      // アイテム削除イベントを発行
-      eventBus.publish('item-deleted', { itemId: id });
     } catch (err) {
       console.error('Failed to delete item:', err);
       setError('アイテムの削除に失敗しました');
@@ -345,11 +313,6 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       // 状態を更新
       updateItemInState(updatedItem);
 
-      // 統計データのキャッシュをクリア
-      clearBaseDataCache();
-
-      // 着用履歴削除イベントを発行
-      eventBus.publish('wear-deleted', { itemId, date });
 
       return true;
     } catch (err) {
@@ -391,11 +354,6 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       // 状態を更新
       updateItemInState(updatedItem);
 
-      // 統計データのキャッシュをクリア
-      clearBaseDataCache();
-
-      // 洗濯履歴削除イベントを発行
-      eventBus.publish('wash-deleted', { itemId, date });
 
       return true;
     } catch (err) {

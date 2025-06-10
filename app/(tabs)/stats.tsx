@@ -805,9 +805,8 @@ export default function Stats() {
                   <Ionicons name="cash" size={24} color="#f1c40f" />
                 </View>
                 <Text style={styles.impactValue}>
-                  {((impactData.electricitySaved.cost || 0) + 
-                    (impactData.waterSaved.cost || 0) + 
-                    (impactData.detergentSaved.cost || 0))}円
+                  {/* 節約金額の計算（仮の値） */}
+                  {Math.round(impactData.waterSaved * 0.2 + impactData.energySaved * 25)}円
                 </Text>
                 <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>節約金額</Text>
               </View>
@@ -815,7 +814,7 @@ export default function Stats() {
 
             <Text style={[styles.impactDescription, { color: theme.text + "CC" }]}>
               「着用するたびに洗濯する」場合と比較して、あなたは{impactData.totalWashesReduced.toFixed(1)}回の洗濯を削減しました。
-              これは約{impactData.treeEquivalent}本の木を植えるのと同等のCO2削減効果があります。
+              これは約{Math.round(impactData.co2Reduced / 20)}本の木を植えるのと同等のCO2削減効果があります。
             </Text>
           </View>
         ) : (

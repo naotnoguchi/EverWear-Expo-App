@@ -15,6 +15,7 @@ import {
   calculateBadgeProgress,
   evaluateBadgeCondition,
   fetchBadgeConditions,
+  fetchBadgeData,
   fetchBadgeDefinitions,
   fetchUserBadges,
   saveNewlyEarnedBadges
@@ -149,40 +150,14 @@ class StatisticsCache {
   }
 }
 
-// 基礎データのキャッシュ
-let baseDataCache: {
-  data: AppClothingItem[] | null;
-  timestamp: number;
-} = {
-  data: null,
-  timestamp: 0
-};
-
-// 基礎データを取得する一元化された関数
+// 基礎データを取得する関数
 async function fetchBaseStatisticsData(): Promise<AppClothingItem[]> {
   console.log('統計基礎データの取得開始');
-  // キャッシュが有効かチェック（5分間有効）
-  const cacheIsValid = baseDataCache.data !== null && 
-                     (Date.now() - baseDataCache.timestamp < 5 * 60 * 1000);
-
-  if (cacheIsValid) {
-    console.log('統計基礎データのキャッシュが有効、キャッシュから返却');
-    return baseDataCache.data!;
-  }
-
-  console.log('統計基礎データのキャッシュが無効、データを再取得');
-  // キャッシュが無効な場合、データを取得
   const items = await getClothingItemsWithHistory();
-
-  // キャッシュを更新
-  baseDataCache = {
-    data: items,
-    timestamp: Date.now()
-  };
   console.log(`統計基礎データの取得完了: ${items.length}件のアイテムデータを取得`);
-
   return items;
 }
+
 
 // 単一アイテムとその履歴を取得する関数
 async function fetchSingleItemWithHistory(itemId: string): Promise<AppClothingItem> {
@@ -642,8 +617,28 @@ export async function getBadges(): Promise<Badge[]> {
       return defaultBadges;
     }
 
-    // 一元化された関数を使用してデータを取得
-    const items = await fetchBaseStatisticsData();
+    // Fetch item data and badge data in parallel
+    console.log('Fetching item data and badge data in parallel');
+
+    // Start both fetch operations in parallel
+    const itemDataPromise = fetchBaseStatisticsData();
+    const badgeDataPromise = fetchBadgeData();
+    const userBadgesPromise = fetchUserBadges(userId);
+
+    // Wait for all promises to resolve
+    const [items, badgeData, userBadges] = await Promise.all([
+      itemDataPromise,
+      badgeDataPromise,
+      userBadgesPromise
+    ]);
+
+    const { definitions: badgeDefinitions, conditions: badgeConditions } = badgeData;
+
+    console.log('Successfully fetched data in parallel:',
+      `items=${items.length},`,
+      `definitions=${badgeDefinitions.length},`,
+      `conditions=${badgeConditions.length},`,
+      `userBadges=${userBadges.size}`);
 
     // Calculate statistics for badge evaluation
     const totalItems = items.length;
@@ -663,30 +658,6 @@ export async function getBadges(): Promise<Badge[]> {
       maxWears,
       categories
     };
-
-    // Fetch badge definitions and conditions from database
-    console.log('Fetching badge definitions, conditions, and user badges');
-
-    let badgeDefinitions, badgeConditions, userBadges;
-
-    try {
-      [badgeDefinitions, badgeConditions, userBadges] = await Promise.all([
-        fetchBadgeDefinitions(),
-        fetchBadgeConditions(),
-        fetchUserBadges(userId)
-      ]);
-
-      console.log('Successfully fetched badge data:',
-        `definitions=${badgeDefinitions.length},`,
-        `conditions=${badgeConditions.length},`,
-        `userBadges=${userBadges.size}`);
-
-    } catch (e) {
-      console.error('Error fetching badge data:', e);
-      const defaultBadges = createDefaultBadges(items, stats);
-      cache.set('badges', defaultBadges);
-      return defaultBadges;
-    }
 
     // If no badge definitions found in database, use default hardcoded badges
     if (!badgeDefinitions || badgeDefinitions.length === 0) {
@@ -832,6 +803,56 @@ export async function getBadges(): Promise<Badge[]> {
     const defaultBadges = createDefaultBadges();
     cache.set('badges', defaultBadges);
     return defaultBadges;
+  }
+}
+
+// Evaluate badges in background and notify user of new badges
+export async function evaluateBadgesInBackground(): Promise<void> {
+  console.log('Starting background badge evaluation');
+
+  try {
+    // Get user session
+    const { data: session } = await auth.getSession();
+    const userId = session?.session?.user?.id;
+
+    if (!userId) {
+      console.warn('User not authenticated, skipping background badge evaluation');
+      return;
+    }
+
+    // Get cached badges if available
+    const cache = StatisticsCache.getInstance();
+    const cachedBadges = cache.get<Badge[]>('badges');
+
+    // Get current badges (this will evaluate and save new badges)
+    const currentBadges = await getBadges();
+
+    // If we had cached badges, compare to find newly earned badges
+    if (cachedBadges) {
+      const newlyEarnedBadges = currentBadges.filter(
+        current => current.isEarned && 
+                  !cachedBadges.some(cached => cached.id === current.id && cached.isEarned)
+      );
+
+      // Notify user of newly earned badges
+      if (newlyEarnedBadges.length > 0) {
+        console.log(`User earned ${newlyEarnedBadges.length} new badges:`, 
+          newlyEarnedBadges.map(b => b.name).join(', '));
+
+        // Here you would implement the actual notification
+        // This could be a push notification, an in-app notification, etc.
+        // For now, we'll just log it
+        newlyEarnedBadges.forEach(badge => {
+          console.log(`🏆 New badge earned: ${badge.name} - ${badge.description}`);
+          // TODO: Implement actual notification mechanism
+          // Example: showNotification(`新しいバッジを獲得しました: ${badge.name}`, badge.description);
+        });
+      }
+    }
+
+    console.log('Background badge evaluation completed');
+  } catch (error) {
+    console.error('Error in background badge evaluation:', error);
   }
 }
 
@@ -1147,26 +1168,8 @@ export async function getItemDetailStats(itemId: string): Promise<ItemDetailStat
   try {
     console.log('アイテム詳細統計のキャッシュが無効、計算を開始');
     // アイテムデータを取得
-    let appItem: AppClothingItem;
-
-    // まず、キャッシュされた基礎データから該当アイテムを探す
-    if (baseDataCache.data) {
-      console.log('基礎データキャッシュから該当アイテムを検索');
-      const cachedItem = baseDataCache.data.find(item => item.id === itemId);
-      if (cachedItem) {
-        // キャッシュから見つかった場合はそれを使用
-        console.log('基礎データキャッシュから該当アイテムを発見、キャッシュから使用');
-        appItem = cachedItem;
-      } else {
-        // キャッシュに見つからない場合は個別に取得
-        console.log('基礎データキャッシュに該当アイテムがないため個別に取得');
-        appItem = await fetchSingleItemWithHistory(itemId);
-      }
-    } else {
-      // 基礎データのキャッシュがない場合は個別に取得
-      console.log('基礎データキャッシュが存在しないため個別に取得');
-      appItem = await fetchSingleItemWithHistory(itemId);
-    }
+    console.log('アイテムデータを個別に取得');
+    const appItem = await fetchSingleItemWithHistory(itemId);
 
     // Calculate statistics
     console.log(`アイテム統計の計算: 着用履歴=${appItem.wearHistory.length}件, 洗濯履歴=${appItem.washHistory.length}件`);
@@ -1328,19 +1331,11 @@ export async function getItemDetailStats(itemId: string): Promise<ItemDetailStat
   }
 }
 
-// キャッシュをクリアする関数
-export function clearBaseDataCache(): void {
-  baseDataCache = {
-    data: null,
-    timestamp: 0
-  };
-}
-
 // Clear all cache
 export function clearCache(): void {
   const cache = StatisticsCache.getInstance();
   cache.clear();
-  clearBaseDataCache();
+  // clearBaseDataCache() は不要になったため呼び出さない
 }
 
 // Clear specific cache entry

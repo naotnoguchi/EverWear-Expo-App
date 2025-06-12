@@ -1,17 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../../contexts/StatisticsContext";
 import { useTabReset } from "../../contexts/TabResetContext";
 import { useTheme } from "../../contexts/ThemeContext";
+import { getPrivateUrls } from "../../lib/storageClient";
 import { Period } from "../../services/statisticsServiceFactory";
 
 export default function Stats() {
   const theme = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
   const { registerResetFunction } = useTabReset();
+
+  // 画像URL管理用の状態
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
 
   // 統計コンテキストを使用
   const { 
@@ -38,6 +42,39 @@ export default function Stats() {
                   contextLoading.impactData || contextLoading.badges;
   const error = contextError.basicStats || contextError.rankingData || 
                 contextError.impactData || contextError.badges;
+
+  // 画像URLを一括で取得
+  useEffect(() => {
+    const loadAllImageUrls = async () => {
+      if (!rankingData || rankingData.length === 0) return;
+
+      // 画像パスの配列を作成
+      const imagePaths = rankingData
+        .filter(item => item.imageUrl && !item.imageUrl.startsWith('http'))
+        .map(item => item.imageUrl);
+
+      if (imagePaths.length === 0) return;
+
+      try {
+        // 一括で署名付きURLを取得
+        const urls = await getPrivateUrls(imagePaths);
+        
+        // 取得したURLをマッピング
+        const newImageUrls: Record<string, string> = {};
+        rankingData.forEach((item, index) => {
+          if (urls[index]) {
+            newImageUrls[item.id] = urls[index];
+          }
+        });
+
+        setImageUrls(prev => ({ ...prev, ...newImageUrls }));
+      } catch (error) {
+        console.error('Error loading image URLs:', error);
+      }
+    };
+
+    loadAllImageUrls();
+  }, [rankingData]);
 
   // 効率ステータスの色を取得
   const getEfficiencyStatusColor = (status: string) => {
@@ -624,9 +661,9 @@ export default function Stats() {
           <View style={styles.statIconContainer}>
             <Ionicons name="analytics" size={24} color="#3498db" />
           </View>
-          {stats?.totalWashes > 0 ? (
+          {stats && stats.totalWashes > 0 ? (
             <>
-              <Text style={styles.statValue}>{stats?.averageWearsBetweenWashes || 0}</Text>
+              <Text style={styles.statValue}>{stats.averageWearsBetweenWashes || 0}</Text>
               <Text style={styles.statLabel}>平均着用回数/洗濯</Text>
             </>
           ) : (
@@ -666,10 +703,29 @@ export default function Stats() {
                   <Text style={styles.rankText}>{index + 1}</Text>
                 </View>
                 <Image
-                  source={{ uri: item.imageUrl }}
+                  source={{
+                    uri: imageUrls[item.id] || item.imageUrl,
+                    cacheKey: item.imageUrl,
+                    width: 40,
+                    height: 40
+                  }}
                   style={styles.itemImage}
                   contentFit="cover"
                   transition={200}
+                  onLoadStart={() => {
+                    console.log(`[Image Load Start] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
+                  }}
+                  onLoad={(event) => {
+                    console.log(`[Image Loaded] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
+                    console.log('Load event:', event);
+                  }}
+                  onLoadEnd={() => {
+                    console.log(`[Image Load End] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
+                  }}
+                  onError={(error) => {
+                    console.error(`[Image Load Error] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
+                    console.error('Error:', error);
+                  }}
                 />
                 <View style={styles.itemInfo}>
                   <Text style={[styles.itemName, { color: theme.text }]} numberOfLines={1}>
@@ -782,7 +838,7 @@ export default function Stats() {
                 <View style={[styles.impactIconContainer, { backgroundColor: 'rgba(52, 152, 219, 0.1)' }]}>
                   <Ionicons name="water" size={24} color="#3498db" />
                 </View>
-                <Text style={styles.impactValue}>{impactData.totalWashesReduced.toFixed(1)}</Text>
+                <Text style={styles.impactValue}>{impactData?.totalWashesReduced?.toFixed(1) || '0.0'}</Text>
                 <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>洗濯回数削減</Text>
               </View>
 
@@ -790,7 +846,7 @@ export default function Stats() {
                 <View style={[styles.impactIconContainer, { backgroundColor: 'rgba(39, 174, 96, 0.1)' }]}>
                   <Ionicons name="leaf" size={24} color="#27ae60" />
                 </View>
-                <Text style={styles.impactValue}>{impactData.co2Reduced} kg</Text>
+                <Text style={styles.impactValue}>{impactData?.co2Reduced?.toFixed(1) || '0.0'} kg</Text>
                 <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>CO2削減量</Text>
               </View>
 
@@ -799,17 +855,19 @@ export default function Stats() {
                   <Ionicons name="cash" size={24} color="#f1c40f" />
                 </View>
                 <Text style={styles.impactValue}>
-                  {((impactData.waterSaved.cost || 0) + 
-                    (impactData.electricitySaved.cost || 0) + 
-                    (impactData.detergentSaved.cost || 0)).toLocaleString()}円
+                  {impactData ? (
+                    ((impactData.waterSaved?.cost || 0) + 
+                    (impactData.electricitySaved?.cost || 0) + 
+                    (impactData.detergentSaved?.cost || 0)).toLocaleString()
+                  ) : 0}円
                 </Text>
                 <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>節約金額</Text>
               </View>
             </View>
 
             <Text style={[styles.impactDescription, { color: theme.text + "CC" }]}>
-              「着用するたびに洗濯する」場合と比較して、あなたは{impactData.totalWashesReduced.toFixed(1)}回の洗濯を削減しました。
-              これは約{impactData.treeEquivalent.toFixed(1)}本の木を植えるのと同等のCO2削減効果があります。
+              「着用するたびに洗濯する」場合と比較して、あなたは{impactData?.totalWashesReduced?.toFixed(1) || '0.0'}回の洗濯を削減しました。
+              これは約{impactData?.treeEquivalent?.toFixed(1) || '0.0'}本の木を植えるのと同等のCO2削減効果があります。
             </Text>
           </View>
         ) : (

@@ -85,14 +85,19 @@ export async function getSingleItemWithHistory(itemId: string): Promise<AppCloth
   }
 
   const item = data[0];
-  console.log(`共通データサービス: アイテムデータ取得成功: ${item.name}`);
+  console.log(`共通データサービス: アイテムデータ取得成功:`, {
+    id: item.item_id,
+    name: item.name,
+    brand_name: item.brand_name,
+    category: item.category
+  });
 
   // AppClothingItem形式に変換
-  return {
+  const result = {
     id: item.item_id,
     name: item.name,
     category: item.category,
-    brand: item.brand_name || '',
+    brand: item.brand_name || '',  // ブランド名を確実に設定
     image: item.image_path || '',
     wearCount: item.wear_count,
     washThreshold: item.wash_threshold,
@@ -103,4 +108,14 @@ export async function getSingleItemWithHistory(itemId: string): Promise<AppCloth
     wearHistory: Array.isArray(item.wear_dates) ? item.wear_dates : [],
     washHistory: Array.isArray(item.wash_dates) ? item.wash_dates : []
   };
+
+  console.log('変換後のAppClothingItem:', {
+    id: result.id,
+    name: result.name,
+    brand: result.brand,
+    category: result.category,
+    lastWorn: result.lastWorn
+  });
+
+  return result;
 }

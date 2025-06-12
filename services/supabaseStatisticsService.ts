@@ -1,7 +1,6 @@
 import { auth } from '../lib/authClient';
-import { db, getAuthenticatedClient } from '../lib/dbClient';
 import { CategoryValue } from '../types/categories';
-import { AppClothingItem, toAppClothingItem } from '../types/database';
+import { AppClothingItem } from '../types/database';
 import {
   Badge,
   BasicStats,
@@ -14,9 +13,7 @@ import {
 import {
   calculateBadgeProgress,
   evaluateBadgeCondition,
-  fetchBadgeConditions,
   fetchBadgeData,
-  fetchBadgeDefinitions,
   fetchUserBadges,
   saveNewlyEarnedBadges
 } from './badgeService';
@@ -1170,6 +1167,12 @@ export async function getItemDetailStats(itemId: string): Promise<ItemDetailStat
     // アイテムデータを取得
     console.log('アイテムデータを個別に取得');
     const appItem = await fetchSingleItemWithHistory(itemId);
+    console.log('取得したアイテムデータ:', {
+      id: appItem.id,
+      name: appItem.name,
+      brand: appItem.brand,
+      category: appItem.category
+    });
 
     // Calculate statistics
     console.log(`アイテム統計の計算: 着用履歴=${appItem.wearHistory.length}件, 洗濯履歴=${appItem.washHistory.length}件`);
@@ -1197,136 +1200,66 @@ export async function getItemDetailStats(itemId: string): Promise<ItemDetailStat
     // Calculate wear by month
     console.log('月別着用回数の集計');
     const wearsByMonth: { [month: string]: number } = {};
-    const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-
     appItem.wearHistory.forEach(dateStr => {
       const date = new Date(dateStr);
-      const month = months[date.getMonth()];
+      const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       wearsByMonth[month] = (wearsByMonth[month] || 0) + 1;
     });
     console.log('月別着用回数:', wearsByMonth);
 
-    // Calculate wear trend (last 6 months)
-    console.log('過去6ヶ月の着用・洗濯トレンドの計算');
-    const now = new Date();
-    const wearTrend: { period: string; count: number }[] = [];
-    const washTrend: { period: string; count: number }[] = [];
-
-    for (let i = 5; i >= 0; i--) {
-      const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthName = months[month.getMonth()];
-      const monthYear = `${monthName} ${month.getFullYear()}`;
-      console.log(`トレンド計算対象月: ${monthYear}`);
-
-      // Count wears in this month
-      const wearsInMonth = appItem.wearHistory.filter(dateStr => {
-        const date = new Date(dateStr);
-        return date.getMonth() === month.getMonth() && date.getFullYear() === month.getFullYear();
-      }).length;
-
-      // Count washes in this month
-      const washesInMonth = appItem.washHistory.filter(dateStr => {
-        const date = new Date(dateStr);
-        return date.getMonth() === month.getMonth() && date.getFullYear() === month.getFullYear();
-      }).length;
-
-      console.log(`${monthName}の着用回数: ${wearsInMonth}, 洗濯回数: ${washesInMonth}`);
-      wearTrend.push({ period: monthName, count: wearsInMonth });
-      washTrend.push({ period: monthName, count: washesInMonth });
-    }
-    console.log('トレンドデータ生成完了');
-
     // Calculate average wear interval
-    console.log('平均着用間隔の計算');
     let averageWearInterval = 0;
     if (appItem.wearHistory.length > 1) {
-      const sortedWears = [...appItem.wearHistory].sort();
-      let totalDays = 0;
-      let intervals = 0;
-
-      for (let i = 1; i < sortedWears.length; i++) {
-        const prevDate = new Date(sortedWears[i-1]);
-        const currDate = new Date(sortedWears[i]);
-        const daysDiff = Math.round((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
-
-        if (daysDiff > 0) {
-          totalDays += daysDiff;
-          intervals++;
-        }
+      const sortedDates = appItem.wearHistory
+        .map(date => new Date(date).getTime())
+        .sort((a, b) => a - b);
+      
+      const intervals = [];
+      for (let i = 1; i < sortedDates.length; i++) {
+        const interval = (sortedDates[i] - sortedDates[i - 1]) / (1000 * 60 * 60 * 24); // Convert to days
+        intervals.push(interval);
       }
-
-      averageWearInterval = intervals > 0 ? parseFloat((totalDays / intervals).toFixed(1)) : 0;
-      console.log(`平均着用間隔: ${averageWearInterval}日 (総日数=${totalDays}, 間隔数=${intervals})`);
-    } else {
-      console.log('着用履歴が1件以下のため平均着用間隔は計算できません');
+      
+      averageWearInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
     }
 
-    // Calculate environmental impact
-    console.log('環境影響データの計算');
-    const ELECTRICITY_PER_WASH = 0.5; // kWh
-    const WATER_PER_WASH = 50; // liters
-    const CO2_PER_KWH = 0.5; // kg
-    const ITEMS_PER_WASH_LOAD = 5; // average items per wash load
-
-    // If we washed after every wear, we would have wearCount washes
-    // Instead, we only have washCount washes
-    const washesReduced = Math.max(0, (wearCount - washCount) / ITEMS_PER_WASH_LOAD);
-    console.log(`洗濯回数削減: ${washesReduced.toFixed(2)}回 (着用=${wearCount}, 洗濯=${washCount}, 1回あたり${ITEMS_PER_WASH_LOAD}アイテム)`);
-
-    const waterSaved = Math.round(washesReduced * WATER_PER_WASH);
-    const energySaved = parseFloat((washesReduced * ELECTRICITY_PER_WASH).toFixed(1));
-    const co2Reduced = parseFloat((energySaved * CO2_PER_KWH).toFixed(1));
-    console.log(`環境影響: 節水=${waterSaved}L, 節電=${energySaved}kWh, CO2削減=${co2Reduced}kg`);
-
-    // Calculate optimized threshold based on usage pattern
-    console.log('最適化された洗濯閾値の計算');
-    let optimizedThreshold = appItem.washThreshold;
-    if (washCount > 0) {
-      // If actual wears between washes is consistently different from threshold,
-      // suggest an optimized threshold
-      const actualWearsBetweenWashes = wearPerWash;
-      const thresholdDiff = Math.abs(actualWearsBetweenWashes - appItem.washThreshold);
-      console.log(`実際の着用/洗濯=${actualWearsBetweenWashes}, 現在の閾値=${appItem.washThreshold}, 差=${thresholdDiff}`);
-
-      if (thresholdDiff > 1) {
-        // Round to nearest integer
-        optimizedThreshold = Math.round(actualWearsBetweenWashes);
-        console.log(`閾値の差が1より大きいため、最適化された閾値を提案: ${optimizedThreshold}`);
-      } else {
-        console.log('現在の閾値は適切なため、最適化は不要');
-      }
-    } else {
-      console.log('洗濯履歴がないため、閾値の最適化は行いません');
-    }
-
-    console.log('アイテム詳細統計オブジェクトの作成');
+    // Create item detail stats
     const itemDetailStats: ItemDetailStats = {
       id: appItem.id,
       name: appItem.name,
       category: appItem.category,
-      brand: appItem.brand,
+      brand: appItem.brand || '',  // ブランド情報を正しく設定
       imageUrl: appItem.image,
+      image: appItem.image,  // 画像パスを追加
       wearCount,
       washCount,
       wearPerWash,
       efficiency,
       wearsByDay,
       wearsByMonth,
-      wearTrend,
-      washTrend,
       averageWearInterval,
-      lastWornDate: appItem.lastWorn,
-      waterSaved,
-      energySaved,
-      co2Reduced,
-      optimizedThreshold: optimizedThreshold !== appItem.washThreshold ? optimizedThreshold : undefined
+      lastWorn: appItem.lastWorn,
+      memo: appItem.memo,
+      condition: appItem.condition,
+      purchasePrice: appItem.purchasePrice
     };
 
-    console.log('アイテム詳細統計をキャッシュに保存');
+    console.log('生成されたItemDetailStats:', {
+      id: itemDetailStats.id,
+      name: itemDetailStats.name,
+      brand: itemDetailStats.brand,
+      category: itemDetailStats.category,
+      image: itemDetailStats.image,
+      imageUrl: itemDetailStats.imageUrl
+    });
+
+    // Cache the result
     cache.set('itemDetailStats', itemDetailStats, itemId);
+    console.log('アイテム詳細統計の計算完了、キャッシュに保存');
+
     return itemDetailStats;
   } catch (error) {
-    console.error('アイテム詳細統計の取得エラー:', error);
+    console.error('アイテム詳細統計の計算中にエラーが発生:', error);
     throw error;
   }
 }

@@ -34,9 +34,13 @@
               "scheme": "clothesmanagerapp"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
-      ]
+      ],
+      "package": "com.naotnoguchi.ClothesManagerApp"
     },
     "web": {
       "bundler": "metro",
@@ -57,6 +61,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "dcf5e6cc-aa85-4c36-8992-8c50b97d87b4"
+      }
+    },
+    "owner": "naotnoguchi"
   }
 }

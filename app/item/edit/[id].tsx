@@ -1,25 +1,25 @@
-import { Stack, useRouter, useLocalSearchParams } from "expo-router";
-import { useState, useEffect } from "react";
-import {
-  Text,
-  View,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-} from "react-native";
-import { Image } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import BrandSelector from "@/components/BrandSelector";
 import { useClothing } from "@/contexts/ClothingContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { showImagePickerOptions } from "@/lib/imageUtils";
 import { getImageUrl } from "@/lib/storageClient";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 // カテゴリ定義
 const categories = [
@@ -105,6 +105,11 @@ export default function EditItem() {
   useEffect(() => {
     const loadSignedImageUrl = async () => {
       if (!imageUrl) return;
+
+      // ローカルファイルの場合はスキップ
+      if (imageUrl.startsWith('file://')) {
+        return; // signedImageUrlは既にhandleSelectImageで設定済み
+      }
 
       try {
         const url = await getImageUrl(imageUrl);
@@ -264,6 +269,8 @@ export default function EditItem() {
       const uri = await showImagePickerOptions();
       if (uri) {
         setSelectedImageUri(uri);
+        setImageUrl(uri); // 新しい画像のURIをimageUrlに設定
+        setSignedImageUrl(uri); // プレビュー用にsignedImageUrlも設定
         setImageSelected(true);
         triggerHaptic();
       }
@@ -524,7 +531,7 @@ export default function EditItem() {
                     <Image 
                       source={{ 
                         uri: selectedImageUri || signedImageUrl || imageUrl,
-                        cacheKey: imageUrl
+                        cacheKey: selectedImageUri || imageUrl
                       }} 
                       style={styles.selectedImage} 
                       contentFit="cover"

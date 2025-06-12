@@ -1,8 +1,8 @@
-import { db, getAuthenticatedClient } from '../lib/dbClient';
 import { auth } from '../lib/authClient';
-import { AppClothingItem, toAppClothingItem, toDbClothingItem, Brand, ExtendedBrand } from '../types/database';
 import { BrandCache } from '../lib/brandCache';
-import { uploadImage, deleteImage } from '../lib/imageUtils';
+import { getAuthenticatedClient } from '../lib/dbClient';
+import { deleteImage, uploadImage } from '../lib/imageUtils';
+import { AppClothingItem, ExtendedBrand, toAppClothingItem, toDbClothingItem } from '../types/database';
 import { getClothingItemsWithHistory as getItemsWithHistory, getSingleItemWithHistory } from './supabaseDataService';
 
 // Get all clothing items with their history in a single query (optimized)
@@ -216,14 +216,24 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
   let uploadedImageUrl: string | null = null;
 
   if (imageUri && imageUri !== currentItem.image && !imageUri.startsWith('http')) {
-    console.log('Uploading new image for item update');
-    uploadedImageUrl = await uploadImage(imageUri, userId);
-    if (uploadedImageUrl) {
-      console.log('Image uploaded successfully');
-      imageUrl = uploadedImageUrl;
-    } else {
-      console.log('Failed to upload new image');
-      throw new Error('画像のアップロードに失敗しました。もう一度お試しください。');
+    try {
+      console.log('Starting image upload process for item update');
+      console.log('Original image URI:', imageUri);
+      
+      // 画像をアップロード（uploadImage関数内でリサイズが行われる）
+      uploadedImageUrl = await uploadImage(imageUri, userId);
+      
+      if (uploadedImageUrl) {
+        console.log('Image uploaded and resized successfully');
+        console.log('New image path:', uploadedImageUrl);
+        imageUrl = uploadedImageUrl;
+      } else {
+        console.error('Failed to upload new image: uploadImage returned null');
+        throw new Error('画像のアップロードに失敗しました。もう一度お試しください。');
+      }
+    } catch (uploadError) {
+      console.error('Error during image upload:', uploadError);
+      throw new Error('画像のアップロード中にエラーが発生しました。もう一度お試しください。');
     }
   }
 

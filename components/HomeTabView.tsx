@@ -22,7 +22,10 @@ import { CATEGORIES, CategoryId, getCategoryValueById } from "../types/categorie
 import { ItemListRefType } from "./ItemList";
 
 // カテゴリとコンポーネントのマッピング
-const categoryComponents: Record<CategoryId, React.ComponentType<{ ref?: React.Ref<ItemListRefType> }>> = {
+const categoryComponents: Record<CategoryId, React.ComponentType<{ 
+  ref?: React.Ref<ItemListRefType>;
+  onRefresh?: () => void;
+}>> = {
   [CategoryId.ALL]: AllItems,
   [CategoryId.TOPS]: TopsItems,
   [CategoryId.BOTTOMS]: BottomsItems,
@@ -325,6 +328,12 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
                 <CategoryComponent
                   ref={(el: ItemListRefType | null) => {
                     categoryRefs.current[index] = el;
+                  }}
+                  onRefresh={() => {
+                    // Refresh all category components when any category is refreshed
+                    categoryRefs.current.forEach(ref => {
+                      ref?.scrollToTop?.();
+                    });
                   }}
                 />
               </View>

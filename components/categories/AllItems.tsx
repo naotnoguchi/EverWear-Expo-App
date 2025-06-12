@@ -1,8 +1,14 @@
 import React, { forwardRef } from "react";
-import ItemList, { ItemListRefType } from "../ItemList"; // 既存のアイテムリストコンポーネント
+import ItemList, { ItemListRefType } from "../ItemList";
 
-const AllItems = forwardRef<ItemListRefType, {}>((props, ref) => {
-    return <ItemList ref={ref} category={null} />;
+interface AllItemsProps {
+  onRefresh?: () => void;
+}
+
+const AllItems = forwardRef<ItemListRefType, AllItemsProps>(({ onRefresh }, ref) => {
+    return <ItemList ref={ref} category={null} onRefresh={onRefresh} />;
 });
+
+AllItems.displayName = 'AllItems';
 
 export default AllItems;

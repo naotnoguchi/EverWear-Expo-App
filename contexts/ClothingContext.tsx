@@ -52,27 +52,7 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
   const [brands, setBrands] = useState<string[]>([]);
   const [extendedBrands, setExtendedBrands] = useState<ExtendedBrand[]>([]);
 
-  // 状態内の単一アイテムを更新するヘルパー関数
-  const updateItemInState = useCallback((updatedItem: ClothingItem) => {
-    setClothingItems(prevItems => {
-      const index = prevItems.findIndex(item => item.id === updatedItem.id);
-      if (index === -1) return prevItems;
-
-      const newItems = [...prevItems];
-      newItems[index] = updatedItem;
-      return newItems;
-    });
-  }, []);
-
-  // 状態に新しいアイテムを追加するヘルパー関数
-  const addItemToState = useCallback((newItem: ClothingItem) => {
-    setClothingItems(prevItems => [...prevItems, newItem]);
-  }, []);
-
-  // 状態からアイテムを削除するヘルパー関数
-  const removeItemFromState = useCallback((id: string) => {
-    setClothingItems(prevItems => prevItems.filter(item => item.id !== id));
-  }, []);
+  // 不要となった部分更新ヘルパーは削除（全件再取得戦略に統一）
 
   // データを読み込む関数
   const loadData = useCallback(async () => {
@@ -171,25 +151,12 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     // dateパラメータが提供されていない場合は今日の日付を使用
     const recordDate = date || formatDateToLocalISOString(new Date());
 
-    // 現在の状態から対象アイテムを検索
-    const targetItem = clothingItems.find(item => item.id === id);
-    if (!targetItem) return false;
-
     try {
       // APIを呼び出して着用記録を追加
       await clothingService.addWearRecord(id, recordDate);
 
-      // 新しいデータで状態のアイテムを更新
-      const updatedItem = {
-        ...targetItem,
-        wearCount: targetItem.wearCount + 1,
-        lastWorn: recordDate,
-        wearHistory: [...targetItem.wearHistory, recordDate].sort()
-      };
-
-      // 状態を更新
-      updateItemInState(updatedItem);
-
+      // サーバー応答後に全件再取得（洗い替え）
+      await loadData();
 
       return true;
     } catch (err) {
@@ -203,25 +170,12 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     // dateパラメータが提供されていない場合は今日の日付を使用
     const recordDate = date || formatDateToLocalISOString(new Date());
 
-    // 現在の状態から対象アイテムを検索
-    const targetItem = clothingItems.find(item => item.id === id);
-    if (!targetItem) return false;
-
     try {
       // APIを呼び出して洗濯記録を追加
       await clothingService.addWashRecord(id, recordDate);
 
-      // 新しいデータで状態のアイテムを更新
-      // 洗濯後は着用回数が0にリセットされる
-      const updatedItem = {
-        ...targetItem,
-        wearCount: 0,
-        washHistory: [...targetItem.washHistory, recordDate].sort()
-      };
-
-      // 状態を更新
-      updateItemInState(updatedItem);
-
+      // サーバー応答後に全件再取得
+      await loadData();
 
       return true;
     } catch (err) {
@@ -234,10 +188,10 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
   const addItem = async (item: Omit<ClothingItem, 'id'>, imageUri?: string) => {
     try {
       // APIを呼び出してアイテムを追加
-      const newItem = await clothingService.addClothingItem(item, imageUri);
+      await clothingService.addClothingItem(item, imageUri);
 
-      // 新しいアイテムを状態に追加
-      addItemToState(newItem);
+      // サーバー応答後に全件再取得
+      await loadData();
 
     } catch (err) {
       console.error('Failed to add item:', err);
@@ -250,10 +204,10 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
   const updateItem = async (updatedItem: ClothingItem, imageUri?: string) => {
     try {
       // APIを呼び出してアイテムを更新
-      const result = await clothingService.updateClothingItem(updatedItem.id, updatedItem, imageUri);
+      await clothingService.updateClothingItem(updatedItem.id, updatedItem, imageUri);
 
-      // 状態内のアイテムを更新
-      updateItemInState(result);
+      // サーバー応答後に全件再取得
+      await loadData();
 
     } catch (err) {
       console.error('Failed to update item:', err);
@@ -268,8 +222,8 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       // APIを呼び出してアイテムを削除
       await clothingService.deleteClothingItem(id);
 
-      // 状態からアイテムを削除
-      removeItemFromState(id);
+      // サーバー応答後に全件再取得
+      await loadData();
 
     } catch (err) {
       console.error('Failed to delete item:', err);
@@ -279,40 +233,12 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
 
   // 着用履歴を削除する関数
   const deleteWearHistory = async (itemId: string, date: string): Promise<boolean> => {
-    // 現在の状態から対象アイテムを検索
-    const targetItem = clothingItems.find(item => item.id === itemId);
-    if (!targetItem) return false;
-
     try {
       // APIを呼び出して着用記録を削除
       await clothingService.deleteWearRecord(itemId, date);
 
-      // 新しい着用回数と最終着用日を計算
-      const updatedWearHistory = targetItem.wearHistory.filter(d => d !== date);
-      const newLastWorn = updatedWearHistory.length > 0 
-        ? updatedWearHistory.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
-        : '';
-
-      // 最新の洗濯日を取得して着用回数を計算
-      const sortedWashHistory = [...targetItem.washHistory].sort();
-      const latestWashDate = sortedWashHistory.length > 0 ? sortedWashHistory[sortedWashHistory.length - 1] : '';
-
-      // 最新の洗濯後の着用回数を計算
-      const wearCount = latestWashDate 
-        ? updatedWearHistory.filter(d => d > latestWashDate).length 
-        : updatedWearHistory.length;
-
-      // 状態内のアイテムを更新
-      const updatedItem = {
-        ...targetItem,
-        wearCount,
-        lastWorn: newLastWorn,
-        wearHistory: updatedWearHistory
-      };
-
-      // 状態を更新
-      updateItemInState(updatedItem);
-
+      // サーバー応答後に全件再取得
+      await loadData();
 
       return true;
     } catch (err) {
@@ -324,36 +250,12 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
 
   // 洗濯履歴を削除する関数
   const deleteWashHistory = async (itemId: string, date: string): Promise<boolean> => {
-    // 現在の状態から対象アイテムを検索
-    const targetItem = clothingItems.find(item => item.id === itemId);
-    if (!targetItem) return false;
-
     try {
       // APIを呼び出して洗濯記録を削除
       await clothingService.deleteWashRecord(itemId, date);
 
-      // 洗濯履歴を更新
-      const updatedWashHistory = targetItem.washHistory.filter(d => d !== date);
-
-      // 削除後の最新の洗濯日を取得
-      const sortedWashHistory = [...updatedWashHistory].sort();
-      const latestWashDate = sortedWashHistory.length > 0 ? sortedWashHistory[sortedWashHistory.length - 1] : '';
-
-      // 最新の洗濯日以降の着用回数を再計算
-      const wearCount = latestWashDate 
-        ? targetItem.wearHistory.filter(d => d > latestWashDate).length 
-        : targetItem.wearHistory.length;
-
-      // 状態内のアイテムを更新
-      const updatedItem = {
-        ...targetItem,
-        wearCount,
-        washHistory: updatedWashHistory
-      };
-
-      // 状態を更新
-      updateItemInState(updatedItem);
-
+      // サーバー応答後に全件再取得
+      await loadData();
 
       return true;
     } catch (err) {

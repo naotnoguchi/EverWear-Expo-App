@@ -1,5 +1,4 @@
 import { auth } from '../lib/authClient';
-import { BrandCache } from '../lib/brandCache';
 import { getAuthenticatedClient } from '../lib/dbClient';
 import { deleteImage, uploadImage } from '../lib/imageUtils';
 import { AppClothingItem, ExtendedBrand, toAppClothingItem, toDbClothingItem } from '../types/database';
@@ -504,24 +503,15 @@ export const getBrands = async (): Promise<string[]> => {
   return getAllBrands();
 };
 
-// Get all brands from the brands table (with caching)
+// Get all brands from the brands table (no cache)
 export const getAllBrands = async (): Promise<string[]> => {
   try {
-    // まずキャッシュをチェック
-    const cache = BrandCache.getInstance();
-    const cachedBrands = cache.get<string[]>('brands');
-    if (cachedBrands) {
-      console.log('Using cached brands data');
-      return cachedBrands;
-    }
-
-    console.log('Fetching all brands from brands table');
+    console.log('Fetching all brands from brands table (no cache)');
 
     // Get authenticated client
-    console.log('Getting authenticated client for database operations');
     const authClient = await getAuthenticatedClient();
 
-    // キャッシュがない場合はSupabaseから取得
+    // 直接 Supabase から取得
     const { data, error } = await authClient
       .from('brands')
       .select('name')
@@ -533,10 +523,6 @@ export const getAllBrands = async (): Promise<string[]> => {
     }
 
     const brandNames = data?.map(brand => brand.name) || [];
-
-    // キャッシュに保存
-    cache.set('brands', brandNames);
-
     console.log('Fetched brands from brands table:', brandNames.length);
     return brandNames;
   } catch (e) {
@@ -548,18 +534,9 @@ export const getAllBrands = async (): Promise<string[]> => {
 // 拡張ブランド情報を取得（検索用）
 export const getExtendedBrands = async (): Promise<ExtendedBrand[]> => {
   try {
-    // キャッシュをチェック
-    const cache = BrandCache.getInstance();
-    const cachedBrands = cache.get<ExtendedBrand[]>('extendedBrands');
-    if (cachedBrands) {
-      console.log('Using cached extended brands data');
-      return cachedBrands;
-    }
-
-    console.log('Fetching extended brands from Supabase');
+    console.log('Fetching extended brands from Supabase (no cache)');
 
     // Get authenticated client
-    console.log('Getting authenticated client for database operations');
     const authClient = await getAuthenticatedClient();
 
     // Supabaseから拡張ブランド情報を取得
@@ -582,9 +559,6 @@ export const getExtendedBrands = async (): Promise<ExtendedBrand[]> => {
       searchTerms: brand.search_terms || []
     }));
 
-    // キャッシュに保存
-    cache.set('extendedBrands', extendedBrands);
-
     console.log('Fetched extended brands:', extendedBrands.length);
     return extendedBrands;
   } catch (e) {
@@ -593,17 +567,8 @@ export const getExtendedBrands = async (): Promise<ExtendedBrand[]> => {
   }
 };
 
-// キャッシュを強制的に更新
+// キャッシュ機能を廃止したため、互換のためのダミー実装
 export const refreshBrandsCache = async (): Promise<void> => {
-  try {
-    console.log('Refreshing brands cache');
-    const cache = BrandCache.getInstance();
-    cache.clear('brands');
-    cache.clear('extendedBrands');
-    await getAllBrands();
-    await getExtendedBrands();
-    console.log('Brands cache refreshed');
-  } catch (e) {
-    console.error('Error refreshing brands cache:', e);
-  }
+  // 現在はキャッシュを使用していないため何もしない
+  console.log('refreshBrandsCache() called - no cache implemented');
 };

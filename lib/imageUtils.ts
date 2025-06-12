@@ -1,13 +1,12 @@
 import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
-import { Alert, Platform } from 'react-native';
-import { 
-  storage, 
-  getAuthenticatedStorage, 
-  CLOTHING_BUCKET, 
-  getPrivateUrl
-} from './storageClient';
+import { Alert } from 'react-native';
 import { auth } from './authClient';
+import {
+  CLOTHING_BUCKET,
+  getAuthenticatedStorage
+} from './storageClient';
 
 // UUIDを生成するヘルパー関数
 const generateUUID = (): string => {
@@ -134,33 +133,68 @@ export const showImagePickerOptions = async (): Promise<string | null> => {
   });
 };
 
+// 画像をリサイズする関数
+const resizeImage = async (uri: string): Promise<string> => {
+  try {
+    console.log('Starting image resize process');
+    console.log('Original image URI:', uri);
+
+    // 画像をリサイズ（最大サイズを1024x1024に制限）
+    const manipResult = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 1024, height: 1024 } }],
+      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+    );
+
+    console.log('Image resized successfully');
+    console.log('Resized image URI:', manipResult.uri);
+
+    return manipResult.uri;
+  } catch (error) {
+    console.error('Error resizing image:', error);
+    // リサイズに失敗した場合は元の画像を返す
+    return uri;
+  }
+};
+
 // 画像をSupabaseにアップロードする関数
 export const uploadImage = async (uri: string, userId: string): Promise<string | null> => {
   try {
-    console.log('Uploading image for user:', userId);
+    console.log('Starting image upload process');
+    console.log('User ID:', userId);
+
+    // 画像をリサイズ
+    console.log('Resizing image before upload');
+    const resizedUri = await resizeImage(uri);
+    console.log('Image resized successfully');
 
     // ファイル拡張子を取得
-    const extension = getFileExtension(uri);
+    const extension = getFileExtension(resizedUri);
+    console.log('File extension:', extension);
 
     // ファイル名を生成（ユーザーIDとUUIDを含む）
     const uuid = generateUUID();
     const fileName = `${uuid}.${extension}`;
     const filePath = `${userId}/${fileName}`; // ユーザーIDでフォルダ分け
+    console.log('Generated file path:', filePath);
 
     // ファイルの内容を取得
-    const fileInfo = await FileSystem.getInfoAsync(uri, { size: true });
+    const fileInfo = await FileSystem.getInfoAsync(resizedUri, { size: true });
     if (!fileInfo.exists) {
-      console.error('File does not exist');
+      console.error('File does not exist after resize');
       return null;
     }
 
     // ファイルサイズをチェック
-    if (fileInfo.size && fileInfo.size > 10 * 1024 * 1024) {
-      console.warn('Warning: File size is large (> 10MB), upload may be slow');
+    if (fileInfo.size && fileInfo.size > 5 * 1024 * 1024) { // 5MBに制限
+      console.warn('Warning: File size is still large (> 5MB):', fileInfo.size);
+    } else {
+      console.log('File size is within limits:', fileInfo.size);
     }
 
     // コンテンツタイプを取得
     const contentType = getContentType(extension);
+    console.log('Content type:', contentType);
 
     // 認証情報を取得
     const { data: session } = await auth.getSession();
@@ -168,10 +202,12 @@ export const uploadImage = async (uri: string, userId: string): Promise<string |
 
     // Supabaseのアップロードエンドポイントを構築
     const uploadEndpoint = `${supabaseUrl}/storage/v1/object/${CLOTHING_BUCKET}/${filePath}`;
+    console.log('Upload endpoint:', uploadEndpoint);
 
     // FileSystem.uploadAsyncを使用して直接アップロード
     try {
-      const uploadResult = await FileSystem.uploadAsync(uploadEndpoint, uri, {
+      console.log('Starting file upload to Supabase');
+      const uploadResult = await FileSystem.uploadAsync(uploadEndpoint, resizedUri, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'apikey': supabaseAnonKey,
@@ -180,11 +216,13 @@ export const uploadImage = async (uri: string, userId: string): Promise<string |
         uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT
       });
 
+      // 一時ファイルを削除
+      await FileSystem.deleteAsync(resizedUri, { idempotent: true });
+      console.log('Temporary file deleted');
+
       if (uploadResult.status >= 200 && uploadResult.status < 300) {
         // アップロード成功
         console.log('Upload successful');
-
-        // パスを返す（署名付きURLではなく）
         return filePath;
       } else {
         // アップロード失敗

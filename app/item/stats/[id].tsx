@@ -1,11 +1,13 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal } from "react-native";
-import { useTheme } from "../../../contexts/ThemeContext";
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { ItemDetailStats } from "../../../services/statisticsServiceFactory";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { useLocalSearchParams, Stack } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../../../contexts/StatisticsContext";
+import { useTheme } from "../../../contexts/ThemeContext";
+import { getPrivateUrl } from "../../../lib/storageClient";
+import { ItemDetailStats } from "../../../services/statisticsServiceFactory";
+import { CategoryValue } from "../../../types/categories";
 
 export default function ItemDetailScreen() {
   const theme = useTheme();
@@ -18,6 +20,7 @@ export default function ItemDetailScreen() {
   const [itemStats, setItemStats] = useState<ItemDetailStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   // モーダル表示状態
   const [showWashInfoModal, setShowWashInfoModal] = useState(false);
@@ -298,8 +301,38 @@ export default function ItemDetailScreen() {
     try {
       setLoading(true);
       setError(null);
+      console.log('アイテム詳細画面: データ取得開始');
       const data = await fetchItemDetailStats(id);
+      if (!data) {
+        throw new Error('アイテムデータが見つかりませんでした。');
+      }
+      console.log('アイテム詳細画面: 取得したデータ:', {
+        id: data.id,
+        name: data.name,
+        category: data.category,
+        brand: data.brand,
+        imageUrl: data.imageUrl,
+        image: data.image
+      });
       setItemStats(data);
+
+      // 画像URLを取得
+      const imagePath = data.image || data.imageUrl;
+      console.log('画像パス:', imagePath);
+      if (imagePath) {
+        try {
+          // 単一の画像URLを取得
+          const url = await getPrivateUrl(imagePath);
+          console.log('取得した画像URL:', url);
+          setImageUrl(url);
+        } catch (error) {
+          console.error('画像URL取得エラー:', error);
+          setImageUrl(null);
+        }
+      } else {
+        console.log('画像パスが存在しません');
+        setImageUrl(null);
+      }
     } catch (err) {
       console.error('アイテム詳細データの取得エラー:', err);
       setError('アイテム詳細データの取得に失敗しました。後でもう一度お試しください。');
@@ -357,6 +390,18 @@ export default function ItemDetailScreen() {
       return current[1] > max[1] ? current : max;
     });
   }, [itemStats]);
+
+  // カテゴリに基づく洗濯アドバイスを取得
+  const getWashingAdvice = useCallback((category: CategoryValue) => {
+    switch (category) {
+      case 'ボトムス':
+        return 'ボトムスは5-10回着用ごとに洗濯するのが理想的です。洗いすぎも洗わなさすぎも避けましょう。';
+      case 'アウター':
+        return 'アウターは汚れた場合を除き、シーズンに1-2回の洗濯で十分です。ただし、汚れが目立つ場合は適宜洗濯しましょう。';
+      default:
+        return '一般的な衣類は2-3回着用ごとに洗濯するのが理想的です。衣類の種類や着用状況に応じて調整しましょう。';
+    }
+  }, []);
 
   // Render loading state
   if (loading) {
@@ -445,10 +490,22 @@ export default function ItemDetailScreen() {
 
           <View style={styles.imageContainer}>
             <Image
-              source={{ uri: itemStats.imageUrl }}
-              style={styles.itemImage}
+              source={
+                imageUrl
+                  ? {
+                      uri: imageUrl,
+                      width: 120,
+                      height: 120
+                    }
+                  : require('../../../assets/images/placeholder.png')
+              }
+              style={[styles.itemImage, { width: 120, height: 120 }]}
               contentFit="cover"
               transition={200}
+              onError={(error) => {
+                console.error('Image load error:', error);
+                setImageUrl(null);
+              }}
             />
           </View>
         </View>
@@ -528,11 +585,7 @@ export default function ItemDetailScreen() {
             <View style={styles.efficiencyTip}>
               <Ionicons name="bulb" size={16} color="#f39c12" />
               <Text style={styles.tipText}>
-                {itemStats.category === 'デニム' 
-                  ? 'デニムは5-10回着用ごとに洗濯するのが理想的です。洗いすぎも洗わなさすぎも避けましょう。' 
-                  : itemStats.category === 'アウター' 
-                    ? 'アウターは汚れた場合を除き、シーズンに1-2回の洗濯で十分です。ただし、汚れが目立つ場合は適宜洗濯しましょう。' 
-                    : '一般的な衣類は2-3回着用ごとに洗濯するのが理想的です。衣類の種類や着用状況に応じて調整しましょう。'}
+                {getWashingAdvice(itemStats.category)}
               </Text>
             </View>
           </View>
@@ -598,7 +651,7 @@ export default function ItemDetailScreen() {
                 最終着用日
               </Text>
               <Text style={styles.patternValue}>
-                {itemStats.lastWornDate ? new Date(itemStats.lastWornDate).toLocaleDateString('ja-JP') : 'なし'}
+                {itemStats.lastWorn ? new Date(itemStats.lastWorn).toLocaleDateString('ja-JP') : 'なし'}
               </Text>
             </View>
           </View>

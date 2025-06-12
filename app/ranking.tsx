@@ -1,15 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, Stack } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { getPrivateUrls } from "../lib/storageClient";
 import { Period, RankingItem } from "../services/statisticsServiceFactory";
 import { CategoryValue } from "../types/categories";
 
 export default function RankingScreen() {
   const theme = useTheme();
+
+  // 画像URL管理用の状態
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
 
   // 統計コンテキストを使用
   const {
@@ -28,6 +32,39 @@ export default function RankingScreen() {
   // ローカル状態（コンテキストにない状態）
   const [sortOrder, setSortOrder] = useState<'most' | 'least'>('most');
   const [selectedCategory, setSelectedCategory] = useState<CategoryValue>(null);
+
+  // 画像URLを一括で取得
+  useEffect(() => {
+    const loadAllImageUrls = async () => {
+      if (!items || items.length === 0) return;
+
+      // 画像パスの配列を作成
+      const imagePaths = items
+        .filter(item => item.imageUrl && !item.imageUrl.startsWith('http'))
+        .map(item => item.imageUrl);
+
+      if (imagePaths.length === 0) return;
+
+      try {
+        // 一括で署名付きURLを取得
+        const urls = await getPrivateUrls(imagePaths);
+        
+        // 取得したURLをマッピング
+        const newImageUrls: Record<string, string> = {};
+        items.forEach((item, index) => {
+          if (urls[index]) {
+            newImageUrls[item.id] = urls[index];
+          }
+        });
+
+        setImageUrls(prev => ({ ...prev, ...newImageUrls }));
+      } catch (error) {
+        console.error('Error loading image URLs:', error);
+      }
+    };
+
+    loadAllImageUrls();
+  }, [items]);
 
   // ランキングデータを取得
   const fetchRanking = useCallback(async () => {
@@ -76,10 +113,29 @@ export default function RankingScreen() {
       </View>
 
       <Image
-        source={{ uri: item.imageUrl }}
+        source={{
+          uri: imageUrls[item.id] || item.imageUrl,
+          cacheKey: item.imageUrl,
+          width: 60,
+          height: 80
+        }}
         style={styles.itemImage}
         contentFit="cover"
         transition={200}
+        onLoadStart={() => {
+          console.log(`[Image Load Start] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
+        }}
+        onLoad={(event) => {
+          console.log(`[Image Loaded] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
+          console.log('Load event:', event);
+        }}
+        onLoadEnd={() => {
+          console.log(`[Image Load End] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
+        }}
+        onError={(error) => {
+          console.error(`[Image Load Error] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
+          console.error('Error:', error);
+        }}
       />
 
       <View style={styles.itemInfo}>

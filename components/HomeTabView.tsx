@@ -1,28 +1,28 @@
 // components/HomeTabView.tsx
-import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
-import { View, StyleSheet, ScrollView, TouchableOpacity, Text, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
-import { useRouter } from "expo-router";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
-import SortModal from "./SortModal";
+import { useRouter } from "expo-router";
+import React, { forwardRef, useImperativeHandle, useRef, useState, useMemo } from "react";
+import { Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useClothing } from "../contexts/ClothingContext";
+import SortModal from "./SortModal";
 
 // カテゴリコンポーネントのインポート
-import AllItems from "./categories/AllItems";
-import TopsItems from "./categories/TopsItems";
-import BottomsItems from "./categories/BottomsItems";
-import OuterwearItems from "./categories/OuterwearItems";
+import { useTheme } from "@/contexts/ThemeContext";
 import AccessoriesItems from "./categories/AccessoriesItems";
-import ShoesItems from "./categories/ShoesItems";
+import AllItems from "./categories/AllItems";
+import BottomsItems from "./categories/BottomsItems";
 import OthersItems from "./categories/OthersItems";
-import {useTheme} from "@/contexts/ThemeContext";
+import OuterwearItems from "./categories/OuterwearItems";
+import ShoesItems from "./categories/ShoesItems";
+import TopsItems from "./categories/TopsItems";
 
 // カテゴリ定義のインポート
 import { CATEGORIES, CategoryId, getCategoryValueById } from "../types/categories";
 import { ItemListRefType } from "./ItemList";
 
 // カテゴリとコンポーネントのマッピング
-const categoryComponents = {
+const categoryComponents: Record<CategoryId, React.ComponentType<{ ref?: React.Ref<ItemListRefType> }>> = {
   [CategoryId.ALL]: AllItems,
   [CategoryId.TOPS]: TopsItems,
   [CategoryId.BOTTOMS]: BottomsItems,
@@ -54,13 +54,28 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const { sortConfig, clothingItems } = useClothing();
 
-  // カテゴリごとのアイテム数を計算する関数
-  const getCategoryItemCount = (categoryId: CategoryId): number => {
-    if (categoryId === CategoryId.ALL) {
-      return clothingItems.length;
+  // カテゴリごとのアイテム数を計算する関数 - メモ化して再計算を防止
+  const categoryItemCounts = useMemo(() => {
+    // 各カテゴリのアイテム数を計算して保存するオブジェクト
+    const counts: Record<CategoryId, number> = {} as Record<CategoryId, number>;
+
+    // ALL カテゴリは全アイテム数
+    counts[CategoryId.ALL] = clothingItems.length;
+
+    // 他のカテゴリはフィルタリングして計算
+    for (const category of CATEGORIES) {
+      if (category.id !== CategoryId.ALL) {
+        const categoryValue = getCategoryValueById(category.id);
+        counts[category.id] = clothingItems.filter(item => item.category === categoryValue).length;
+      }
     }
-    const categoryValue = getCategoryValueById(categoryId);
-    return clothingItems.filter(item => item.category === categoryValue).length;
+
+    return counts;
+  }, [clothingItems]);
+
+  // カテゴリIDからアイテム数を取得する関数
+  const getCategoryItemCount = (categoryId: CategoryId): number => {
+    return categoryItemCounts[categoryId];
   };
 
   const theme = useTheme();
@@ -268,14 +283,18 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
                   >
                     {category.name}
                   </Text>
-                  <View style={[
-                    styles.countBadge,
-                    activeIndex === index && styles.activeCountBadge,
-                  ]}>
-                    <Text style={[
-                      styles.countText,
-                      activeIndex === index && styles.activeCountText,
-                    ]}>
+                  <View
+                    style={[
+                      styles.countBadge,
+                      activeIndex === index && styles.activeCountBadge,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.countText,
+                        activeIndex === index && styles.activeCountText,
+                      ]}
+                    >
                       {getCategoryItemCount(category.id)}
                     </Text>
                   </View>
@@ -283,8 +302,6 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
               </TouchableOpacity>
             ))}
           </ScrollView>
-
-          {/* ソートボタンを削除 */}
         </View>
       </View>
 
@@ -305,8 +322,10 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
             const CategoryComponent = categoryComponents[category.id];
             return (
               <View key={category.id} style={[styles.pageContainer, { width }]}>
-                <CategoryComponent 
-                  ref={(el) => (categoryRefs.current[index] = el)}
+                <CategoryComponent
+                  ref={(el: ItemListRefType | null) => {
+                    categoryRefs.current[index] = el;
+                  }}
                 />
               </View>
             );

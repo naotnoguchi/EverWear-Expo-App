@@ -1,42 +1,28 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
-import { FlatList, TouchableOpacity, Text, View, Alert, StyleSheet, Modal, Platform, useColorScheme } from "react-native";
-import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { StatusBar } from 'expo-status-bar';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, Modal, Platform, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import { useClothing } from '../contexts/ClothingContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { formatDateToLocalISOString, formatDateJapanese } from '../lib/dateUtils';
+import { formatDateJapanese, formatDateToLocalISOString } from '../lib/dateUtils';
+import { getPrivateUrls } from '../lib/storageClient';
 import { CategoryValue } from '../types/categories';
-import { ActivityIndicator } from 'react-native';
-import { getImageUrl, getPrivateUrls } from '../lib/storageClient';
+import { ClothingItem } from '../types/clothing';
 
 // 公開するメソッドの型定義
 export type ItemListRefType = {
   scrollToTop: () => void;
 };
 
-// インターフェース定義
-interface ClothingItem {
-  id: string;
-  name: string;
-  category: CategoryValue;
-  brand: string; // ブランド情報
-  image: string;
-  wearCount: number;
-  washThreshold: number;
-  lastWorn: string;
-  wearHistory: string[];
-  washHistory: string[];
-}
-
 interface ItemListProps {
   category: CategoryValue;
 }
 
 const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) => {
-  const { clothingItems, wearItem, washItem, loading } = useClothing();
+  const { clothingItems, wearItem, washItem, loading, sortConfig } = useClothing();
   const router = useRouter();
   const colorScheme = useColorScheme(); // 現在のカラースキーム（ライト/ダーク）を取得
   const theme = useTheme(); // テーマの取得
@@ -65,35 +51,43 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
   const [showWashModal, setShowWashModal] = useState(false);
 
   // 画像URL管理用の状態
-  const [imageUrls, setImageUrls] = useState<Record<string, string | null>>({});
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
 
-  // 画像URLを生成するためのuseEffect
+  // アイテムリストが更新されたときに、すべての画像URLを一括で取得
   useEffect(() => {
-    const loadImageUrls = async () => {
-      if (!clothingItems.length) return;
+    const loadAllImageUrls = async () => {
+      if (!clothingItems || clothingItems.length === 0) return;
 
-      // 既存のURLをクリア
-      const newImageUrls: Record<string, string | null> = {};
+      // 画像パスの配列を作成
+      const imagePaths = clothingItems
+        .filter(item => item.image && !item.image.startsWith('http'))
+        .map(item => item.image);
 
-      // 各アイテムの画像パスからURLを生成
-      for (const item of clothingItems) {
-        try {
-          const url = await getImageUrl(item.image);
-          newImageUrls[item.id] = url;
-        } catch (error) {
-          console.error(`Error generating URL for item ${item.id}:`, error);
-          newImageUrls[item.id] = null;
-        }
+      if (imagePaths.length === 0) return;
+
+      try {
+        // 一括で署名付きURLを取得
+        const urls = await getPrivateUrls(imagePaths);
+        
+        // 取得したURLをマッピング
+        const newImageUrls: Record<string, string> = {};
+        clothingItems.forEach((item, index) => {
+          if (urls[index]) {
+            newImageUrls[item.id] = urls[index];
+          }
+        });
+
+        setImageUrls(prev => ({ ...prev, ...newImageUrls }));
+      } catch (error) {
+        console.error('Error loading image URLs:', error);
       }
-
-      setImageUrls(newImageUrls);
     };
 
-    loadImageUrls();
+    loadAllImageUrls();
   }, [clothingItems]);
 
-  // カテゴリでフィルタリングおよび着用メーターの長さが長い順にソートを適用
-  const getFilteredAndSortedItems = () => {
+  // カテゴリでフィルタリングおよび着用メーターの長さが長い順にソートを適用 - メモ化して再計算を防止
+  const filteredAndSortedItems = useMemo(() => {
     // カテゴリでフィルタリング
     let result = [...clothingItems];
 
@@ -119,7 +113,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
     });
 
     return result;
-  };
+  }, [clothingItems, category, sortConfig]);
 
   // 日付選択の変更ハンドラー
   const onDateChange = (event: any, selectedDate?: Date) => {
@@ -241,20 +235,36 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
     return (
       <TouchableOpacity
         style={[
-          styles.itemContainer, 
+          styles.itemContainer,
           needsWash && styles.needsWashContainer
         ]}
         onPress={handleItemPress}
         activeOpacity={0.7}
       >
         <Image
-          source={{ 
+          source={{
             uri: imageUrls[item.id] || item.image,
-            cacheKey: item.image
+            cacheKey: item.image,
+            width: 80,
+            height: 80
           }}
           style={styles.itemImage}
           contentFit="cover"
           transition={200}
+          onLoadStart={() => {
+            console.log(`[Image Load Start] Item ID: ${item.id}, Image: ${item.image.slice(0, 50)}...`);
+          }}
+          onLoad={(event) => {
+            console.log(`[Image Loaded] Item ID: ${item.id}, Image: ${item.image.slice(0, 50)}...`);
+            console.log('Load event:', event);
+          }}
+          onLoadEnd={() => {
+            console.log(`[Image Load End] Item ID: ${item.id}, Image: ${item.image.slice(0, 50)}...`);
+          }}
+          onError={(error) => {
+            console.error(`[Image Load Error] Item ID: ${item.id}, Image: ${item.image.slice(0, 50)}...`);
+            console.error('Error:', error);
+          }}
         />
         <View style={styles.contentContainer}>
           <View style={styles.itemDetails}>
@@ -312,10 +322,10 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
                 handleWashItem(item.id);
               }}
             >
-              <Ionicons 
-                name="water" 
-                size={20} 
-                color={needsWash ? "#e74c3c" : "#3498db"} 
+              <Ionicons
+                name="water"
+                size={20}
+                color={needsWash ? "#e74c3c" : "#3498db"}
               />
               <Text style={[
                 styles.actionText,
@@ -333,8 +343,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
     );
   };
 
-  // Get filtered and sorted items
-  const filteredAndSortedItems = getFilteredAndSortedItems();
+  // filteredAndSortedItems is now directly defined with useMemo above
 
   // Define styles with theme colors
   const styles = StyleSheet.create({
@@ -440,6 +449,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
     itemImage: {
       width: 80,
       height: 80,
+      backgroundColor: theme.border, // 画像読み込み中の背景色
     },
     contentContainer: {
       flex: 1,
@@ -551,6 +561,9 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
       textAlign: 'center',
       marginBottom: 20,
     },
+    container: {
+      flex: 1,
+    },
   });
 
   // ローディング中の表示
@@ -577,7 +590,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* StatusBarコンポーネントを条件付きでレンダリング */}
       <StatusBar style={(showWearModal || showWashModal) ? 'dark' : (colorScheme === 'dark' ? 'light' : 'dark')} />
       {/* Android用の日付ピッカー */}
@@ -590,7 +603,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
           onChange={onDateChange}
           maximumDate={new Date()} // 未来の日付は選択できないように
           locale="ja-JP"
-          themeVariant={colorScheme}
+          themeVariant={colorScheme || 'light'}
         />
       )}
 
@@ -612,7 +625,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
               maximumDate={new Date()} // 未来の日付は選択できないように
               style={styles.datePicker}
               locale="ja-JP"
-              themeVariant={colorScheme}
+              themeVariant={colorScheme || 'light'}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -653,7 +666,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
               maximumDate={new Date()} // 未来の日付は選択できないように
               style={styles.datePicker}
               locale="ja-JP"
-              themeVariant={colorScheme}
+              themeVariant={colorScheme || 'light'}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity

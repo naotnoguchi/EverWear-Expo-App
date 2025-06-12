@@ -241,11 +241,14 @@ export const deleteWashRecord = async (clothingItemId: string, washDate: string)
   return true;
 };
 
-// Get all brands
-export const getBrands = async (): Promise<string[]> => {
+// Get all brands (simple alias for compatibility)
+export const getAllBrands = async (): Promise<string[]> => {
   await simulateNetworkDelay();
   return [...brands];
 };
+
+// Backward-compatible alias
+export const getBrands = getAllBrands;
 
 // Get extended brands with additional information for search
 export const getExtendedBrands = async (): Promise<ExtendedBrand[]> => {

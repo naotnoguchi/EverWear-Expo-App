@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Modal, Platform, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
@@ -19,9 +19,10 @@ export type ItemListRefType = {
 
 interface ItemListProps {
   category: CategoryValue;
+  onRefresh?: () => void;
 }
 
-const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) => {
+const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefresh }, ref) => {
   const { clothingItems, wearItem, washItem, loading, sortConfig } = useClothing();
   const router = useRouter();
   const colorScheme = useColorScheme(); // 現在のカラースキーム（ライト/ダーク）を取得
@@ -58,26 +59,32 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
     const loadAllImageUrls = async () => {
       if (!clothingItems || clothingItems.length === 0) return;
 
-      // 画像パスの配列を作成
-      const imagePaths = clothingItems
-        .filter(item => item.image && !item.image.startsWith('http'))
-        .map(item => item.image);
+      // 画像パスの配列を作成（既にURLがあるものは除外）
+      const itemsNeedingUrls = clothingItems.filter(
+        item => item.image && 
+               !item.image.startsWith('http') && 
+               !imageUrls[item.id]
+      );
 
-      if (imagePaths.length === 0) return;
+      if (itemsNeedingUrls.length === 0) return;
 
       try {
-        // 一括で署名付きURLを取得
-        const urls = await getPrivateUrls(imagePaths);
+        // 一括で署名付きURLを取得（サムネイルサイズで取得）
+        const imagePaths = itemsNeedingUrls.map(item => item.image);
+        const urls = await getPrivateUrls(imagePaths, 160, 160);
         
         // 取得したURLをマッピング
         const newImageUrls: Record<string, string> = {};
-        clothingItems.forEach((item, index) => {
+        itemsNeedingUrls.forEach((item, index) => {
           if (urls[index]) {
-            newImageUrls[item.id] = urls[index];
+            newImageUrls[item.id] = urls[index]!;
           }
         });
 
-        setImageUrls(prev => ({ ...prev, ...newImageUrls }));
+        setImageUrls(prev => ({
+          ...prev,
+          ...newImageUrls
+        }));
       } catch (error) {
         console.error('Error loading image URLs:', error);
       }
@@ -116,42 +123,50 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
   }, [clothingItems, category, sortConfig]);
 
   // 日付選択の変更ハンドラー
-  const onDateChange = (event: any, selectedDate?: Date) => {
-    // キャンセルされた場合は何もせずに日付ピッカーを閉じる
+  const onDateChange = async (event: any, selectedDate?: Date) => {
+    if (!selectedDate) return;
+    
+    // 現在の日付を更新
+    const currentDate = selectedDate;
+    setSelectedDate(currentDate);
+
+    // iOSの場合はDatePickerを非表示に
+    if (Platform.OS === 'ios') {
+      setShowWearDatePicker(false);
+      setShowWashDatePicker(false);
+    }
+
+    // 日付が選択された場合（「完了」ボタンが押された場合）
     if (event.type === 'dismissed') {
+      // モーダルを閉じる
       setShowWearDatePicker(false);
       setShowWashDatePicker(false);
       setSelectedItemId(null);
-      return;
-    }
-
-    const currentDate = selectedDate || new Date();
-    setSelectedDate(currentDate);
-
-    if (Platform.OS === 'android') {
-      setShowWearDatePicker(false);
-      setShowWashDatePicker(false);
-
-      // Androidの場合は日付選択後に直接アクションを実行
+    } else if (event.type === 'set' || event.type === 'neutralButtonPressed') {
+      // 日付が選択された場合は記録を追加
       if (showWearDatePicker && selectedDate && selectedItemId) {
-        const formattedDate = formatDateToLocalISOString(currentDate);
-        const japaneseDate = formatDateJapanese(currentDate);
-        const success = wearItem(selectedItemId, formattedDate);
-
-        if (success) {
+        try {
+          const formattedDate = formatDateToLocalISOString(currentDate);
+          const japaneseDate = formatDateJapanese(currentDate);
+          
+          await wearItem(selectedItemId, formattedDate);
           Alert.alert("着用記録", `${japaneseDate}に着用記録を追加しました`);
-        } else {
+          onRefresh?.();
+        } catch (error) {
+          const japaneseDate = formatDateJapanese(currentDate);
           Alert.alert("エラー", `${japaneseDate}の着用記録は既に存在します`);
         }
         setSelectedItemId(null);
       } else if (showWashDatePicker && selectedDate && selectedItemId) {
-        const formattedDate = formatDateToLocalISOString(currentDate);
-        const japaneseDate = formatDateJapanese(currentDate);
-        const success = washItem(selectedItemId, formattedDate);
-
-        if (success) {
+        try {
+          const formattedDate = formatDateToLocalISOString(currentDate);
+          const japaneseDate = formatDateJapanese(currentDate);
+          
+          await washItem(selectedItemId, formattedDate);
           Alert.alert("洗濯記録", `${japaneseDate}に洗濯記録を追加しました`);
-        } else {
+          onRefresh?.();
+        } catch (error) {
+          const japaneseDate = formatDateJapanese(currentDate);
           Alert.alert("エラー", `${japaneseDate}の洗濯記録は既に存在します`);
         }
         setSelectedItemId(null);
@@ -190,36 +205,44 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
   };
 
   // iOS用の着用記録確定ハンドラー
-  const confirmWearDate = () => {
-    if (selectedItemId) {
+  const confirmWearDate = async () => {
+    if (!selectedItemId) return;
+    
+    try {
       const formattedDate = formatDateToLocalISOString(selectedDate);
       const japaneseDate = formatDateJapanese(selectedDate);
-      const success = wearItem(selectedItemId, formattedDate);
-
-      if (success) {
-        Alert.alert("着用記録", `${japaneseDate}に着用記録を追加しました`);
-      } else {
-        Alert.alert("エラー", `${japaneseDate}の着用記録は既に存在します`);
-      }
+      
+      await wearItem(selectedItemId, formattedDate);
+      Alert.alert("着用記録", `${japaneseDate}に着用記録を追加しました`);
+      
       setShowWearModal(false);
       setSelectedItemId(null);
+      // 親コンポーネントに更新を通知
+      onRefresh?.();
+    } catch (error) {
+      const japaneseDate = formatDateJapanese(selectedDate);
+      Alert.alert("エラー", `${japaneseDate}の着用記録は既に存在します`);
     }
   };
 
   // iOS用の洗濯記録確定ハンドラー
-  const confirmWashDate = () => {
-    if (selectedItemId) {
+  const confirmWashDate = async () => {
+    if (!selectedItemId) return;
+    
+    try {
       const formattedDate = formatDateToLocalISOString(selectedDate);
       const japaneseDate = formatDateJapanese(selectedDate);
-      const success = washItem(selectedItemId, formattedDate);
-
-      if (success) {
-        Alert.alert("洗濯記録", `${japaneseDate}に洗濯記録を追加しました`);
-      } else {
-        Alert.alert("エラー", `${japaneseDate}の洗濯記録は既に存在します`);
-      }
+      
+      await washItem(selectedItemId, formattedDate);
+      Alert.alert("洗濯記録", `${japaneseDate}に洗濯記録を追加しました`);
+      
       setShowWashModal(false);
       setSelectedItemId(null);
+      // 親コンポーネントに更新を通知
+      onRefresh?.();
+    } catch (error) {
+      const japaneseDate = formatDateJapanese(selectedDate);
+      Alert.alert("エラー", `${japaneseDate}の洗濯記録は既に存在します`);
     }
   };
 
@@ -251,20 +274,9 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category }, ref) 
           style={styles.itemImage}
           contentFit="cover"
           transition={200}
-          onLoadStart={() => {
-            console.log(`[Image Load Start] Item ID: ${item.id}, Image: ${item.image.slice(0, 50)}...`);
-          }}
-          onLoad={(event) => {
-            console.log(`[Image Loaded] Item ID: ${item.id}, Image: ${item.image.slice(0, 50)}...`);
-            console.log('Load event:', event);
-          }}
-          onLoadEnd={() => {
-            console.log(`[Image Load End] Item ID: ${item.id}, Image: ${item.image.slice(0, 50)}...`);
-          }}
-          onError={(error) => {
-            console.error(`[Image Load Error] Item ID: ${item.id}, Image: ${item.image.slice(0, 50)}...`);
-            console.error('Error:', error);
-          }}
+          cachePolicy="memory-disk"
+          priority="high"
+          recyclingKey={item.id}
         />
         <View style={styles.contentContainer}>
           <View style={styles.itemDetails}>

@@ -32,12 +32,21 @@ export const getAuthenticatedStorage = async () => {
 };
 
 // 認証済みユーザー専用のURLを取得する関数
-export const getPrivateUrl = async (path: string): Promise<string | null> => {
+export const getPrivateUrl = async (path: string, width: number = 160, height: number = 160): Promise<string | null> => {
+  if (!path) return null;
+  
   try {
     const authStorage = await getAuthenticatedStorage();
     const { data, error } = await authStorage
       .from(CLOTHING_BUCKET)
-      .createSignedUrl(path, 60 * 60); // 1時間有効
+      .createSignedUrl(path, 60 * 60, {
+        transform: {
+          width,
+          height,
+          resize: 'cover',
+          quality: 80
+        }
+      });
 
     if (error) {
       console.error('Error getting signed URL:', error);
@@ -52,21 +61,19 @@ export const getPrivateUrl = async (path: string): Promise<string | null> => {
 };
 
 // 複数の画像パスから署名付きURLを一括取得する関数
-export const getPrivateUrls = async (paths: string[]): Promise<(string | null)[]> => {
+export const getPrivateUrls = async (paths: string[], width: number = 160, height: number = 160): Promise<(string | null)[]> => {
   if (!paths || paths.length === 0) return [];
 
   try {
     const authStorage = await getAuthenticatedStorage();
-    const { data, error } = await authStorage
-      .from(CLOTHING_BUCKET)
-      .createSignedUrls(paths, 60 * 60); // 1時間有効
-
-    if (error) {
-      console.error('Error getting signed URLs:', error);
-      return paths.map(() => null);
-    }
-
-    return data.map(item => item.signedUrl);
+    
+    // 各パスに対して個別に署名付きURLを取得
+    const urlPromises = paths.map(path => 
+      getPrivateUrl(path, width, height)
+    );
+    
+    const urls = await Promise.all(urlPromises);
+    return urls;
   } catch (error) {
     console.error('Error in getPrivateUrls:', error);
     return paths.map(() => null);

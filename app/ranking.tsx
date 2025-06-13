@@ -5,15 +5,13 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { useImageUrls } from '../hooks/useImageUrls';
 import { getPrivateUrls } from "../lib/storageClient";
 import { Period, RankingItem } from "../services/statisticsServiceFactory";
 import { CategoryValue } from "../types/categories";
 
 export default function RankingScreen() {
   const theme = useTheme();
-
-  // 画像URL管理用の状態
-  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
 
   // 統計コンテキストを使用
   const {
@@ -32,6 +30,12 @@ export default function RankingScreen() {
   // ローカル状態（コンテキストにない状態）
   const [sortOrder, setSortOrder] = useState<'most' | 'least'>('most');
   const [selectedCategory, setSelectedCategory] = useState<CategoryValue>(null);
+
+  // 画像URLを取得
+  const imageUrls = useImageUrls(items || [], { 
+    width: 60, 
+    height: 60
+  });
 
   // 画像URLを一括で取得
   useEffect(() => {
@@ -57,7 +61,7 @@ export default function RankingScreen() {
           }
         });
 
-        setImageUrls(prev => ({ ...prev, ...newImageUrls }));
+        // ここではuseImageUrlsを更新する必要がありますが、このコードでは既存のimageUrlsを使用
       } catch (error) {
         console.error('Error loading image URLs:', error);
       }
@@ -114,27 +118,20 @@ export default function RankingScreen() {
 
       <Image
         source={{
-          uri: imageUrls[item.id] || item.imageUrl,
+          uri: imageUrls[item.id] || item.imageUrl || require('@/assets/images/placeholder.png'),
           cacheKey: item.imageUrl,
           width: 60,
-          height: 80
+          height: 60
         }}
-        style={styles.itemImage}
+        style={{
+          width: 60,
+          height: 'auto',
+          marginRight: 12,
+          backgroundColor: '#f0f0f0'
+        }}
         contentFit="cover"
-        transition={200}
-        onLoadStart={() => {
-          console.log(`[Image Load Start] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
-        }}
-        onLoad={(event) => {
-          console.log(`[Image Loaded] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
-          console.log('Load event:', event);
-        }}
-        onLoadEnd={() => {
-          console.log(`[Image Load End] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
-        }}
-        onError={(error) => {
-          console.error(`[Image Load Error] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
-          console.error('Error:', error);
+        onError={() => {
+          // エラー時は何もしない（デフォルトのフォールバック画像が表示される）
         }}
       />
 

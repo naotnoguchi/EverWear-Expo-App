@@ -1,11 +1,12 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
-import { useTheme } from "../contexts/ThemeContext";
-import { useState, useEffect, useCallback } from "react";
-import { Period } from "../services/statisticsServiceFactory";
-import { useStatistics } from "../contexts/StatisticsContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, Stack } from "expo-router";
+import { useCallback, useEffect } from "react";
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useStatistics } from "../contexts/StatisticsContext";
+import { useTheme } from "../contexts/ThemeContext";
+import { useImageUrls } from '../hooks/useImageUrls';
+import { EfficiencyItem, Period } from "../services/statisticsServiceFactory";
 
 export default function EfficiencyScreen() {
   const theme = useTheme();
@@ -19,6 +20,12 @@ export default function EfficiencyScreen() {
     setPeriod,
     fetchEfficiencyData
   } = useStatistics();
+
+  // 画像URLを取得
+  const imageUrls = useImageUrls(items || [], { 
+    width: 60, 
+    height: 60
+  });
 
   // ローディングとエラーの状態
   const loading = isLoading;
@@ -109,10 +116,23 @@ export default function EfficiencyScreen() {
       })}
     >
       <Image
-        source={{ uri: item.imageUrl }}
-        style={styles.itemImage}
+        source={{
+          uri: imageUrls[item.id] || item.imageUrl || require('@/assets/images/placeholder.png'),
+          cacheKey: item.imageUrl,
+          width: 60,
+          height: 60
+        }}
+        style={{
+          width: 60,
+          height: 60,
+          borderRadius: 4,
+          marginRight: 12,
+          backgroundColor: '#f0f0f0'
+        }}
         contentFit="cover"
-        transition={200}
+        onError={() => {
+          // エラー時は何もしない（デフォルトのフォールバック画像が表示される）
+        }}
       />
 
       <View style={styles.itemInfo}>

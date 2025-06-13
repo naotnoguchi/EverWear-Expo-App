@@ -2,12 +2,12 @@
 import { CategoryValue } from '../types/categories';
 import { AppClothingItem } from '../types/database';
 import {
-    BasicStats,
-    EfficiencyItem,
-    ImpactData,
-    ItemDetailStats,
-    Period,
-    RankingItem
+  BasicStats,
+  EfficiencyItem,
+  ImpactData,
+  ItemDetailStats,
+  Period,
+  RankingItem
 } from '../types/statistics';
 
 // Helper function to filter items by period
@@ -58,10 +58,16 @@ export function calculateBasicStats(items: AppClothingItem[], period: Period): B
 
   // 最も着用されたカテゴリを見つける
   console.log('カテゴリ別着用回数の集計');
-  const categoryWears: Record<CategoryValue, number> = {};
+  const categoryWears: Record<CategoryValue, number> = {
+    'トップス': 0,
+    'ボトムス': 0,
+    'アウター': 0,
+    '小物': 0,
+    'シューズ': 0,
+    'その他': 0
+  };
   filteredItems.forEach(item => {
     const category = item.category;
-    if (!categoryWears[category]) categoryWears[category] = 0;
     categoryWears[category] += item.filteredWearHistory.length;
   });
 
@@ -95,10 +101,16 @@ export function calculateBasicStats(items: AppClothingItem[], period: Period): B
 
   // カテゴリ別の内訳を計算
   console.log('カテゴリ別アイテム数の集計');
-  const categories: Record<CategoryValue, number> = {};
+  const categories: Record<CategoryValue, number> = {
+    'トップス': 0,
+    'ボトムス': 0,
+    'アウター': 0,
+    '小物': 0,
+    'シューズ': 0,
+    'その他': 0
+  };
   items.forEach(item => {
     const category = item.category;
-    if (!categories[category]) categories[category] = 0;
     categories[category]++;
   });
 
@@ -224,12 +236,13 @@ export function calculateEfficiencyData(items: AppClothingItem[], period: Period
       id: item.id,
       name: item.name,
       category: item.category,
-      image: item.image,
-      wears,
-      washes,
-      wearsPerWash,
-      washThreshold: item.washThreshold,
-      efficiency
+      brand: item.brand,
+      imageUrl: item.image,
+      wearCount: wears,
+      washCount: washes,
+      threshold: item.washThreshold,
+      efficiency,
+      status: efficiency >= 0.8 && efficiency <= 1.2 ? 'good' : efficiency < 0.8 ? 'overwashed' : 'underwashed'
     };
   });
 

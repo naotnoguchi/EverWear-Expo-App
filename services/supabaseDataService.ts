@@ -10,8 +10,8 @@ export async function getClothingItemsWithHistory(): Promise<AppClothingItem[]> 
   const userId = session?.session?.user?.id;
 
   if (!userId) {
-    console.log('共通データサービス: ユーザー認証エラー - 認証されていないユーザー');
-    throw new Error('User not authenticated');
+    console.log('共通データサービス: ユーザーが認証されていません - 空の結果を返します');
+    return [];
   }
 
   // Get authenticated client
@@ -58,8 +58,8 @@ export async function getSingleItemWithHistory(itemId: string): Promise<AppCloth
   const userId = session?.session?.user?.id;
 
   if (!userId) {
-    console.log('共通データサービス: ユーザー認証エラー - 認証されていないユーザー');
-    throw new Error('User not authenticated');
+    console.log('共通データサービス: ユーザーが認証されていません - nullを返します');
+    return null;
   }
 
   // Get authenticated client

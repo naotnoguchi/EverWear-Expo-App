@@ -64,7 +64,7 @@ async function fetchBaseStatisticsData(): Promise<AppClothingItem[]> {
   const userId = session?.session?.user?.id;
 
   if (!userId) {
-    console.warn('User not authenticated when fetching statistics data');
+    console.log('ユーザーが認証されていません - 統計データ用の空の結果を返します');
     return [];
   }
 
@@ -202,7 +202,7 @@ export async function getBadges(): Promise<Badge[]> {
     const userId = session?.session?.user?.id;
 
     if (!userId) {
-      console.warn('User not authenticated when fetching badges');
+      console.log('ユーザーが認証されていません - デフォルトバッジを返します');
       return createDefaultBadges();
     }
 

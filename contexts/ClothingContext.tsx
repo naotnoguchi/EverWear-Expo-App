@@ -63,8 +63,16 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       const items = await clothingService.getClothingItemsWithHistory();
       setClothingItems(items);
     } catch (err) {
-      console.error('Failed to load data:', err);
-      setError('データの読み込みに失敗しました');
+      console.log('データの読み込み中にエラーが発生:', err);
+      // 認証エラーなど正常なケースでは、エラー状態を設定せずに空のデータとして扱う
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes('User not authenticated')) {
+        console.log('ユーザーが認証されていません - 空のデータを設定します');
+        setClothingItems([]);
+      } else {
+        console.error('データの読み込みに失敗しました:', err);
+        setError('データの読み込みに失敗しました');
+      }
     } finally {
       setLoading(false);
     }

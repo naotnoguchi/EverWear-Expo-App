@@ -4,6 +4,25 @@ import { deleteImage, uploadImage } from '../lib/imageUtils';
 import { AppClothingItem, ExtendedBrand, toAppClothingItem, toDbClothingItem } from '../types/database';
 import { getClothingItemsWithHistory as getItemsWithHistory, getSingleItemWithHistory } from './supabaseDataService';
 
+// RPC関数のレスポンスをAppClothingItemに変換する関数
+const convertRpcResponseToAppItem = (rpcResponse: any): AppClothingItem => {
+  return {
+    id: rpcResponse.id,
+    name: rpcResponse.name,
+    category: rpcResponse.category,
+    brand: rpcResponse.brand_name || '',
+    image: rpcResponse.image_path || '',
+    wearCount: rpcResponse.wear_count,
+    washThreshold: rpcResponse.wash_threshold,
+    lastWorn: rpcResponse.last_worn || '',
+    memo: rpcResponse.memo || '',
+    condition: rpcResponse.condition || '',
+    purchasePrice: rpcResponse.purchase_price,
+    wearHistory: Array.isArray(rpcResponse.wear_history) ? rpcResponse.wear_history : [],
+    washHistory: Array.isArray(rpcResponse.wash_history) ? rpcResponse.wash_history : []
+  };
+};
+
 // Get all clothing items with their history in a single query (optimized)
 export const getClothingItemsWithHistory = async (): Promise<AppClothingItem[]> => {
   console.log('衣類サービス: 共通データサービスを使用してアイテムと履歴を取得');
@@ -297,9 +316,16 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
       });
     }
 
-    // Return the updated item with empty history arrays since we don't need the history data
-    // for just updating the clothing item
-    return toAppClothingItem(data, [], [], updatedItem.brand);
+    // Return the updated item with preserved history data
+    // Convert string arrays back to WearHistory/WashHistory format for toAppClothingItem
+    const wearHistoryObjects = currentItem.wearHistory.map(date => ({ 
+      id: '', clothing_item_id: id, wear_date: date, created_at: '' 
+    }));
+    const washHistoryObjects = currentItem.washHistory.map(date => ({ 
+      id: '', clothing_item_id: id, wash_date: date, created_at: '' 
+    }));
+    
+    return toAppClothingItem(data, wearHistoryObjects, washHistoryObjects, updatedItem.brand);
   } catch (error) {
     // If there was an error and we uploaded a new image, delete it
     if (uploadedImageUrl && uploadedImageUrl.includes('supabase')) {
@@ -366,7 +392,7 @@ export const deleteClothingItem = async (id: string): Promise<void> => {
 };
 
 // Add a wear record
-export const addWearRecord = async (clothingItemId: string, date: string): Promise<void> => {
+export const addWearRecord = async (clothingItemId: string, date: string): Promise<AppClothingItem> => {
   console.log('Starting to add wear record for clothing item ID:', clothingItemId, 'with date:', date);
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
@@ -395,11 +421,20 @@ export const addWearRecord = async (clothingItemId: string, date: string): Promi
     throw error;
   }
 
+  if (!data || data.length === 0) {
+    console.log('No data returned from RPC function');
+    throw new Error('No data returned from database');
+  }
+
   console.log('Successfully added wear record and updated item');
+  console.log('RPC response data:', data[0]);
+  
+  // RPCレスポンスをAppClothingItemに変換して返却
+  return convertRpcResponseToAppItem(data[0]);
 };
 
 // Delete a wear record
-export const deleteWearRecord = async (clothingItemId: string, wearDate: string): Promise<void> => {
+export const deleteWearRecord = async (clothingItemId: string, wearDate: string): Promise<AppClothingItem> => {
   console.log('Starting to delete wear record for clothing item ID:', clothingItemId, 'with date:', wearDate);
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
@@ -428,11 +463,20 @@ export const deleteWearRecord = async (clothingItemId: string, wearDate: string)
     throw error;
   }
 
+  if (!data || data.length === 0) {
+    console.log('No data returned from RPC function');
+    throw new Error('No data returned from database');
+  }
+
   console.log('Successfully deleted wear record and updated item');
+  console.log('RPC response data:', data[0]);
+  
+  // RPCレスポンスをAppClothingItemに変換して返却
+  return convertRpcResponseToAppItem(data[0]);
 };
 
 // Add a wash record
-export const addWashRecord = async (clothingItemId: string, date: string): Promise<void> => {
+export const addWashRecord = async (clothingItemId: string, date: string): Promise<AppClothingItem> => {
   console.log('Starting to add wash record for clothing item ID:', clothingItemId, 'with date:', date);
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
@@ -461,11 +505,20 @@ export const addWashRecord = async (clothingItemId: string, date: string): Promi
     throw error;
   }
 
+  if (!data || data.length === 0) {
+    console.log('No data returned from RPC function');
+    throw new Error('No data returned from database');
+  }
+
   console.log('Successfully added wash record and updated item');
+  console.log('RPC response data:', data[0]);
+  
+  // RPCレスポンスをAppClothingItemに変換して返却
+  return convertRpcResponseToAppItem(data[0]);
 };
 
 // Delete a wash record
-export const deleteWashRecord = async (clothingItemId: string, washDate: string): Promise<void> => {
+export const deleteWashRecord = async (clothingItemId: string, washDate: string): Promise<AppClothingItem> => {
   console.log('Starting to delete wash record for clothing item ID:', clothingItemId, 'with date:', washDate);
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
@@ -494,7 +547,16 @@ export const deleteWashRecord = async (clothingItemId: string, washDate: string)
     throw error;
   }
 
+  if (!data || data.length === 0) {
+    console.log('No data returned from RPC function');
+    throw new Error('No data returned from database');
+  }
+
   console.log('Successfully deleted wash record and updated item');
+  console.log('RPC response data:', data[0]);
+  
+  // RPCレスポンスをAppClothingItemに変換して返却
+  return convertRpcResponseToAppItem(data[0]);
 };
 
 // Get all brands from the brands table

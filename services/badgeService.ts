@@ -1,14 +1,11 @@
 import { db, getAuthenticatedClient } from '../lib/dbClient';
-import { auth } from '../lib/authClient';
-import { Badge } from '../types/statistics';
-import { AppClothingItem } from '../types/database';
 import { CategoryValue } from '../types/categories';
+import { AppClothingItem } from '../types/database';
+import { Badge } from '../types/statistics';
 
 // Fetch badge definitions and conditions from the database in a single query
 export async function fetchBadgeData(): Promise<{ definitions: any[], conditions: any[] }> {
   try {
-    console.log('Fetching badge data (definitions and conditions) from database');
-
     // Fetch badge definitions with their conditions using a JOIN query
     const { data: definitionsWithConditions, error: definitionsError } = await db
       .from('badge_definitions')
@@ -37,10 +34,6 @@ export async function fetchBadgeData(): Promise<{ definitions: any[], conditions
       }
     });
 
-    console.log('Fetched badge data:', 
-      `definitions=${definitions.length},`,
-      `conditions=${conditions.length}`);
-
     return { definitions, conditions };
   } catch (e) {
     console.error('Exception in fetchBadgeData:', e);
@@ -51,7 +44,6 @@ export async function fetchBadgeData(): Promise<{ definitions: any[], conditions
 // Legacy functions for backward compatibility
 export async function fetchBadgeDefinitions(): Promise<any[]> {
   try {
-    console.log('Using fetchBadgeData instead of fetchBadgeDefinitions');
     const { definitions } = await fetchBadgeData();
     return definitions;
   } catch (e) {
@@ -62,7 +54,6 @@ export async function fetchBadgeDefinitions(): Promise<any[]> {
 
 export async function fetchBadgeConditions(): Promise<any[]> {
   try {
-    console.log('Using fetchBadgeData instead of fetchBadgeConditions');
     const { conditions } = await fetchBadgeData();
     return conditions;
   } catch (e) {
@@ -74,8 +65,6 @@ export async function fetchBadgeConditions(): Promise<any[]> {
 // Fetch user's earned badges from the database
 export async function fetchUserBadges(userId: string): Promise<Map<string, string>> {
   try {
-    console.log('Fetching user badges for user ID:', userId);
-
     // Get authenticated client
     const authClient = await getAuthenticatedClient();
 
@@ -88,8 +77,6 @@ export async function fetchUserBadges(userId: string): Promise<Map<string, strin
       console.error('Error fetching user badges:', error);
       throw error;
     }
-
-    console.log('Fetched user badges:', data?.length || 0);
 
     // Create a map of badge IDs to earned dates
     const badgeMap = new Map<string, string>();
@@ -107,27 +94,19 @@ export async function fetchUserBadges(userId: string): Promise<Map<string, strin
 // Save newly earned badges to the database
 export async function saveNewlyEarnedBadges(userId: string, earnedBadges: Badge[]): Promise<void> {
   try {
-    console.log('Saving newly earned badges for user ID:', userId);
-    console.log('Total badges to check:', earnedBadges.length);
-
     if (!userId || earnedBadges.length === 0) {
-      console.log('No user ID or no badges to save, returning early');
       return;
     }
 
     // Get existing badges
     const existingBadges = await fetchUserBadges(userId);
-    console.log('Existing badges count:', existingBadges.size);
 
     // Filter out badges that are already earned
     const newlyEarnedBadges = earnedBadges.filter(
       badge => badge.isEarned && !existingBadges.has(badge.id)
     );
 
-    console.log('Newly earned badges count:', newlyEarnedBadges.length);
-
     if (newlyEarnedBadges.length === 0) {
-      console.log('No new badges to save, returning early');
       return;
     }
 
@@ -137,8 +116,6 @@ export async function saveNewlyEarnedBadges(userId: string, earnedBadges: Badge[
       badge_id: badge.id,
       earned_date: badge.earnedDate || new Date().toISOString()
     }));
-
-    console.log('Inserting badges into database:', badgesToInsert.length);
 
     // Get authenticated client
     const authClient = await getAuthenticatedClient();
@@ -153,7 +130,7 @@ export async function saveNewlyEarnedBadges(userId: string, earnedBadges: Badge[
       throw error;
     }
 
-    console.log('Successfully saved badges to database');
+    console.log(`バッジサービス: ${newlyEarnedBadges.length}個の新しいバッジを保存完了`);
   } catch (e) {
     console.error('Exception in saveNewlyEarnedBadges:', e);
   }

@@ -1,19 +1,18 @@
 // app/_layout.tsx
-import React, { useEffect } from 'react';
-import { Stack, useSegments } from "expo-router";
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
+import * as Linking from 'expo-linking';
+import { Redirect, Stack, useSegments } from "expo-router";
 import { StatusBar } from 'expo-status-bar';
+import React, { useEffect } from 'react';
+import { Platform, StyleSheet, useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BadgeNotificationManager } from '../components/BadgeNotification';
+import Onboarding from '../components/Onboarding';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { ClothingProvider } from '../contexts/ClothingContext';
 import { OnboardingProvider, useOnboarding } from '../contexts/OnboardingContext';
-import { AuthProvider, useAuth } from '../contexts/AuthContext';
-import { ThemeProvider } from '@/contexts/ThemeContext';
+import { StatisticsProvider, useStatistics } from '../contexts/StatisticsContext';
 import { TabResetProvider } from '../contexts/TabResetContext';
-import { StatisticsProvider } from '../contexts/StatisticsContext';
-import { Platform, StyleSheet, useColorScheme } from 'react-native';
-import Onboarding from '../components/Onboarding';
-import { useTheme } from "@/contexts/ThemeContext";
-import { Redirect } from 'expo-router';
-import * as Linking from 'expo-linking';
 
 // app/_layout.tsx の先頭に追加
 console.log('App starting...');
@@ -22,6 +21,7 @@ console.log('App starting...');
 function MainApp() {
   const { isOnboardingComplete } = useOnboarding();
   const { user, loading, isFirstLaunch, setFirstLaunchComplete, handleDeepLink } = useAuth();
+  const { badgeNotifications, clearBadgeNotification } = useStatistics();
   const segments = useSegments();
   const colorScheme = useColorScheme();
   const theme = useTheme();
@@ -159,6 +159,10 @@ function MainApp() {
         <Stack.Screen name="badges-overview" options={{ title: "バッジコレクション", headerBackTitle: "戻る" }} />
         <Stack.Screen name="item/stats/[id]" options={{ title: "アイテム詳細分析", headerBackTitle: "戻る" }} />
       </Stack>
+      <BadgeNotificationManager 
+        notifications={badgeNotifications} 
+        onDismiss={clearBadgeNotification} 
+      />
     </>
   );
 }

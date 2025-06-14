@@ -306,7 +306,7 @@ export default function ItemDetail() {
     },
     itemImage: {
       width: "100%",
-      height: 300,
+      aspectRatio: 1, // 1:1の正方形比率を維持
     },
     detailsContainer: {
       padding: 16,

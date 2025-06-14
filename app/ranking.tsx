@@ -106,12 +106,12 @@ export default function RankingScreen() {
         source={{
           uri: imageUrls[item.id] || item.imageUrl || require('@/assets/images/placeholder.png'),
           cacheKey: item.imageUrl,
-          width: 60,
-          height: 60
+          width: 80,
+          height: 80
         }}
         style={{
-          width: 60,
-          height: 'auto',
+          width: 80,
+          height: 80, // カードの高さに合わせて画像を大きくし、正方形を維持
           marginRight: 12,
           backgroundColor: '#f0f0f0'
         }}

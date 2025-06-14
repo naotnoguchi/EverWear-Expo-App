@@ -188,9 +188,24 @@ export default function ItemDetail() {
         { 
           text: "削除", 
           style: "destructive",
-          onPress: () => {
-            deleteItem(item!.id);
-            router.replace("/");
+          onPress: async () => {
+            try {
+              const itemName = item!.name;
+              await deleteItem(item!.id);
+              Alert.alert(
+                "削除完了", 
+                `「${itemName}」を削除しました`,
+                [
+                  {
+                    text: "OK",
+                    onPress: () => router.replace("/")
+                  }
+                ]
+              );
+            } catch (err) {
+              console.error('Error in handleDeleteItem:', err);
+              Alert.alert("削除エラー", "アイテムの削除に失敗しました。もう一度お試しください。");
+            }
           }
         }
       ]
@@ -201,14 +216,11 @@ export default function ItemDetail() {
   const handleDeleteWearHistory = async (date: string) => {
     if (item) {
       try {
-        const success = await deleteWearHistory(item.id, date);
-        if (success) {
-          Alert.alert("削除完了", `${formatDateJapanese(date)}の着用履歴を削除しました`);
-        }
+        await deleteWearHistory(item.id, date);
+        Alert.alert("削除完了", `${formatDateJapanese(date)}の着用履歴を削除しました`);
       } catch (err) {
         console.error('Error in handleDeleteWearHistory:', err);
-        // エラーはClothingContextでキャッチされ、setErrorが呼ばれるので
-        // ここでは追加のエラー処理は不要
+        Alert.alert("削除エラー", "着用履歴の削除に失敗しました。もう一度お試しください。");
       }
     }
   };
@@ -217,14 +229,11 @@ export default function ItemDetail() {
   const handleDeleteWashHistory = async (date: string) => {
     if (item) {
       try {
-        const success = await deleteWashHistory(item.id, date);
-        if (success) {
-          Alert.alert("削除完了", `${formatDateJapanese(date)}の洗濯履歴を削除しました`);
-        }
+        await deleteWashHistory(item.id, date);
+        Alert.alert("削除完了", `${formatDateJapanese(date)}の洗濯履歴を削除しました`);
       } catch (err) {
         console.error('Error in handleDeleteWashHistory:', err);
-        // エラーはClothingContextでキャッチされ、setErrorが呼ばれるので
-        // ここでは追加のエラー処理は不要
+        Alert.alert("削除エラー", "洗濯履歴の削除に失敗しました。もう一度お試しください。");
       }
     }
   };

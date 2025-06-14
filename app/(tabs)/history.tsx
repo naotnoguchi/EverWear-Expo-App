@@ -2,20 +2,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
-  Animated,
-  Easing,
-  LayoutAnimation,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  Platform,
-  SectionList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  UIManager,
-  useWindowDimensions,
-  View,
+    Alert,
+    Animated,
+    Easing,
+    LayoutAnimation,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
+    Platform,
+    SectionList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    UIManager,
+    useWindowDimensions,
+    View,
 } from "react-native";
 import HistoryCalendar, { HistoryCalendarRefType } from "../../components/HistoryCalendar";
 import { useClothing } from '../../contexts/ClothingContext';
@@ -253,8 +253,8 @@ export default function History() {
   // 履歴削除ハンドラー
   const handleDeleteHistory = (item: HistoryItem) => {
     Alert.alert(
-      "履歴の削除",
-      `${item.itemName}の${item.date}の${item.eventType === "wear" ? "着用" : "洗濯"}履歴を削除しますか？`,
+      `${item.eventType === "wear" ? "着用" : "洗濯"}履歴を削除`,
+      `${item.itemName}の${item.date}の履歴を削除しますか？`,
       [
         { text: "キャンセル", style: "cancel" },
         {
@@ -262,23 +262,22 @@ export default function History() {
           style: "destructive",
           onPress: async () => {
             try {
-              let success: boolean;
               if (item.eventType === "wear") {
-                success = await deleteWearHistory(item.itemId, item.date);
+                await deleteWearHistory(item.itemId, item.date);
               } else {
-                success = await deleteWashHistory(item.itemId, item.date);
+                await deleteWashHistory(item.itemId, item.date);
               }
 
-              if (success) {
-                Alert.alert(
-                  "削除完了", 
-                  `${item.itemName}の${item.date}の${item.eventType === "wear" ? "着用" : "洗濯"}履歴を削除しました`
-                );
-              }
+              Alert.alert(
+                "削除完了", 
+                `${item.itemName}の${item.date}の${item.eventType === "wear" ? "着用" : "洗濯"}履歴を削除しました`
+              );
             } catch (err) {
               console.error('Error in handleDeleteHistory:', err);
-              // エラーはClothingContextでキャッチされ、setErrorが呼ばれるので
-              // ここでは追加のエラー処理は不要
+              Alert.alert(
+                "削除エラー", 
+                `${item.eventType === "wear" ? "着用" : "洗濯"}履歴の削除に失敗しました。もう一度お試しください。`
+              );
             }
           }
         }

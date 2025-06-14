@@ -1,7 +1,7 @@
 // contexts/ClothingContext.tsx
-import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
-import { clothingService, AppClothingItem } from '../services/clothingServiceFactory';
-import { formatDateToLocalISOString, formatDateJapanese } from '../lib/dateUtils';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
+import { formatDateToLocalISOString } from '../lib/dateUtils';
+import { AppClothingItem, clothingService } from '../services/clothingServiceFactory';
 import { ExtendedBrand } from '../types/database';
 
 // Use AppClothingItem from our database types
@@ -16,8 +16,8 @@ interface ClothingContextType {
   addItem: (item: Omit<ClothingItem, 'id'>, imageUri?: string) => Promise<void>;
   updateItem: (item: ClothingItem, imageUri?: string) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
-  deleteWearHistory: (itemId: string, date: string) => Promise<boolean>; // 成功時はtrue、失敗時はfalseを返す
-  deleteWashHistory: (itemId: string, date: string) => Promise<boolean>; // 成功時はtrue、失敗時はfalseを返す
+  deleteWearHistory: (itemId: string, date: string) => Promise<void>; // 例外で処理、着用・洗濯記録と統一
+  deleteWashHistory: (itemId: string, date: string) => Promise<void>; // 例外で処理、着用・洗濯記録と統一
   // ソート関連の状態を追加
   sortConfig: {
     sortBy: string;
@@ -152,11 +152,15 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     const recordDate = date || formatDateToLocalISOString(new Date());
 
     try {
-      // APIを呼び出して着用記録を追加
-      await clothingService.addWearRecord(id, recordDate);
+      // APIを呼び出して着用記録を追加し、更新されたアイテムデータを取得
+      const updatedItem = await clothingService.addWearRecord(id, recordDate);
 
-      // サーバー応答後に全件再取得（洗い替え）
-      await loadData();
+      // 差分更新：該当アイテムのみ配列内で更新
+      setClothingItems((items: ClothingItem[]) => 
+        items.map((item: ClothingItem): ClothingItem => 
+          item.id === id ? (updatedItem as ClothingItem) : item
+        )
+      );
 
       return true;
     } catch (err) {
@@ -171,11 +175,15 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     const recordDate = date || formatDateToLocalISOString(new Date());
 
     try {
-      // APIを呼び出して洗濯記録を追加
-      await clothingService.addWashRecord(id, recordDate);
+      // APIを呼び出して洗濯記録を追加し、更新されたアイテムデータを取得
+      const updatedItem = await clothingService.addWashRecord(id, recordDate);
 
-      // サーバー応答後に全件再取得
-      await loadData();
+      // 差分更新：該当アイテムのみ配列内で更新
+      setClothingItems((items: ClothingItem[]) => 
+        items.map((item: ClothingItem): ClothingItem => 
+          item.id === id ? (updatedItem as ClothingItem) : item
+        )
+      );
 
       return true;
     } catch (err) {
@@ -185,13 +193,13 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addItem = async (item: Omit<ClothingItem, 'id'>, imageUri?: string) => {
+  const addItem = async (item: Omit<ClothingItem, 'id'>, imageUri?: string): Promise<void> => {
     try {
-      // APIを呼び出してアイテムを追加
-      await clothingService.addClothingItem(item, imageUri);
+      // APIを呼び出してアイテムを追加し、新規アイテムデータを取得
+      const newItem = await clothingService.addClothingItem(item, imageUri);
 
-      // サーバー応答後に全件再取得
-      await loadData();
+      // 差分更新：新規アイテムを配列に追加
+      setClothingItems((items: ClothingItem[]) => [...items, newItem as ClothingItem]);
 
     } catch (err) {
       console.error('Failed to add item:', err);
@@ -201,13 +209,17 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateItem = async (updatedItem: ClothingItem, imageUri?: string) => {
+  const updateItem = async (updatedItem: ClothingItem, imageUri?: string): Promise<void> => {
     try {
-      // APIを呼び出してアイテムを更新
-      await clothingService.updateClothingItem(updatedItem.id, updatedItem, imageUri);
+      // APIを呼び出してアイテムを更新し、更新されたアイテムデータを取得
+      const updatedItemData = await clothingService.updateClothingItem(updatedItem.id, updatedItem, imageUri);
 
-      // サーバー応答後に全件再取得
-      await loadData();
+      // 差分更新：該当アイテムのみ配列内で更新
+      setClothingItems((items: ClothingItem[]) => 
+        items.map((item: ClothingItem): ClothingItem => 
+          item.id === updatedItem.id ? (updatedItemData as ClothingItem) : item
+        )
+      );
 
     } catch (err) {
       console.error('Failed to update item:', err);
@@ -217,51 +229,60 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const deleteItem = async (id: string) => {
+  const deleteItem = async (id: string): Promise<void> => {
     try {
       // APIを呼び出してアイテムを削除
       await clothingService.deleteClothingItem(id);
 
-      // サーバー応答後に全件再取得
-      await loadData();
+      // 差分更新：該当アイテムを配列から削除
+      setClothingItems((items: ClothingItem[]) => 
+        items.filter((item: ClothingItem) => item.id !== id)
+      );
 
     } catch (err) {
       console.error('Failed to delete item:', err);
       setError('アイテムの削除に失敗しました');
+      throw err; // 例外を再スロー
     }
   };
 
   // 着用履歴を削除する関数
-  const deleteWearHistory = async (itemId: string, date: string): Promise<boolean> => {
+  const deleteWearHistory = async (itemId: string, date: string): Promise<void> => {
     try {
-      // APIを呼び出して着用記録を削除
-      await clothingService.deleteWearRecord(itemId, date);
+      // APIを呼び出して着用記録を削除し、更新されたアイテムデータを取得
+      const updatedItem = await clothingService.deleteWearRecord(itemId, date);
 
-      // サーバー応答後に全件再取得
-      await loadData();
+      // 差分更新：該当アイテムのみ配列内で更新
+      setClothingItems((items: ClothingItem[]) => 
+        items.map((item: ClothingItem): ClothingItem => 
+          item.id === itemId ? (updatedItem as ClothingItem) : item
+        )
+      );
 
-      return true;
     } catch (err) {
       console.error('Failed to delete wear history:', err);
       setError('着用履歴の削除に失敗しました');
-      return false;
+      throw err; // 例外を再スロー
     }
   };
 
   // 洗濯履歴を削除する関数
-  const deleteWashHistory = async (itemId: string, date: string): Promise<boolean> => {
+  const deleteWashHistory = async (itemId: string, date: string): Promise<void> => {
     try {
-      // APIを呼び出して洗濯記録を削除
-      await clothingService.deleteWashRecord(itemId, date);
+      // APIを呼び出して洗濯記録を削除し、更新されたアイテムデータを取得
+      const updatedItem = await clothingService.deleteWashRecord(itemId, date);
 
-      // サーバー応答後に全件再取得
-      await loadData();
+      // 差分更新：該当アイテムのみ配列内で更新
+      setClothingItems((items: ClothingItem[]) => 
+        items.map((item: ClothingItem): ClothingItem => 
+          item.id === itemId ? (updatedItem as ClothingItem) : item
+        )
+      );
 
-      return true;
     } catch (err) {
       console.error('Failed to delete wash history:', err);
       setError('洗濯履歴の削除に失敗しました');
-      return false;
+      throw err; // 例外を再スロー
     }
   };
 

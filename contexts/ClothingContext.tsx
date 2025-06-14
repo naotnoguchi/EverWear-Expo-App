@@ -70,10 +70,12 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // ブランド情報を読み込む関数
+  // ブランド情報を読み込む関数（常に最新データを取得）
   const loadBrands = useCallback(async () => {
     try {
-      // ブランドを取得（キャッシュ優先）
+      console.log('Loading brands - always fetching fresh data');
+      
+      // ブランドを取得（常に最新データ）
       const brandList = await clothingService.getAllBrands();
       setBrands(brandList);
 

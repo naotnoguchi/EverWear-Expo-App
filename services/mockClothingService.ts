@@ -1,6 +1,6 @@
 // Mock clothing service that mimics Supabase API behavior
 import { AppClothingItem, ExtendedBrand } from '../types/database';
-import { mockClothingItems, mockBrands, simulateNetworkDelay, MOCK_USER_ID } from './mockData';
+import { mockBrands, mockClothingItems, simulateNetworkDelay } from './mockData';
 
 // In-memory storage for mock data
 let clothingItems = [...mockClothingItems];
@@ -280,13 +280,6 @@ export const getExtendedBrands = async (): Promise<ExtendedBrand[]> => {
 };
 
 // Note: addBrand function has been removed as per requirements
-
-// キャッシュを強制的に更新（Supabaseサービスとの互換性のため）
-export const refreshBrandsCache = async (): Promise<void> => {
-  await simulateNetworkDelay();
-  console.log('Mock refreshBrandsCache called - no actual cache to refresh in mock service');
-  // モックサービスでは実際のキャッシュはないが、インターフェースの互換性のために実装
-};
 
 // Reset mock data (useful for testing)
 export const resetMockData = (): void => {

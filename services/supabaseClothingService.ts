@@ -565,10 +565,10 @@ export const getBrands = async (): Promise<string[]> => {
   return getAllBrands();
 };
 
-// Get all brands from the brands table (no cache)
+// Get all brands from the brands table (always fetch fresh data)
 export const getAllBrands = async (): Promise<string[]> => {
   try {
-    console.log('Fetching all brands from brands table (no cache)');
+    console.log('Fetching all brands from brands table (always fresh)');
 
     // Get authenticated client
     const authClient = await getAuthenticatedClient();
@@ -593,10 +593,10 @@ export const getAllBrands = async (): Promise<string[]> => {
   }
 };
 
-// 拡張ブランド情報を取得（検索用）
+// 拡張ブランド情報を取得（検索用、常に最新データ）
 export const getExtendedBrands = async (): Promise<ExtendedBrand[]> => {
   try {
-    console.log('Fetching extended brands from Supabase (no cache)');
+    console.log('Fetching extended brands from Supabase (always fresh)');
 
     // Get authenticated client
     const authClient = await getAuthenticatedClient();
@@ -627,10 +627,4 @@ export const getExtendedBrands = async (): Promise<ExtendedBrand[]> => {
     console.error('Error fetching extended brands:', e);
     return [];
   }
-};
-
-// キャッシュ機能を廃止したため、互換のためのダミー実装
-export const refreshBrandsCache = async (): Promise<void> => {
-  // 現在はキャッシュを使用していないため何もしない
-  console.log('refreshBrandsCache() called - no cache implemented');
 };

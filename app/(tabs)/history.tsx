@@ -296,7 +296,7 @@ export default function History() {
           <View
             style={[
               styles.iconBackground,
-              { backgroundColor: item.eventType === "wear" ? "#3498db" : "#e74c3c" },
+              { backgroundColor: item.eventType === "wear" ? "#3498db" : "#2ecc71" },
             ]}
           >
             <Ionicons

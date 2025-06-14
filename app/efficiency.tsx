@@ -100,73 +100,75 @@ export default function EfficiencyScreen() {
         params: { id: item.id }
       })}
     >
-      <Image
-        source={{
-          uri: imageUrls[item.id] || item.imageUrl || require('@/assets/images/placeholder.png'),
-          cacheKey: item.imageUrl,
-          width: 60,
-          height: 60
-        }}
-        style={{
-          width: 60,
-          height: 60,
-          borderRadius: 4,
-          marginRight: 12,
-          backgroundColor: '#f0f0f0'
-        }}
-        contentFit="cover"
-        cachePolicy="disk"
-        onError={() => {
-          // エラー時は何もしない（デフォルトのフォールバック画像が表示される）
-        }}
-      />
-
-      <View style={styles.itemInfo}>
-        <Text style={[styles.itemName, { color: theme.text }]} numberOfLines={1}>
-          {item.name}
-        </Text>
-        <Text style={[styles.itemCategory, { color: theme.text + "99" }]}>
-          {item.brand ? `${item.brand} / ${item.category}` : item.category}
-        </Text>
-
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: theme.text }]}>
-              {item.wearCount}
-            </Text>
-            <Text style={[styles.statLabel, { color: theme.text + "99" }]}>
-              着用回数
-            </Text>
-          </View>
-
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: theme.text }]}>
-              {item.washCount}
-            </Text>
-            <Text style={[styles.statLabel, { color: theme.text + "99" }]}>
-              洗濯回数
-            </Text>
-          </View>
-
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: theme.text }]}>
-              {item.threshold}
-            </Text>
-            <Text style={[styles.statLabel, { color: theme.text + "99" }]}>
-              閾値
-            </Text>
-          </View>
-
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: getStatusColor(item.status, item.wearCount, item.washCount) }]}>
-              {getStatusText(item.status, item.wearCount, item.washCount)}
-            </Text>
-            <Text style={[styles.statLabel, { color: theme.text + "99" }]}>
-              効率
-            </Text>
-          </View>
+      {/* 上部セクション：画像、アイテム名、統計値 */}
+      <View style={styles.upperSection}>
+        <View style={styles.imageContainer}>
+          <Image
+            source={{
+              uri: imageUrls[item.id] || item.imageUrl || require('@/assets/images/placeholder.png'),
+              cacheKey: item.imageUrl,
+              width: 60,
+              height: 60
+            }}
+            style={styles.itemImage}
+            contentFit="cover"
+            cachePolicy="disk"
+            onError={() => {
+              // エラー時は何もしない（デフォルトのフォールバック画像が表示される）
+            }}
+          />
         </View>
 
+        <View style={styles.itemInfoSection}>
+          <Text style={[styles.itemName, { color: theme.text }]} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <Text style={[styles.itemCategory, { color: theme.text + "99" }]}>
+            {item.brand ? `${item.brand} / ${item.category}` : item.category}
+          </Text>
+
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: theme.text }]}>
+                {item.wearCount}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.text + "99" }]}>
+                着用回数
+              </Text>
+            </View>
+
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: theme.text }]}>
+                {item.washCount}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.text + "99" }]}>
+                洗濯回数
+              </Text>
+            </View>
+
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: theme.text }]}>
+                {item.threshold}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.text + "99" }]}>
+                閾値
+              </Text>
+            </View>
+
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: getStatusColor(item.status, item.wearCount, item.washCount) }]}>
+                {getStatusText(item.status, item.wearCount, item.washCount)}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.text + "99" }]}>
+                効率
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* 下部セクション：効率の詳細説明 */}
+      <View style={styles.lowerSection}>
         <View style={styles.efficiencyContainer}>
           <View style={styles.efficiencyLabelContainer}>
             <Text style={[styles.efficiencyLabel, { color: theme.text }]}>
@@ -357,11 +359,10 @@ export default function EfficiencyScreen() {
       paddingBottom: 16,
     },
     itemCard: {
-      flexDirection: 'row',
       backgroundColor: theme.card,
       borderRadius: 8,
       marginBottom: 12,
-      overflow: 'hidden',
+      padding: 12,
       elevation: 2,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 1 },
@@ -369,12 +370,10 @@ export default function EfficiencyScreen() {
       shadowRadius: 2,
     },
     itemImage: {
-      width: 80,
-      height: 120,
-    },
-    itemInfo: {
-      flex: 1,
-      padding: 12,
+      width: 60,
+      height: 60,
+      borderRadius: 4,
+      backgroundColor: '#f0f0f0',
     },
     itemName: {
       fontWeight: 'bold',
@@ -401,7 +400,7 @@ export default function EfficiencyScreen() {
       fontSize: 10,
     },
     efficiencyContainer: {
-      marginTop: 4,
+      marginTop: 12,
     },
     efficiencyLabelContainer: {
       flexDirection: 'row',
@@ -511,6 +510,19 @@ export default function EfficiencyScreen() {
     retryButtonText: {
       color: 'white',
       fontWeight: 'bold',
+    },
+    upperSection: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    imageContainer: {
+      marginRight: 12,
+    },
+    itemInfoSection: {
+      flex: 1,
+    },
+    lowerSection: {
+      flex: 1,
     },
   });
 

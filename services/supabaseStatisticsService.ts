@@ -28,8 +28,6 @@ import {
 
 // Helper function to convert RPC response to AppClothingItem
 const convertRpcResponseToAppItem = (rpcResponse: any): AppClothingItem => {
-  console.log('Converting RPC response to AppItem:', JSON.stringify(rpcResponse, null, 2));
-  
   const item = {
     id: rpcResponse.item_id,
     name: rpcResponse.name,
@@ -46,25 +44,15 @@ const convertRpcResponseToAppItem = (rpcResponse: any): AppClothingItem => {
     washHistory: Array.isArray(rpcResponse.wash_dates) ? rpcResponse.wash_dates : []
   };
   
-  console.log('Converted AppItem:', JSON.stringify({
-    id: item.id,
-    name: item.name,
-    wearHistoryLength: item.wearHistory.length,
-    washHistoryLength: item.washHistory.length
-  }, null, 2));
-  
   return item;
 };
 
 // Fetch base statistics data (clothing items with history)
 async function fetchBaseStatisticsData(): Promise<AppClothingItem[]> {
-  console.log('Fetching base statistics data (always fresh)');
-  
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
 
   if (!userId) {
-    console.log('ユーザーが認証されていません - 統計データ用の空の結果を返します');
     return [];
   }
 
@@ -83,37 +71,20 @@ async function fetchBaseStatisticsData(): Promise<AppClothingItem[]> {
   }
 
   if (!data || data.length === 0) {
-    console.log('No clothing items found for statistics');
     return [];
   }
 
-  console.log('Raw RPC response sample (first item):', JSON.stringify(data[0], null, 2));
-
   // Convert RPC response to AppClothingItem format
   const items = data.map(convertRpcResponseToAppItem);
-  console.log(`Fetched ${items.length} items for statistics`);
-  
-  // デバッグ: 最初のアイテムの詳細
-  if (items.length > 0) {
-    console.log('First converted item:', JSON.stringify({
-      id: items[0].id,
-      name: items[0].name,
-      wearHistory: items[0].wearHistory,
-      washHistory: items[0].washHistory
-    }, null, 2));
-  }
   
   return items;
 }
 
 // Get basic statistics (always fresh calculation)
 export const getBasicStats = async (period: Period = '3months'): Promise<BasicStats> => {
-  console.log(`Calculating basic stats for period: ${period}`);
-  
   try {
     const items = await fetchBaseStatisticsData();
     const stats = calculateBasicStats(items, period);
-    console.log(`Basic stats calculated successfully`);
     return stats;
   } catch (error) {
     console.error('Error calculating basic stats:', error);
@@ -127,12 +98,9 @@ export const getRankingData = async (
   sortOrder: 'most' | 'least' = 'most',
   category: CategoryValue = null
 ): Promise<RankingItem[]> => {
-  console.log(`Calculating ranking data for period: ${period}, order: ${sortOrder}, category: ${category || 'all'}`);
-  
   try {
     const items = await fetchBaseStatisticsData();
     const ranking = calculateRankingData(items, period, sortOrder, category);
-    console.log(`Ranking data calculated successfully: ${ranking.length} items`);
     return ranking;
   } catch (error) {
     console.error('Error calculating ranking data:', error);
@@ -142,12 +110,9 @@ export const getRankingData = async (
 
 // Get efficiency data (always fresh calculation)
 export const getEfficiencyData = async (period: Period = '3months'): Promise<EfficiencyItem[]> => {
-  console.log(`Calculating efficiency data for period: ${period}`);
-  
   try {
     const items = await fetchBaseStatisticsData();
     const efficiency = calculateEfficiencyData(items, period);
-    console.log(`Efficiency data calculated successfully: ${efficiency.length} items`);
     return efficiency;
   } catch (error) {
     console.error('Error calculating efficiency data:', error);
@@ -157,12 +122,9 @@ export const getEfficiencyData = async (period: Period = '3months'): Promise<Eff
 
 // Get impact data (always fresh calculation)
 export const getImpactData = async (period: Period = '3months'): Promise<ImpactData> => {
-  console.log(`Calculating impact data for period: ${period}`);
-  
   try {
     const items = await fetchBaseStatisticsData();
     const impact = calculateImpactData(items, period);
-    console.log(`Impact data calculated successfully`);
     return impact;
   } catch (error) {
     console.error('Error calculating impact data:', error);
@@ -172,19 +134,15 @@ export const getImpactData = async (period: Period = '3months'): Promise<ImpactD
 
 // Get item detail statistics (always fresh calculation)
 export const getItemDetailStats = async (itemId: string): Promise<ItemDetailStats | null> => {
-  console.log(`Calculating item detail stats for item: ${itemId}`);
-  
   try {
     const items = await fetchBaseStatisticsData();
     const item = items.find(i => i.id === itemId);
     
     if (!item) {
-      console.log(`Item not found: ${itemId}`);
       return null;
     }
     
     const stats = calculateItemDetailStats(item);
-    console.log(`Item detail stats calculated successfully for: ${itemId}`);
     return stats;
   } catch (error) {
     console.error('Error calculating item detail stats:', error);
@@ -194,21 +152,16 @@ export const getItemDetailStats = async (itemId: string): Promise<ItemDetailStat
 
 // Get badges (always fresh evaluation)
 export async function getBadges(): Promise<Badge[]> {
-  console.log('Evaluating badges (always fresh)');
-
   try {
     // Get user session
     const { data: session } = await auth.getSession();
     const userId = session?.session?.user?.id;
 
     if (!userId) {
-      console.log('ユーザーが認証されていません - デフォルトバッジを返します');
       return createDefaultBadges();
     }
 
     // Fetch item data and badge data in parallel
-    console.log('Fetching item data and badge data in parallel');
-
     const [items, badgeData, userBadges] = await Promise.all([
       fetchBaseStatisticsData(),
       fetchBadgeData(),
@@ -216,12 +169,6 @@ export async function getBadges(): Promise<Badge[]> {
     ]);
 
     const { definitions: badgeDefinitions, conditions: badgeConditions } = badgeData;
-
-    console.log('Successfully fetched data in parallel:',
-      `items=${items.length},`,
-      `definitions=${badgeDefinitions.length},`,
-      `conditions=${badgeConditions.length},`,
-      `userBadges=${userBadges.size}`);
 
     // Calculate statistics for badge evaluation
     const totalItems = items.length;
@@ -375,7 +322,6 @@ export async function getBadges(): Promise<Badge[]> {
       await saveNewlyEarnedBadges(userId, badges);
     }
 
-    console.log('getBadges returning data, count:', badges.length, 'earned:', badges.filter(b => b.isEarned).length);
     return badges;
   } catch (error) {
     console.error('Error fetching badges:', error);
@@ -542,7 +488,6 @@ function createDefaultBadges(items?: AppClothingItem[], stats?: any): Badge[] {
       }
     ];
 
-    console.log('createDefaultBadges with items and stats, count:', badges.length, 'earned:', badges.filter(b => b.isEarned).length);
     return badges;
   }
 
@@ -667,7 +612,6 @@ function createDefaultBadges(items?: AppClothingItem[], stats?: any): Badge[] {
     }
   ];
 
-  console.log('createDefaultBadges with default values, count:', badges.length);
   return badges;
 }
 

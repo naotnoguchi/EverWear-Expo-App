@@ -1,14 +1,14 @@
 // contexts/StatisticsContext.tsx
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
-    Badge,
-    BasicStats,
-    EfficiencyItem,
-    ImpactData,
-    ItemDetailStats,
-    Period,
-    RankingItem,
-    statisticsService
+  Badge,
+  BasicStats,
+  EfficiencyItem,
+  ImpactData,
+  ItemDetailStats,
+  Period,
+  RankingItem,
+  statisticsService
 } from '../services/statisticsServiceFactory';
 import { CategoryValue } from '../types/categories';
 import { useClothing } from './ClothingContext';
@@ -88,11 +88,9 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
   // バックグラウンドで統計を計算する関数
   const calculateStatisticsInBackground = useCallback(async () => {
     if (clothingLoading || clothingItems.length === 0) {
-      console.log('StatisticsContext: Skipping calculation - data not ready');
       return;
     }
 
-    console.log('StatisticsContext: Starting background statistics calculation');
     setIsCalculating(true);
     setCalculationError(null);
 
@@ -121,9 +119,6 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
 
       // 新しいバッジがある場合は通知を追加
       if (newlyEarnedBadges.length > 0) {
-        console.log(`StatisticsContext: ${newlyEarnedBadges.length} new badges earned:`, 
-          newlyEarnedBadges.map(b => b.name).join(', '));
-        
         const notifications = newlyEarnedBadges.map(badge => ({
           id: badge.id,
           name: badge.name,
@@ -143,8 +138,6 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
 
       // 前回のバッジ状態を更新
       previousBadgesRef.current = badgesResult;
-
-      console.log('StatisticsContext: Background calculation completed successfully');
     } catch (error) {
       console.error('StatisticsContext: Background calculation failed:', error);
       setCalculationError('統計データの計算に失敗しました。統計タブで再計算を試してください。');
@@ -155,18 +148,14 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
 
   // 手動再計算（エラー時の復旧用）
   const recalculateStatistics = useCallback(async () => {
-    console.log('StatisticsContext: Manual recalculation requested');
     await calculateStatisticsInBackground();
   }, [calculateStatisticsInBackground]);
 
   // アイテム詳細統計の取得
   const getItemDetailStats = useCallback(async (itemId: string): Promise<ItemDetailStats | null> => {
-    console.log(`StatisticsContext: Getting item detail stats for ${itemId}`);
-    
     // キャッシュから確認
     const cached = itemDetailStats.get(itemId);
     if (cached) {
-      console.log(`StatisticsContext: Returning cached item detail stats for ${itemId}`);
       return cached;
     }
 
@@ -175,7 +164,6 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
       if (stats) {
         // キャッシュに保存
         setItemDetailStats(prev => new Map(prev).set(itemId, stats));
-        console.log(`StatisticsContext: Item detail stats calculated and cached for ${itemId}`);
       }
       return stats;
     } catch (error) {
@@ -192,7 +180,6 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
   // 衣類データが変更されたときにバックグラウンドで統計を再計算
   useEffect(() => {
     if (!clothingLoading && clothingItems.length > 0) {
-      console.log('StatisticsContext: Clothing data changed, triggering background calculation');
       calculateStatisticsInBackground();
     }
   }, [clothingItems, clothingLoading, calculateStatisticsInBackground]);
@@ -200,7 +187,6 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
   // 期間やフィルターが変更されたときに再計算
   useEffect(() => {
     if (!clothingLoading && clothingItems.length > 0) {
-      console.log('StatisticsContext: Period or filter changed, triggering background calculation');
       calculateStatisticsInBackground();
     }
   }, [period, sortOrder, categoryFilter, clothingLoading, clothingItems.length, calculateStatisticsInBackground]);
@@ -209,11 +195,9 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const initializeBadges = async () => {
       try {
-        console.log('StatisticsContext: Initializing badges on app startup');
         const initialBadges = await statisticsService.getBadges();
         setBadges(initialBadges);
         previousBadgesRef.current = initialBadges;
-        console.log('StatisticsContext: Initial badges loaded');
       } catch (error) {
         console.log('StatisticsContext: バッジの初期化中にエラーが発生しましたが、継続します:', error);
         // エラーが発生してもアプリは継続動作させる

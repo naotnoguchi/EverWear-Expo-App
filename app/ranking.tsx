@@ -116,6 +116,7 @@ export default function RankingScreen() {
           backgroundColor: '#f0f0f0'
         }}
         contentFit="cover"
+        cachePolicy="disk"
         onError={() => {
           // エラー時は何もしない（デフォルトのフォールバック画像が表示される）
         }}

@@ -9,16 +9,16 @@ import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 // カテゴリ定義
@@ -535,6 +535,7 @@ export default function EditItem() {
                       }} 
                       style={styles.selectedImage} 
                       contentFit="cover"
+        cachePolicy="disk"
                       transition={200}
                     />
                     <View style={styles.blurContainer}>

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, Stack } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
@@ -13,23 +13,26 @@ import { CategoryValue } from "../types/categories";
 export default function RankingScreen() {
   const theme = useTheme();
 
-  // 統計コンテキストを使用
+  // 統計コンテキストを使用（新しいAPI）
   const {
     rankingData: items,
-    loading: { rankingData: isLoading },
-    error: { rankingData: contextError },
+    isCalculating,
+    calculationError,
     period,
     setPeriod,
-    fetchRankingData
+    sortOrder,
+    setSortOrder,
+    categoryFilter,
+    setCategoryFilter,
+    recalculateStatistics
   } = useStatistics();
 
   // ローディングとエラーの状態
-  const loading = isLoading;
-  const error = contextError;
+  const loading = isCalculating;
+  const error = calculationError;
 
-  // ローカル状態（コンテキストにない状態）
-  const [sortOrder, setSortOrder] = useState<'most' | 'least'>('most');
-  const [selectedCategory, setSelectedCategory] = useState<CategoryValue>(null);
+  // ローカル状態をコンテキストの状態に同期
+  const selectedCategory = categoryFilter;
 
   // 画像URLを取得
   const imageUrls = useImageUrls(items || [], { 
@@ -70,37 +73,20 @@ export default function RankingScreen() {
     loadAllImageUrls();
   }, [items]);
 
-  // ランキングデータを取得
-  const fetchRanking = useCallback(async () => {
-    try {
-      await fetchRankingData(period, sortOrder, selectedCategory);
-    } catch (err) {
-      console.error('ランキングデータの取得エラー:', err);
-    }
-  }, [fetchRankingData, period, sortOrder, selectedCategory]);
-
-  // マウント時とフィルター変更時にデータを取得
-  useEffect(() => {
-    fetchRanking();
-  }, [fetchRanking]);
-
   // 期間変更の処理
   const handlePeriodChange = (newPeriod: Period) => {
     setPeriod(newPeriod);
-    fetchRanking();
   };
 
   // ソート順変更の処理
   const handleSortOrderChange = () => {
     const newSortOrder = sortOrder === 'most' ? 'least' : 'most';
     setSortOrder(newSortOrder);
-    fetchRanking();
   };
 
   // カテゴリ変更の処理
   const handleCategoryChange = (category: CategoryValue) => {
-    setSelectedCategory(category);
-    fetchRanking();
+    setCategoryFilter(category);
   };
 
   // Render item
@@ -338,7 +324,7 @@ export default function RankingScreen() {
       <View style={[styles.container, styles.centerContent]}>
         <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
         <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchRanking}>
+                    <TouchableOpacity style={styles.retryButton} onPress={recalculateStatistics}>
           <Text style={styles.retryButtonText}>再試行</Text>
         </TouchableOpacity>
       </View>

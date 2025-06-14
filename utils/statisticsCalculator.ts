@@ -2,12 +2,12 @@
 import { CategoryValue } from '../types/categories';
 import { AppClothingItem } from '../types/database';
 import {
-  BasicStats,
-  EfficiencyItem,
-  ImpactData,
-  ItemDetailStats,
-  Period,
-  RankingItem
+    BasicStats,
+    EfficiencyItem,
+    ImpactData,
+    ItemDetailStats,
+    Period,
+    RankingItem
 } from '../types/statistics';
 
 // Helper function to filter items by period
@@ -111,7 +111,9 @@ export function calculateBasicStats(items: AppClothingItem[], period: Period): B
   };
   items.forEach(item => {
     const category = item.category;
-    categories[category]++;
+    if (category) {
+      categories[category]++;
+    }
   });
 
   const totalItems = items.length;
@@ -289,11 +291,9 @@ export function calculateImpactData(items: AppClothingItem[], period: Period): I
 
   // 結果を返す
   return {
-    totalWears,
-    totalWashes,
     totalWashesReduced: washesReduced,
-    waterSaved: { amount: waterSaved, cost: Math.round(waterSaved * 0.2) }, // 水の単価を0.2円/Lと仮定
     electricitySaved: { amount: energySaved, cost: Math.round(energySaved * 25) }, // 電気の単価を25円/kWhと仮定
+    waterSaved: { amount: waterSaved, cost: Math.round(waterSaved * 0.2) }, // 水の単価を0.2円/Lと仮定
     detergentSaved: { amount: Math.round(washesReduced * 30), cost: Math.round(washesReduced * 30 * 0.05) }, // 洗剤は1回30ml、単価0.05円/mlと仮定
     co2Reduced,
     treeEquivalent: parseFloat((co2Reduced / 20).toFixed(1)), // 1本の木が年間約20kgのCO2を吸収すると仮定
@@ -305,6 +305,13 @@ export function calculateImpactData(items: AppClothingItem[], period: Period): I
 export function calculateItemDetailStats(item: AppClothingItem): ItemDetailStats {
   console.log(`アイテム詳細統計の計算: ID=${item.id}, 名前=${item.name}`);
   console.log(`アイテム統計の計算: 着用履歴=${item.wearHistory.length}件, 洗濯履歴=${item.washHistory.length}件`);
+  console.log('アイテム詳細データ:', {
+    id: item.id,
+    name: item.name,
+    category: item.category,
+    brand: item.brand,
+    image: item.image
+  });
 
   // 基本統計を計算
   const wearCount = item.wearHistory.length;
@@ -433,29 +440,39 @@ export function calculateItemDetailStats(item: AppClothingItem): ItemDetailStats
     console.log('洗濯履歴がないため、閾値の最適化は行いません');
   }
 
+  // 最終着用日を計算
+  console.log('最終着用日の計算');
+  let lastWornDate: string | null = null;
+  if (item.wearHistory.length > 0) {
+    const sortedWears = [...item.wearHistory].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+    lastWornDate = sortedWears[0];
+    console.log(`最終着用日: ${lastWornDate}`);
+  } else {
+    console.log('着用履歴がないため、最終着用日はnull');
+  }
+
   // 結果を返す
   console.log('アイテム詳細統計オブジェクトの作成');
   return {
     id: item.id,
     name: item.name,
     category: item.category,
-    image: item.image,
+    brand: item.brand, // ブランド名を追加
+    imageUrl: item.image, // imageUrlプロパティに修正
     wearCount,
     washCount,
     wearPerWash,
-    washThreshold: item.washThreshold,
     efficiency,
     wearsByDay,
     wearsByMonth,
     wearTrend,
     washTrend,
     averageWearInterval,
-    environmentalImpact: {
-      washesReduced,
-      waterSaved,
-      energySaved,
-      co2Reduced
-    },
+    lastWornDate, // 最終着用日を追加
+    // 環境影響データを個別プロパティとして設定
+    waterSaved: waterSaved,
+    energySaved: energySaved,
+    co2Reduced: co2Reduced,
     optimizedThreshold: optimizedThreshold !== item.washThreshold ? optimizedThreshold : undefined
   };
 }

@@ -215,7 +215,12 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
         previousBadgesRef.current = initialBadges;
         console.log('StatisticsContext: Initial badges loaded');
       } catch (error) {
-        console.error('StatisticsContext: Failed to initialize badges:', error);
+        console.log('StatisticsContext: バッジの初期化中にエラーが発生しましたが、継続します:', error);
+        // エラーが発生してもアプリは継続動作させる
+        // デフォルトバッジを設定
+        const defaultBadges = await statisticsService.getBadges().catch(() => []);
+        setBadges(defaultBadges);
+        previousBadgesRef.current = defaultBadges;
       }
     };
 

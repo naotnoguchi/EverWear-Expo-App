@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
-import { useAuth } from '../../contexts/AuthContext';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useOnboarding } from '../../contexts/OnboardingContext';
-import { router } from 'expo-router';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useAuth } from '../../contexts/AuthContext';
+import { useOnboarding } from '../../contexts/OnboardingContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');

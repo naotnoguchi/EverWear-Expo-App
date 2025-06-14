@@ -1,11 +1,10 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { auth } from '../lib/authClient';
-import { User, Session, AuthChangeEvent } from '@supabase/auth-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
+import { AuthChangeEvent, Session, User } from '@supabase/auth-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Google from 'expo-auth-session/providers/google';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
+import { auth } from '../lib/authClient';
 
 // AsyncStorageのキー
 const AUTH_STATE_KEY = 'auth_state';

@@ -13,8 +13,8 @@ export default function ItemDetailScreen() {
   const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  // 統計コンテキストを使用
-  const { fetchItemDetailStats } = useStatistics();
+  // 統計コンテキストを使用（新しいAPI）
+  const { getItemDetailStats } = useStatistics();
 
   // ローカル状態
   const [itemStats, setItemStats] = useState<ItemDetailStats | null>(null);
@@ -302,7 +302,7 @@ export default function ItemDetailScreen() {
       setLoading(true);
       setError(null);
       console.log('アイテム詳細画面: データ取得開始');
-      const data = await fetchItemDetailStats(id);
+      const data = await getItemDetailStats(id);
       if (!data) {
         throw new Error('アイテムデータが見つかりませんでした。');
       }
@@ -311,13 +311,12 @@ export default function ItemDetailScreen() {
         name: data.name,
         category: data.category,
         brand: data.brand,
-        imageUrl: data.imageUrl,
-        image: data.image
+        imageUrl: data.imageUrl
       });
       setItemStats(data);
 
       // 画像URLを取得
-      const imagePath = data.image || data.imageUrl;
+      const imagePath = data.imageUrl;
       console.log('画像パス:', imagePath);
       if (imagePath) {
         try {
@@ -339,7 +338,7 @@ export default function ItemDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [id, fetchItemDetailStats]);
+  }, [id, getItemDetailStats]);
 
   // Load data on mount
   useEffect(() => {
@@ -651,7 +650,7 @@ export default function ItemDetailScreen() {
                 最終着用日
               </Text>
               <Text style={styles.patternValue}>
-                {itemStats.lastWorn ? new Date(itemStats.lastWorn).toLocaleDateString('ja-JP') : 'なし'}
+                {itemStats.lastWornDate ? new Date(itemStats.lastWornDate).toLocaleDateString('ja-JP') : 'なし'}
               </Text>
             </View>
           </View>

@@ -1,27 +1,27 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Share } from "react-native";
-import { useTheme } from "../contexts/ThemeContext";
-import { useState, useEffect, useCallback } from "react";
-import { Period } from "../services/statisticsServiceFactory";
-import { useStatistics } from "../contexts/StatisticsContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
+import React, { useState } from "react";
+import { ActivityIndicator, Modal, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useStatistics } from "../contexts/StatisticsContext";
+import { useTheme } from "../contexts/ThemeContext";
+import { Period } from "../services/statisticsServiceFactory";
 
 export default function ImpactScreen() {
   const theme = useTheme();
 
-  // 統計コンテキストを使用
+  // 統計コンテキストを使用（新しいAPI）
   const {
     impactData: impact,
-    loading: { impactData: isLoading },
-    error: { impactData: contextError },
+    isCalculating,
+    calculationError,
     period,
     setPeriod,
-    fetchImpactData
+    recalculateStatistics
   } = useStatistics();
 
   // ローディングとエラーの状態
-  const loading = isLoading;
-  const error = contextError;
+  const loading = isCalculating;
+  const error = calculationError;
 
   // 環境影響データを共有
   const handleShare = async () => {
@@ -59,24 +59,9 @@ ClothesManagerAppで洋服の寿命を延ばしながら環境にも貢献しよ
   const [showDetergentInfoModal, setShowDetergentInfoModal] = useState(false);
   const [showLifespanInfoModal, setShowLifespanInfoModal] = useState(false);
 
-  // 環境影響データを取得
-  const fetchImpact = useCallback(async () => {
-    try {
-      await fetchImpactData(period);
-    } catch (err) {
-      console.error('環境影響データの取得エラー:', err);
-    }
-  }, [fetchImpactData, period]);
-
-  // マウント時とperiod変更時にデータを取得
-  useEffect(() => {
-    fetchImpact();
-  }, [fetchImpact]);
-
   // 期間変更の処理
   const handlePeriodChange = (newPeriod: Period) => {
     setPeriod(newPeriod);
-    fetchImpact();
   };
 
   // Period options
@@ -397,7 +382,7 @@ ClothesManagerAppで洋服の寿命を延ばしながら環境にも貢献しよ
       <View style={[styles.container, styles.centerContent]}>
         <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
         <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchImpact}>
+                    <TouchableOpacity style={styles.retryButton} onPress={recalculateStatistics}>
           <Text style={styles.retryButtonText}>再試行</Text>
         </TouchableOpacity>
       </View>

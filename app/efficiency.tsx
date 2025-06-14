@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, Stack } from "expo-router";
-import { useCallback, useEffect } from "react";
+import React from "react";
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
@@ -11,14 +11,14 @@ import { EfficiencyItem, Period } from "../services/statisticsServiceFactory";
 export default function EfficiencyScreen() {
   const theme = useTheme();
 
-  // 統計コンテキストを使用
+  // 統計コンテキストを使用（新しいAPI）
   const {
     efficiencyData: items,
-    loading: { efficiencyData: isLoading },
-    error: { efficiencyData: contextError },
+    isCalculating,
+    calculationError,
     period,
     setPeriod,
-    fetchEfficiencyData
+    recalculateStatistics
   } = useStatistics();
 
   // 画像URLを取得
@@ -28,27 +28,12 @@ export default function EfficiencyScreen() {
   });
 
   // ローディングとエラーの状態
-  const loading = isLoading;
-  const error = contextError;
-
-  // 効率データを取得
-  const fetchEfficiency = useCallback(async () => {
-    try {
-      await fetchEfficiencyData(period);
-    } catch (err) {
-      console.error('効率データの取得エラー:', err);
-    }
-  }, [fetchEfficiencyData, period]);
-
-  // マウント時とperiod変更時にデータを取得
-  useEffect(() => {
-    fetchEfficiency();
-  }, [fetchEfficiency]);
+  const loading = isCalculating;
+  const error = calculationError;
 
   // 期間変更の処理
   const handlePeriodChange = (newPeriod: Period) => {
     setPeriod(newPeriod);
-    fetchEfficiency();
   };
 
   // Get status color
@@ -544,7 +529,7 @@ export default function EfficiencyScreen() {
       <View style={[styles.container, styles.centerContent]}>
         <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
         <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchEfficiency}>
+                    <TouchableOpacity style={styles.retryButton} onPress={recalculateStatistics}>
           <Text style={styles.retryButtonText}>再試行</Text>
         </TouchableOpacity>
       </View>

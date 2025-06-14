@@ -274,7 +274,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
           style={styles.itemImage}
           contentFit="cover"
           transition={200}
-          cachePolicy="memory-disk"
+          cachePolicy="disk"
           priority="high"
           recyclingKey={item.id}
         />

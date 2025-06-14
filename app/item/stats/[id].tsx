@@ -500,6 +500,7 @@ export default function ItemDetailScreen() {
               }
               style={[styles.itemImage, { width: 120, height: 120 }]}
               contentFit="cover"
+        cachePolicy="disk"
               transition={200}
               onError={(error) => {
                 console.error('Image load error:', error);

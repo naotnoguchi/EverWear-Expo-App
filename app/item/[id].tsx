@@ -594,6 +594,7 @@ export default function ItemDetail() {
         style={styles.itemImage} 
         contentFit="cover"
         transition={200}
+        cachePolicy="disk"
       />
 
       <View style={styles.detailsContainer}>

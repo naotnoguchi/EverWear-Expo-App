@@ -68,7 +68,7 @@ export const pickImageFromGallery = async (): Promise<string | null> => {
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     allowsEditing: true,
     aspect: [1, 1],
-    quality: 0.8,
+    quality: 1.0,
   });
 
   if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -91,7 +91,7 @@ export const takePhotoWithCamera = async (): Promise<string | null> => {
   const result = await ImagePicker.launchCameraAsync({
     allowsEditing: true,
     aspect: [1, 1],
-    quality: 0.8,
+    quality: 1.0,
   });
 
   if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -143,7 +143,7 @@ const resizeImage = async (uri: string): Promise<string> => {
     const manipResult = await ImageManipulator.manipulateAsync(
       uri,
       [{ resize: { width: 1024, height: 1024 } }],
-      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
     );
 
     console.log('Image resized successfully');

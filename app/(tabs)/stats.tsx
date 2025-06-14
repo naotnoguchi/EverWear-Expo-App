@@ -717,6 +717,7 @@ export default function Stats() {
                   style={styles.itemImage}
                   contentFit="cover"
                   transition={200}
+                  cachePolicy="disk"
                   onLoadStart={() => {
                     console.log(`[Image Load Start] Item ID: ${item.id || 'undefined'}, Image: ${(item.imageUrl || '').slice(0, 50)}...`);
                   }}

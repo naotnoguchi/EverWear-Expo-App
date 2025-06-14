@@ -1,20 +1,20 @@
-import { Stack, useRouter } from "expo-router";
-import { useState, useEffect } from "react";
-import {
-  Text,
-  View,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-  ActivityIndicator,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Stack, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import BrandSelector from "../components/BrandSelector";
 import { useClothing } from "../contexts/ClothingContext";
 import { useTheme } from "../contexts/ThemeContext";

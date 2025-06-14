@@ -31,44 +31,34 @@ export const getClothingItemsWithHistory = async (): Promise<AppClothingItem[]> 
 // Get all clothing items for the current user
 /*
 export const getClothingItems = async (): Promise<AppClothingItem[]> => {
-  console.log('Fetching clothing items');
   const { data: session } = await auth.getSession();
   const userId = session?.session?.user?.id;
 
-  console.log('User authentication check for item retrieval');
   if (!userId) {
-    console.log('User not authenticated, cannot retrieve items');
     throw new Error('User not authenticated');
   }
 
   // Get authenticated client
-  console.log('Getting authenticated client for database operations');
   const authClient = await getAuthenticatedClient();
 
   // Get clothing items
-  console.log('Querying clothing_items table');
   const { data: items, error } = await authClient
     .from('clothing_items')
     .select('*')
     .eq('user_id', userId);
 
   if (error) {
-    console.log('Error retrieving items:', error);
     throw error;
   }
-  console.log(`Retrieved ${items?.length || 0} items from database`);
 
   // Get all brands for lookup
-  console.log('Querying brands table for lookup');
   const { data: brands, error: brandsError } = await authClient
     .from('brands')
     .select('id, name');
 
   if (brandsError) {
-    console.log('Error retrieving brands:', brandsError);
     throw brandsError;
   }
-  console.log(`Retrieved ${brands?.length || 0} brands from database`);
 
   // Create a map of brand IDs to brand names for quick lookup
   const brandMap = new Map();
@@ -77,7 +67,6 @@ export const getClothingItems = async (): Promise<AppClothingItem[]> => {
   });
 
   // Get wear and wash history for each item
-  console.log('Retrieving wear and wash history for each item');
   const result: AppClothingItem[] = [];
 
   for (const item of items) {
@@ -87,7 +76,6 @@ export const getClothingItems = async (): Promise<AppClothingItem[]> => {
       .eq('clothing_item_id', item.id);
 
     if (wearError) {
-      console.log('Error retrieving wear history:', wearError);
       throw wearError;
     }
 
@@ -97,7 +85,6 @@ export const getClothingItems = async (): Promise<AppClothingItem[]> => {
       .eq('clothing_item_id', item.id);
 
     if (washError) {
-      console.log('Error retrieving wash history:', washError);
       throw washError;
     }
 
@@ -170,7 +157,6 @@ export const addClothingItem = async (item: Omit<AppClothingItem, 'id'>, imageUr
       throw error;
     }
 
-    console.log(`衣類サービス: 新しいアイテム「${item.name}」を追加完了`);
     return toAppClothingItem(data, [], [], item.brand);
   } catch (error) {
     // If there was an error and we uploaded an image, delete it
@@ -288,7 +274,6 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
       id: '', clothing_item_id: id, wash_date: date, created_at: '' 
     }));
     
-    console.log(`衣類サービス: アイテム「${updatedItem.name}」の更新完了`);
     return toAppClothingItem(data, wearHistoryObjects, washHistoryObjects, updatedItem.brand);
   } catch (error) {
     // If there was an error and we uploaded a new image, delete it
@@ -344,7 +329,7 @@ export const deleteClothingItem = async (id: string): Promise<void> => {
     await deleteImage(item.image_path);
   }
 
-  console.log(`衣類サービス: アイテム（ID: ${id}）の削除完了`);
+
 };
 
 // Add a wear record

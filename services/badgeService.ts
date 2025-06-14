@@ -130,7 +130,7 @@ export async function saveNewlyEarnedBadges(userId: string, earnedBadges: Badge[
       throw error;
     }
 
-    console.log(`バッジサービス: ${newlyEarnedBadges.length}個の新しいバッジを保存完了`);
+
   } catch (e) {
     console.error('Exception in saveNewlyEarnedBadges:', e);
   }

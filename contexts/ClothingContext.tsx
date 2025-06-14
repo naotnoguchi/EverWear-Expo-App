@@ -63,11 +63,9 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       const items = await clothingService.getClothingItemsWithHistory();
       setClothingItems(items);
     } catch (err) {
-      console.log('データの読み込み中にエラーが発生:', err);
       // 認証エラーなど正常なケースでは、エラー状態を設定せずに空のデータとして扱う
       const errorMessage = err instanceof Error ? err.message : String(err);
       if (errorMessage.includes('User not authenticated')) {
-        console.log('ユーザーが認証されていません - 空のデータを設定します');
         setClothingItems([]);
       } else {
         console.error('データの読み込みに失敗しました:', err);
@@ -81,8 +79,6 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
   // ブランド情報を読み込む関数（常に最新データを取得）
   const loadBrands = useCallback(async () => {
     try {
-      console.log('Loading brands - always fetching fresh data');
-      
       // ブランドを取得（常に最新データ）
       const brandList = await clothingService.getAllBrands();
       setBrands(brandList);

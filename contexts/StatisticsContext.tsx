@@ -1,76 +1,57 @@
 // contexts/StatisticsContext.tsx
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { 
-  statisticsService, 
-  BasicStats, 
-  RankingItem, 
-  EfficiencyItem, 
-  ImpactData, 
-  Badge, 
-  ItemDetailStats,
-  Period
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import {
+    Badge,
+    BasicStats,
+    EfficiencyItem,
+    ImpactData,
+    ItemDetailStats,
+    Period,
+    RankingItem,
+    statisticsService
 } from '../services/statisticsServiceFactory';
 import { CategoryValue } from '../types/categories';
 import { useClothing } from './ClothingContext';
-import { 
-  calculateBasicStats,
-  calculateRankingData,
-  calculateEfficiencyData,
-  calculateImpactData,
-  calculateItemDetailStats
-} from '../utils/statisticsCalculator';
 
-// コンテキストの型定義
+// 新しいバッジ通知の型
+interface BadgeNotification {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+}
+
+// コンテキストの型定義（簡素化）
 interface StatisticsContextType {
-  // データの状態
+  // 計算済みデータ（常に最新）
   basicStats: BasicStats | null;
   rankingData: RankingItem[];
   efficiencyData: EfficiencyItem[];
   impactData: ImpactData | null;
   badges: Badge[];
-
-  // アイテム詳細統計のキャッシュ
   itemDetailStats: Map<string, ItemDetailStats>;
 
-  // ローディングとエラーの状態
-  loading: {
-    basicStats: boolean;
-    rankingData: boolean;
-    efficiencyData: boolean;
-    impactData: boolean;
-    badges: boolean;
-  };
-  error: {
-    basicStats: string | null;
-    rankingData: string | null;
-    efficiencyData: string | null;
-    impactData: string | null;
-    badges: string | null;
-  };
+  // バッジ通知
+  badgeNotifications: BadgeNotification[];
+  clearBadgeNotification: (badgeId: string) => void;
 
-  // 期間の状態（画面間で共有）
+  // 計算状態
+  isCalculating: boolean;
+  calculationError: string | null;
+
+  // 期間とフィルター設定
   period: Period;
   setPeriod: (period: Period) => void;
-
-  // ランキングのフィルター状態
   sortOrder: 'most' | 'least';
   setSortOrder: (order: 'most' | 'least') => void;
   categoryFilter: CategoryValue;
   setCategoryFilter: (category: CategoryValue) => void;
 
-  // データ取得関数
-  fetchBasicStats: (period?: Period) => Promise<void>;
-  fetchRankingData: (period?: Period, sortOrder?: 'most' | 'least', category?: CategoryValue) => Promise<void>;
-  fetchEfficiencyData: (period?: Period) => Promise<void>;
-  fetchImpactData: (period?: Period) => Promise<void>;
-  fetchBadges: () => Promise<void>;
-  fetchItemDetailStats: (itemId: string) => Promise<ItemDetailStats | null>;
-
-  // すべてのデータを更新
-  refreshAllData: () => Promise<void>;
-
-  // キャッシュをクリア（テストやデバッグ用）
-  clearCache: () => void;
+  // 手動再計算（エラー時の復旧用）
+  recalculateStatistics: () => Promise<void>;
+  
+  // アイテム詳細統計の取得
+  getItemDetailStats: (itemId: string) => Promise<ItemDetailStats | null>;
 }
 
 // コンテキストの作成
@@ -81,7 +62,7 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
   // ClothingContextからデータを取得
   const { clothingItems, loading: clothingLoading } = useClothing();
 
-  // データの状態
+  // 計算済みデータの状態
   const [basicStats, setBasicStats] = useState<BasicStats | null>(null);
   const [rankingData, setRankingData] = useState<RankingItem[]>([]);
   const [efficiencyData, setEfficiencyData] = useState<EfficiencyItem[]>([]);
@@ -89,321 +70,161 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
   const [badges, setBadges] = useState<Badge[]>([]);
   const [itemDetailStats, setItemDetailStats] = useState<Map<string, ItemDetailStats>>(new Map());
 
-  // ローディング状態
-  const [loading, setLoading] = useState({
-    basicStats: false,
-    rankingData: false,
-    efficiencyData: false,
-    impactData: false,
-    badges: false,
-  });
+  // バッジ通知
+  const [badgeNotifications, setBadgeNotifications] = useState<BadgeNotification[]>([]);
 
-  // エラー状態
-  const [error, setError] = useState({
-    basicStats: null as string | null,
-    rankingData: null as string | null,
-    efficiencyData: null as string | null,
-    impactData: null as string | null,
-    badges: null as string | null,
-  });
+  // 計算状態
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [calculationError, setCalculationError] = useState<string | null>(null);
 
-  // 期間の状態（デフォルトは3ヶ月）
+  // 期間とフィルター設定
   const [period, setPeriod] = useState<Period>('3months');
-
-  // ランキングのフィルター状態
   const [sortOrder, setSortOrder] = useState<'most' | 'least'>('most');
   const [categoryFilter, setCategoryFilter] = useState<CategoryValue>(null);
 
-  // 基本統計データを計算
-  const fetchBasicStats = useCallback(async (selectedPeriod: Period = period) => {
-    console.log(`StatisticsContext: 基本統計データの計算開始 (期間=${selectedPeriod})`);
-    try {
-      setLoading(prev => ({ ...prev, basicStats: true }));
-      setError(prev => ({ ...prev, basicStats: null }));
+  // 前回のバッジ状態を保持（新しいバッジ検出用）
+  const previousBadgesRef = useRef<Badge[]>([]);
 
-      // ClothingContextのデータを使用して計算
-      if (clothingItems.length === 0 && !clothingLoading) {
-        console.log('StatisticsContext: アイテムデータがありません');
-        setBasicStats({
-          totalItems: 0,
-          totalWears: 0,
-          totalWashes: 0,
-          averageWearsBetweenWashes: 0,
-          mostWornCategory: null,
-          mostWornItem: { id: '', name: '', wears: 0 },
-          leastWornItem: { id: '', name: '', wears: 0 },
-          categoryBreakdown: [],
-          monthlyWears: [],
-          averageWashThreshold: 0
-        });
-        return;
-      }
-
-      if (clothingLoading) {
-        console.log('StatisticsContext: アイテムデータ読み込み中...');
-        return;
-      }
-
-      const data = calculateBasicStats(clothingItems, selectedPeriod);
-      console.log(`StatisticsContext: 基本統計データの計算成功 (アイテム数=${data.totalItems}, 着用回数=${data.totalWears}, 洗濯回数=${data.totalWashes})`);
-      setBasicStats(data);
-    } catch (err) {
-      console.error('StatisticsContext: 基本統計データの計算エラー:', err);
-      setError(prev => ({ ...prev, basicStats: '基本統計データの計算に失敗しました' }));
-    } finally {
-      setLoading(prev => ({ ...prev, basicStats: false }));
+  // バックグラウンドで統計を計算する関数
+  const calculateStatisticsInBackground = useCallback(async () => {
+    if (clothingLoading || clothingItems.length === 0) {
+      console.log('StatisticsContext: Skipping calculation - data not ready');
+      return;
     }
-  }, [period, clothingItems, clothingLoading]);
 
-  // ランキングデータを計算
-  const fetchRankingData = useCallback(async (
-    selectedPeriod: Period = period,
-    selectedSortOrder: 'most' | 'least' = sortOrder,
-    selectedCategory: CategoryValue = categoryFilter
-  ) => {
-    console.log(`StatisticsContext: ランキングデータの計算開始 (期間=${selectedPeriod}, 並び順=${selectedSortOrder}, カテゴリ=${selectedCategory || 'すべて'})`);
+    console.log('StatisticsContext: Starting background statistics calculation');
+    setIsCalculating(true);
+    setCalculationError(null);
+
     try {
-      setLoading(prev => ({ ...prev, rankingData: true }));
-      setError(prev => ({ ...prev, rankingData: null }));
+      // 並列で全ての統計データを計算
+      const [
+        basicStatsResult,
+        rankingDataResult,
+        efficiencyDataResult,
+        impactDataResult,
+        badgesResult
+      ] = await Promise.all([
+        statisticsService.getBasicStats(period),
+        statisticsService.getRankingData(period, sortOrder, categoryFilter),
+        statisticsService.getEfficiencyData(period),
+        statisticsService.getImpactData(period),
+        statisticsService.getBadges()
+      ]);
 
-      // ClothingContextのデータを使用して計算
-      if (clothingItems.length === 0 && !clothingLoading) {
-        console.log('StatisticsContext: アイテムデータがありません');
-        setRankingData([]);
-        return;
-      }
-
-      if (clothingLoading) {
-        console.log('StatisticsContext: アイテムデータ読み込み中...');
-        return;
-      }
-
-      const data = calculateRankingData(
-        clothingItems, 
-        selectedPeriod, 
-        selectedSortOrder, 
-        selectedCategory
+      // 新しいバッジの検出
+      const previousBadges = previousBadgesRef.current;
+      const newlyEarnedBadges = badgesResult.filter(
+        current => current.isEarned && 
+                  !previousBadges.some(prev => prev.id === current.id && prev.isEarned)
       );
-      console.log(`StatisticsContext: ランキングデータの計算成功 (${data.length}件のアイテム)`);
-      setRankingData(data);
-    } catch (err) {
-      console.error('StatisticsContext: ランキングデータの計算エラー:', err);
-      setError(prev => ({ ...prev, rankingData: 'ランキングデータの計算に失敗しました' }));
+
+      // 新しいバッジがある場合は通知を追加
+      if (newlyEarnedBadges.length > 0) {
+        console.log(`StatisticsContext: ${newlyEarnedBadges.length} new badges earned:`, 
+          newlyEarnedBadges.map(b => b.name).join(', '));
+        
+        const notifications = newlyEarnedBadges.map(badge => ({
+          id: badge.id,
+          name: badge.name,
+          description: badge.description,
+          imageUrl: badge.imageUrl
+        }));
+        
+        setBadgeNotifications(prev => [...prev, ...notifications]);
+      }
+
+      // 状態を更新
+      setBasicStats(basicStatsResult);
+      setRankingData(rankingDataResult);
+      setEfficiencyData(efficiencyDataResult);
+      setImpactData(impactDataResult);
+      setBadges(badgesResult);
+
+      // 前回のバッジ状態を更新
+      previousBadgesRef.current = badgesResult;
+
+      console.log('StatisticsContext: Background calculation completed successfully');
+    } catch (error) {
+      console.error('StatisticsContext: Background calculation failed:', error);
+      setCalculationError('統計データの計算に失敗しました。統計タブで再計算を試してください。');
     } finally {
-      setLoading(prev => ({ ...prev, rankingData: false }));
+      setIsCalculating(false);
     }
-  }, [period, sortOrder, categoryFilter, clothingItems, clothingLoading]);
+  }, [clothingItems, clothingLoading, period, sortOrder, categoryFilter]);
 
-  // 効率データを計算
-  const fetchEfficiencyData = useCallback(async (selectedPeriod: Period = period) => {
-    console.log(`StatisticsContext: 効率データの計算開始 (期間=${selectedPeriod})`);
-    try {
-      setLoading(prev => ({ ...prev, efficiencyData: true }));
-      setError(prev => ({ ...prev, efficiencyData: null }));
+  // 手動再計算（エラー時の復旧用）
+  const recalculateStatistics = useCallback(async () => {
+    console.log('StatisticsContext: Manual recalculation requested');
+    await calculateStatisticsInBackground();
+  }, [calculateStatisticsInBackground]);
 
-      // ClothingContextのデータを使用して計算
-      if (clothingItems.length === 0 && !clothingLoading) {
-        console.log('StatisticsContext: アイテムデータがありません');
-        setEfficiencyData([]);
-        return;
-      }
-
-      if (clothingLoading) {
-        console.log('StatisticsContext: アイテムデータ読み込み中...');
-        return;
-      }
-
-      const data = calculateEfficiencyData(clothingItems, selectedPeriod);
-      console.log(`StatisticsContext: 効率データの計算成功 (${data.length}件のアイテム)`);
-      setEfficiencyData(data);
-    } catch (err) {
-      console.error('StatisticsContext: 効率データの計算エラー:', err);
-      setError(prev => ({ ...prev, efficiencyData: '効率データの計算に失敗しました' }));
-    } finally {
-      setLoading(prev => ({ ...prev, efficiencyData: false }));
+  // アイテム詳細統計の取得
+  const getItemDetailStats = useCallback(async (itemId: string): Promise<ItemDetailStats | null> => {
+    console.log(`StatisticsContext: Getting item detail stats for ${itemId}`);
+    
+    // キャッシュから確認
+    const cached = itemDetailStats.get(itemId);
+    if (cached) {
+      console.log(`StatisticsContext: Returning cached item detail stats for ${itemId}`);
+      return cached;
     }
-  }, [period, clothingItems, clothingLoading]);
 
-  // 環境影響データを計算
-  const fetchImpactData = useCallback(async (selectedPeriod: Period = period) => {
-    console.log(`StatisticsContext: 環境影響データの計算開始 (期間=${selectedPeriod})`);
     try {
-      setLoading(prev => ({ ...prev, impactData: true }));
-      setError(prev => ({ ...prev, impactData: null }));
-
-      // ClothingContextのデータを使用して計算
-      if (clothingItems.length === 0 && !clothingLoading) {
-        console.log('StatisticsContext: アイテムデータがありません');
-        setImpactData({
-          totalWears: 0,
-          totalWashes: 0,
-          totalWashesReduced: 0,
-          waterSaved: 0,
-          energySaved: 0,
-          co2Reduced: 0
-        });
-        return;
+      const stats = await statisticsService.getItemDetailStats(itemId);
+      if (stats) {
+        // キャッシュに保存
+        setItemDetailStats(prev => new Map(prev).set(itemId, stats));
+        console.log(`StatisticsContext: Item detail stats calculated and cached for ${itemId}`);
       }
-
-      if (clothingLoading) {
-        console.log('StatisticsContext: アイテムデータ読み込み中...');
-        return;
-      }
-
-      const data = calculateImpactData(clothingItems, selectedPeriod);
-      console.log(`StatisticsContext: 環境影響データの計算成功 (洗濯削減=${data.totalWashesReduced.toFixed(1)}回, CO2削減=${data.co2Reduced.toFixed(1)}kg)`);
-      setImpactData(data);
-    } catch (err) {
-      console.error('StatisticsContext: 環境影響データの計算エラー:', err);
-      setError(prev => ({ ...prev, impactData: '環境影響データの計算に失敗しました' }));
-    } finally {
-      setLoading(prev => ({ ...prev, impactData: false }));
-    }
-  }, [period, clothingItems, clothingLoading]);
-
-  // バッジデータを取得
-  const fetchBadges = useCallback(async () => {
-    console.log('StatisticsContext: バッジデータの取得開始');
-    try {
-      setLoading(prev => ({ ...prev, badges: true }));
-      setError(prev => ({ ...prev, badges: null }));
-
-      const data = await statisticsService.getBadges();
-      console.log(`StatisticsContext: バッジデータの取得成功 (${data.length}件のバッジ, 獲得済み=${data.filter(b => b.isEarned).length}件)`);
-      setBadges(data);
-    } catch (err) {
-      console.error('StatisticsContext: バッジデータの取得エラー:', err);
-      setError(prev => ({ ...prev, badges: 'バッジデータの読み込みに失敗しました' }));
-    } finally {
-      setLoading(prev => ({ ...prev, badges: false }));
-    }
-  }, []);
-
-  // アイテム詳細統計を計算
-  const fetchItemDetailStats = useCallback(async (itemId: string): Promise<ItemDetailStats | null> => {
-    console.log(`StatisticsContext: アイテム詳細統計の計算開始 (ID=${itemId})`);
-    try {
-      // すでにキャッシュにあるか確認
-      if (itemDetailStats.has(itemId)) {
-        console.log(`StatisticsContext: アイテム詳細統計がキャッシュに存在、キャッシュから返却 (ID=${itemId})`);
-        return itemDetailStats.get(itemId) || null;
-      }
-
-      // ClothingContextのデータを使用して計算
-      if (clothingLoading) {
-        console.log('StatisticsContext: アイテムデータ読み込み中...');
-        return null;
-      }
-
-      // 対象のアイテムを検索
-      const item = clothingItems.find(item => item.id === itemId);
-      if (!item) {
-        console.log(`StatisticsContext: アイテムが見つかりません (ID=${itemId})`);
-        return null;
-      }
-
-      console.log(`StatisticsContext: アイテム詳細統計を計算 (ID=${itemId})`);
-      const data = calculateItemDetailStats(item);
-      console.log(`StatisticsContext: アイテム詳細統計の計算成功 (ID=${itemId}, 着用回数=${data.wearCount}, 洗濯回数=${data.washCount})`);
-
-      // キャッシュを更新
-      setItemDetailStats(prev => {
-        const newMap = new Map(prev);
-        newMap.set(itemId, data);
-        return newMap;
-      });
-      console.log(`StatisticsContext: アイテム詳細統計をコンテキストキャッシュに保存 (ID=${itemId})`);
-
-      return data;
-    } catch (err) {
-      console.error(`StatisticsContext: アイテム詳細統計の計算エラー (ID: ${itemId}):`, err);
+      return stats;
+    } catch (error) {
+      console.error(`StatisticsContext: Failed to get item detail stats for ${itemId}:`, error);
       return null;
     }
-  }, [itemDetailStats, clothingItems, clothingLoading]);
+  }, [itemDetailStats]);
 
-  // すべてのデータを更新
-  const refreshAllData = useCallback(async () => {
-    console.log('StatisticsContext: すべての統計データの更新開始');
-
-    console.log('StatisticsContext: 各種統計データの並列計算を開始');
-    await Promise.all([
-      fetchBasicStats(),
-      fetchRankingData(),
-      fetchEfficiencyData(),
-      fetchImpactData(),
-      fetchBadges()
-    ]);
-    console.log('StatisticsContext: すべての統計データの更新完了');
-  }, [fetchBasicStats, fetchRankingData, fetchEfficiencyData, fetchImpactData, fetchBadges]);
-
-  // キャッシュをクリア
-  const clearCache = useCallback(() => {
-    console.log('StatisticsContext: コンテキスト内の統計データをリセット');
-    setBasicStats(null);
-    setRankingData([]);
-    setEfficiencyData([]);
-    setImpactData(null);
-    setBadges([]);
-    setItemDetailStats(new Map());
-    console.log('StatisticsContext: キャッシュクリア完了');
+  // バッジ通知をクリア
+  const clearBadgeNotification = useCallback((badgeId: string) => {
+    setBadgeNotifications(prev => prev.filter(notification => notification.id !== badgeId));
   }, []);
 
-  // 期間が変更されたときのエフェクト
+  // 衣類データが変更されたときにバックグラウンドで統計を再計算
   useEffect(() => {
-    // 期間が変更されたときに自動的にデータを再計算しない
-    // 各画面がマウントされたとき、または期間が変更されたときに必要なデータを計算する
-    // これにより、表示されていない画面のデータを不必要に計算することを防ぐ
-  }, [period]);
+    if (!clothingLoading && clothingItems.length > 0) {
+      console.log('StatisticsContext: Clothing data changed, triggering background calculation');
+      calculateStatisticsInBackground();
+    }
+  }, [clothingItems, clothingLoading, calculateStatisticsInBackground]);
 
-  // clothingItemsが変更されたときのエフェクト
+  // 期間やフィルターが変更されたときに再計算
   useEffect(() => {
-    console.log('StatisticsContext: clothingItemsが変更されました、表示中の統計データを更新');
-
-    // 現在表示中の統計データのみを更新
-    const updatePromises: Promise<void>[] = [];
-
-    // 基本統計データが読み込まれている場合は更新
-    if (basicStats !== null) {
-      console.log('StatisticsContext: 基本統計データを更新');
-      updatePromises.push(fetchBasicStats());
+    if (!clothingLoading && clothingItems.length > 0) {
+      console.log('StatisticsContext: Period or filter changed, triggering background calculation');
+      calculateStatisticsInBackground();
     }
+  }, [period, sortOrder, categoryFilter, clothingLoading, clothingItems.length, calculateStatisticsInBackground]);
 
-    // ランキングデータが読み込まれている場合は更新
-    if (rankingData.length > 0) {
-      console.log('StatisticsContext: ランキングデータを更新');
-      updatePromises.push(fetchRankingData());
-    }
+  // アプリ起動時にバッジデータを取得
+  useEffect(() => {
+    const initializeBadges = async () => {
+      try {
+        console.log('StatisticsContext: Initializing badges on app startup');
+        const initialBadges = await statisticsService.getBadges();
+        setBadges(initialBadges);
+        previousBadgesRef.current = initialBadges;
+        console.log('StatisticsContext: Initial badges loaded');
+      } catch (error) {
+        console.error('StatisticsContext: Failed to initialize badges:', error);
+      }
+    };
 
-    // 効率データが読み込まれている場合は更新
-    if (efficiencyData.length > 0) {
-      console.log('StatisticsContext: 効率データを更新');
-      updatePromises.push(fetchEfficiencyData());
-    }
+    initializeBadges();
+  }, []);
 
-    // 環境影響データが読み込まれている場合は更新
-    if (impactData !== null) {
-      console.log('StatisticsContext: 環境影響データを更新');
-      updatePromises.push(fetchImpactData());
-    }
-
-    // アイテム詳細統計のキャッシュをクリア
-    if (itemDetailStats.size > 0) {
-      console.log('StatisticsContext: アイテム詳細統計のキャッシュをクリア');
-      setItemDetailStats(new Map());
-    }
-
-    // すべての更新を並行して実行
-    if (updatePromises.length > 0) {
-      Promise.all(updatePromises)
-        .then(() => console.log('StatisticsContext: clothingItems変更による更新が完了'))
-        .catch(err => console.error('StatisticsContext: 更新中にエラー:', err));
-    }
-  }, [clothingItems]);
-
-
-  // コンテキスト値を提供
+  // コンテキスト値
   const contextValue: StatisticsContextType = {
-    // データ
+    // 計算済みデータ
     basicStats,
     rankingData,
     efficiencyData,
@@ -411,33 +232,27 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
     badges,
     itemDetailStats,
 
-    // ローディングとエラーの状態
-    loading,
-    error,
+    // バッジ通知
+    badgeNotifications,
+    clearBadgeNotification,
 
-    // 期間の状態
+    // 計算状態
+    isCalculating,
+    calculationError,
+
+    // 期間とフィルター設定
     period,
     setPeriod,
-
-    // ランキングのフィルター状態
     sortOrder,
     setSortOrder,
     categoryFilter,
     setCategoryFilter,
 
-    // データ取得関数
-    fetchBasicStats,
-    fetchRankingData,
-    fetchEfficiencyData,
-    fetchImpactData,
-    fetchBadges,
-    fetchItemDetailStats,
-
-    // すべてのデータを更新
-    refreshAllData,
-
-    // キャッシュをクリア
-    clearCache,
+    // 手動再計算
+    recalculateStatistics,
+    
+    // アイテム詳細統計
+    getItemDetailStats
   };
 
   return (
@@ -447,7 +262,7 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
   );
 }
 
-// 統計コンテキストを使用するためのフック
+// カスタムフック
 export function useStatistics() {
   const context = useContext(StatisticsContext);
   if (context === undefined) {

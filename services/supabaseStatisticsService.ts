@@ -1,4 +1,5 @@
 import { auth } from '../lib/authClient';
+import { getAuthenticatedClient } from '../lib/dbClient';
 import { CategoryValue } from '../types/categories';
 import { AppClothingItem } from '../types/database';
 import {
@@ -11,622 +12,207 @@ import {
   RankingItem
 } from '../types/statistics';
 import {
+  calculateBasicStats,
+  calculateEfficiencyData,
+  calculateImpactData,
+  calculateItemDetailStats,
+  calculateRankingData
+} from '../utils/statisticsCalculator';
+import {
   calculateBadgeProgress,
   evaluateBadgeCondition,
   fetchBadgeData,
   fetchUserBadges,
   saveNewlyEarnedBadges
 } from './badgeService';
-import { getClothingItemsWithHistory, getSingleItemWithHistory } from './supabaseDataService';
 
-// Helper function to filter items by period
-const filterByPeriod = (dates: string[], period: Period): string[] => {
-  if (period === 'all') return dates;
-
-  const now = new Date();
-  let cutoffDate = new Date();
-
-  switch (period) {
-    case '1month':
-      cutoffDate.setMonth(now.getMonth() - 1);
-      break;
-    case '3months':
-      cutoffDate.setMonth(now.getMonth() - 3);
-      break;
-    case '6months':
-      cutoffDate.setMonth(now.getMonth() - 6);
-      break;
-    case '1year':
-      cutoffDate.setFullYear(now.getFullYear() - 1);
-      break;
-  }
-
-  return dates.filter(date => new Date(date) >= cutoffDate);
+// Helper function to convert RPC response to AppClothingItem
+const convertRpcResponseToAppItem = (rpcResponse: any): AppClothingItem => {
+  console.log('Converting RPC response to AppItem:', JSON.stringify(rpcResponse, null, 2));
+  
+  const item = {
+    id: rpcResponse.item_id,
+    name: rpcResponse.name,
+    category: rpcResponse.category,
+    brand: rpcResponse.brand_name || '',
+    image: rpcResponse.image_path || '',
+    washThreshold: rpcResponse.wash_threshold || 3,
+    lastWorn: rpcResponse.last_worn || '',
+    wearCount: rpcResponse.wear_count || 0,
+    memo: rpcResponse.memo || '',
+    condition: rpcResponse.condition || '',
+    purchasePrice: rpcResponse.purchase_price,
+    wearHistory: Array.isArray(rpcResponse.wear_dates) ? rpcResponse.wear_dates : [],
+    washHistory: Array.isArray(rpcResponse.wash_dates) ? rpcResponse.wash_dates : []
+  };
+  
+  console.log('Converted AppItem:', JSON.stringify({
+    id: item.id,
+    name: item.name,
+    wearHistoryLength: item.wearHistory.length,
+    washHistoryLength: item.washHistory.length
+  }, null, 2));
+  
+  return item;
 };
 
-// Cache for statistics data to avoid redundant calculations
-class StatisticsCache {
-  private static instance: StatisticsCache | null = null;
-  private cache: {
-    basicStats: Map<string, { data: BasicStats; timestamp: number }>;
-    rankingData: Map<string, { data: RankingItem[]; timestamp: number }>;
-    efficiencyData: Map<string, { data: EfficiencyItem[]; timestamp: number }>;
-    impactData: Map<string, { data: ImpactData; timestamp: number }>;
-    badges: { data: Badge[]; timestamp: number } | null;
-    itemDetailStats: Map<string, { data: ItemDetailStats; timestamp: number }>;
-  };
-
-  private constructor() {
-    this.cache = {
-      basicStats: new Map(),
-      rankingData: new Map(),
-      efficiencyData: new Map(),
-      impactData: new Map(),
-      badges: null,
-      itemDetailStats: new Map(),
-    };
-  }
-
-  public static getInstance(): StatisticsCache {
-    if (!StatisticsCache.instance) {
-      StatisticsCache.instance = new StatisticsCache();
-    }
-    return StatisticsCache.instance;
-  }
-
-  public get<T>(type: string, key: string = 'default'): T | null {
-    const cacheMap = this.cache[type];
-    if (!cacheMap) return null;
-
-    if (type === 'badges') {
-      const cached = cacheMap as { data: T; timestamp: number } | null;
-      if (!cached) return null;
-
-      // Cache expires after 5 minutes
-      if (Date.now() - cached.timestamp > 5 * 60 * 1000) {
-        this.cache[type] = null;
-        return null;
-      }
-
-      return cached.data;
-    }
-
-    const cached = cacheMap.get(key);
-    if (!cached) return null;
-
-    // Cache expires after 5 minutes
-    if (Date.now() - cached.timestamp > 5 * 60 * 1000) {
-      cacheMap.delete(key);
-      return null;
-    }
-
-    return cached.data as T;
-  }
-
-  public set<T>(type: string, data: T, key: string = 'default'): void {
-    if (type === 'badges') {
-      this.cache[type] = { data, timestamp: Date.now() };
-      return;
-    }
-
-    const cacheMap = this.cache[type];
-    if (!cacheMap) return;
-
-    cacheMap.set(key, { data, timestamp: Date.now() });
-  }
-
-  public clear(type?: string): void {
-    if (type) {
-      if (type === 'badges') {
-        this.cache[type] = null;
-      } else {
-        const cacheMap = this.cache[type];
-        if (cacheMap) cacheMap.clear();
-      }
-    } else {
-      Object.keys(this.cache).forEach(key => {
-        if (key === 'badges') {
-          this.cache[key] = null;
-        } else {
-          this.cache[key].clear();
-        }
-      });
-    }
-  }
-
-  public clearEntry(type: string, key: string): void {
-    if (type === 'badges') {
-      this.cache[type] = null;
-      return;
-    }
-
-    const cacheMap = this.cache[type];
-    if (!cacheMap) return;
-
-    cacheMap.delete(key);
-  }
-}
-
-// 基礎データを取得する関数
+// Fetch base statistics data (clothing items with history)
 async function fetchBaseStatisticsData(): Promise<AppClothingItem[]> {
-  console.log('統計基礎データの取得開始');
-  const items = await getClothingItemsWithHistory();
-  console.log(`統計基礎データの取得完了: ${items.length}件のアイテムデータを取得`);
+  console.log('Fetching base statistics data (always fresh)');
+  
+  const { data: session } = await auth.getSession();
+  const userId = session?.session?.user?.id;
+
+  if (!userId) {
+    console.warn('User not authenticated when fetching statistics data');
+    return [];
+  }
+
+  // Get authenticated client
+  const authClient = await getAuthenticatedClient();
+
+  // Use the optimized RPC function to get all items with history
+  const { data, error } = await authClient
+    .rpc('get_clothing_items_with_history', {
+      user_id_param: userId
+    });
+
+  if (error) {
+    console.error('Error fetching base statistics data:', error);
+    throw error;
+  }
+
+  if (!data || data.length === 0) {
+    console.log('No clothing items found for statistics');
+    return [];
+  }
+
+  console.log('Raw RPC response sample (first item):', JSON.stringify(data[0], null, 2));
+
+  // Convert RPC response to AppClothingItem format
+  const items = data.map(convertRpcResponseToAppItem);
+  console.log(`Fetched ${items.length} items for statistics`);
+  
+  // デバッグ: 最初のアイテムの詳細
+  if (items.length > 0) {
+    console.log('First converted item:', JSON.stringify({
+      id: items[0].id,
+      name: items[0].name,
+      wearHistory: items[0].wearHistory,
+      washHistory: items[0].washHistory
+    }, null, 2));
+  }
+  
   return items;
 }
 
-
-// 単一アイテムとその履歴を取得する関数
-async function fetchSingleItemWithHistory(itemId: string): Promise<AppClothingItem> {
-  const item = await getSingleItemWithHistory(itemId);
-  if (!item) {
-    throw new Error('Item not found');
-  }
-  return item;
-}
-
-
-// Get basic statistics
-export async function getBasicStats(period: Period = '3months'): Promise<BasicStats> {
-  console.log(`基本統計データの取得開始: 期間=${period}`);
-  const cache = StatisticsCache.getInstance();
-  const cachedData = cache.get<BasicStats>('basicStats', period);
-
-  if (cachedData) {
-    console.log('基本統計データのキャッシュが有効、キャッシュから返却');
-    return cachedData;
-  }
-
+// Get basic statistics (always fresh calculation)
+export const getBasicStats = async (period: Period = '3months'): Promise<BasicStats> => {
+  console.log(`Calculating basic stats for period: ${period}`);
+  
   try {
-    console.log('基本統計データのキャッシュが無効、計算を開始');
-    // 一元化された関数を使用してデータを取得
     const items = await fetchBaseStatisticsData();
-    console.log(`基本統計の計算: ${items.length}件のアイテムデータを使用`);
-
-    // Filter items by period
-    console.log(`期間フィルター適用: ${period}`);
-    const filteredItems = items.map(item => ({
-      ...item,
-      filteredWearHistory: filterByPeriod(item.wearHistory, period),
-      filteredWashHistory: filterByPeriod(item.washHistory, period)
-    }));
-
-    // Calculate total wears and washes in the period
-    const totalWears = filteredItems.reduce((sum, item) => sum + item.filteredWearHistory.length, 0);
-    const totalWashes = filteredItems.reduce((sum, item) => sum + item.filteredWashHistory.length, 0);
-    console.log(`集計結果: 総着用回数=${totalWears}, 総洗濯回数=${totalWashes}`);
-
-    // Calculate average wears between washes
-    const averageWearsBetweenWashes = totalWashes > 0 ? parseFloat((totalWears / totalWashes).toFixed(1)) : 0;
-    console.log(`平均着用回数/洗濯=${averageWearsBetweenWashes}`);
-
-    // Find most worn category
-    console.log('カテゴリ別着用回数の集計');
-    const categoryWears: Record<CategoryValue, number> = {};
-    filteredItems.forEach(item => {
-      const category = item.category;
-      if (!categoryWears[category]) categoryWears[category] = 0;
-      categoryWears[category] += item.filteredWearHistory.length;
-    });
-
-    const mostWornCategory = Object.entries(categoryWears).length > 0 
-      ? Object.entries(categoryWears)
-          .sort((a, b) => b[1] - a[1])
-          .map(entry => entry[0] as CategoryValue)[0]
-      : null;
-    console.log(`最も着用されたカテゴリ: ${mostWornCategory || 'なし'}`);
-
-    // Find most and least worn items
-    console.log('着用回数によるアイテムのソート');
-    const sortedItems = [...filteredItems].sort(
-      (a, b) => b.filteredWearHistory.length - a.filteredWearHistory.length
-    );
-
-    const mostWornItem = sortedItems.length > 0 ? {
-      id: sortedItems[0].id,
-      name: sortedItems[0].name,
-      wears: sortedItems[0].filteredWearHistory.length
-    } : { id: '', name: '', wears: 0 };
-
-    const leastWornItem = sortedItems.length > 0 ? {
-      id: sortedItems[sortedItems.length - 1].id,
-      name: sortedItems[sortedItems.length - 1].name,
-      wears: sortedItems[sortedItems.length - 1].filteredWearHistory.length
-    } : { id: '', name: '', wears: 0 };
-
-    console.log(`最も着用されたアイテム: ${mostWornItem.name}(${mostWornItem.wears}回)`);
-    console.log(`最も着用されていないアイテム: ${leastWornItem.name}(${leastWornItem.wears}回)`);
-
-    // Calculate category breakdown
-    console.log('カテゴリ別アイテム数の集計');
-    const categories: Record<CategoryValue, number> = {};
-    items.forEach(item => {
-      const category = item.category;
-      if (!categories[category]) categories[category] = 0;
-      categories[category]++;
-    });
-
-    const totalItems = items.length;
-    const categoryBreakdown = Object.entries(categories).map(([category, count]) => ({
-      category: category as CategoryValue,
-      count,
-      percentage: Math.round((count / totalItems) * 100)
-    }));
-
-    // Calculate monthly wears
-    console.log('月別着用回数の集計');
-    const monthlyWears: Record<string, number> = {};
-    const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-
-    filteredItems.forEach(item => {
-      item.filteredWearHistory.forEach(date => {
-        const month = new Date(date).getMonth();
-        const monthName = months[month];
-        if (!monthlyWears[monthName]) monthlyWears[monthName] = 0;
-        monthlyWears[monthName]++;
-      });
-    });
-
-    // Convert to array and sort by month
-    const monthlyWearsArray = Object.entries(monthlyWears).map(([month, count]) => ({
-      month,
-      count
-    })).sort((a, b) => {
-      return months.indexOf(a.month) - months.indexOf(b.month);
-    });
-
-    // Calculate average wash threshold
-    console.log('平均洗濯閾値の計算');
-    const totalThreshold = filteredItems.reduce((sum, item) => sum + (item.washThreshold || 0), 0);
-    const averageWashThreshold = filteredItems.length > 0
-      ? parseFloat((totalThreshold / filteredItems.length).toFixed(1))
-      : 3; // Default value of 3
-    console.log(`平均洗濯閾値=${averageWashThreshold}`);
-
-    const stats: BasicStats = {
-      totalItems,
-      totalWears,
-      totalWashes,
-      averageWearsBetweenWashes,
-      averageWashThreshold,
-      mostWornCategory,
-      mostWornItem,
-      leastWornItem,
-      categoryBreakdown,
-      monthlyWears: monthlyWearsArray
-    };
-
-    console.log('基本統計データの計算完了、キャッシュに保存');
-    cache.set('basicStats', stats, period);
+    const stats = calculateBasicStats(items, period);
+    console.log(`Basic stats calculated successfully`);
     return stats;
   } catch (error) {
-    console.error('基本統計データの取得エラー:', error);
+    console.error('Error calculating basic stats:', error);
     throw error;
   }
-}
+};
 
-// Get ranking data
-export async function getRankingData(
+// Get ranking data (always fresh calculation)
+export const getRankingData = async (
   period: Period = '3months',
   sortOrder: 'most' | 'least' = 'most',
   category: CategoryValue = null
-): Promise<RankingItem[]> {
-  console.log(`ランキングデータの取得開始: 期間=${period}, 並び順=${sortOrder}, カテゴリ=${category || 'すべて'}`);
-  const cacheKey = `${period}-${sortOrder}-${category || 'all'}`;
-  const cache = StatisticsCache.getInstance();
-  const cachedData = cache.get<RankingItem[]>('rankingData', cacheKey);
-
-  if (cachedData) {
-    console.log(`ランキングデータのキャッシュが有効、キャッシュから返却: ${cachedData.length}件`);
-    return cachedData;
-  }
-
+): Promise<RankingItem[]> => {
+  console.log(`Calculating ranking data for period: ${period}, order: ${sortOrder}, category: ${category || 'all'}`);
+  
   try {
-    console.log('ランキングデータのキャッシュが無効、計算を開始');
-    // 一元化された関数を使用してデータを取得
     const items = await fetchBaseStatisticsData();
-
-    // Filter items by period and category
-    console.log(`アイテムのフィルタリング: カテゴリ=${category || 'すべて'}`);
-    let filteredItems = items
-      .filter(item => category === null || item.category === category)
-      .map(item => ({
-        ...item,
-        filteredWearHistory: filterByPeriod(item.wearHistory, period)
-      }));
-
-    console.log(`フィルタリング後のアイテム数: ${filteredItems.length}件`);
-
-    // Sort by wear count
-    console.log(`着用回数による${sortOrder === 'most' ? '降順' : '昇順'}ソート`);
-    filteredItems = filteredItems.sort((a, b) => {
-      const diff = b.filteredWearHistory.length - a.filteredWearHistory.length;
-      return sortOrder === 'most' ? diff : -diff;
-    });
-
-    // Find maximum wear count for percentage calculation
-    const maxWearCount = Math.max(
-      ...filteredItems.map(item => item.filteredWearHistory.length),
-      1 // Avoid division by zero
-    );
-    console.log(`最大着用回数: ${maxWearCount}回`);
-
-    // Convert to RankingItem format
-    console.log('RankingItem形式への変換');
-    const rankingData = filteredItems.map(item => ({
-      id: item.id,
-      name: item.name,
-      category: item.category,
-      brand: item.brand,
-      imageUrl: item.image,
-      wearCount: item.filteredWearHistory.length,
-      percentageOfMax: Math.round((item.filteredWearHistory.length / maxWearCount) * 100)
-    }));
-
-    console.log(`ランキングデータの計算完了: ${rankingData.length}件のデータを生成`);
-    cache.set('rankingData', rankingData, cacheKey);
-    return rankingData;
+    const ranking = calculateRankingData(items, period, sortOrder, category);
+    console.log(`Ranking data calculated successfully: ${ranking.length} items`);
+    return ranking;
   } catch (error) {
-    console.error('ランキングデータの取得エラー:', error);
+    console.error('Error calculating ranking data:', error);
     throw error;
   }
-}
+};
 
-// Get efficiency data
-export async function getEfficiencyData(period: Period = '3months'): Promise<EfficiencyItem[]> {
-  console.log(`効率データの取得開始: 期間=${period}`);
-  const cache = StatisticsCache.getInstance();
-  const cachedData = cache.get<EfficiencyItem[]>('efficiencyData', period);
-
-  if (cachedData) {
-    console.log(`効率データのキャッシュが有効、キャッシュから返却: ${cachedData.length}件`);
-    return cachedData;
-  }
-
+// Get efficiency data (always fresh calculation)
+export const getEfficiencyData = async (period: Period = '3months'): Promise<EfficiencyItem[]> => {
+  console.log(`Calculating efficiency data for period: ${period}`);
+  
   try {
-    console.log('効率データのキャッシュが無効、計算を開始');
-    // 一元化された関数を使用してデータを取得
     const items = await fetchBaseStatisticsData();
-    console.log(`効率データの計算: ${items.length}件のアイテムデータを使用`);
-
-    // Filter items by period
-    console.log(`期間フィルター適用: ${period}`);
-    const filteredItems = items.map(item => {
-      const filteredWearHistory = filterByPeriod(item.wearHistory, period);
-      const filteredWashHistory = filterByPeriod(item.washHistory, period);
-
-      // Calculate efficiency
-      const wearCount = filteredWearHistory.length;
-      const washCount = filteredWashHistory.length;
-      const actualWearsBetweenWashes = washCount > 0 ? wearCount / washCount : wearCount;
-      const efficiency = item.washThreshold > 0 ? actualWearsBetweenWashes / item.washThreshold : 0;
-
-      // Determine status based on efficiency
-      const lowerThreshold = 0.8; // 80% of threshold
-      const upperThreshold = 1.2; // 120% of threshold
-      let status: 'good' | 'underwashed' | 'overwashed';
-
-      // If there's no wash history or no wear and wash history, don't make a judgment
-      if (washCount === 0 || (wearCount === 0 && washCount === 0)) {
-        // Use 'good' as a default, but the UI will handle this special case
-        status = 'good';
-      } else if (efficiency >= lowerThreshold && efficiency <= upperThreshold) {
-        status = 'good'; // Optimal range
-      } else if (efficiency < lowerThreshold) {
-        status = 'overwashed'; // Washing too frequently
-      } else {
-        status = 'underwashed'; // Not washing frequently enough
-      }
-
-      console.log(`アイテム効率計算: ID=${item.id}, 名前=${item.name}, 着用=${wearCount}, 洗濯=${washCount}, 効率=${efficiency.toFixed(2)}, 状態=${status}`);
-
-      return {
-        id: item.id,
-        name: item.name,
-        category: item.category,
-        brand: item.brand,
-        imageUrl: item.image,
-        wearCount,
-        washCount,
-        threshold: item.washThreshold,
-        efficiency,
-        status
-      };
-    });
-
-    // Sort by efficiency (highest first)
-    console.log('効率によるアイテムのソート');
-    const efficiencyData = filteredItems.sort((a, b) => b.efficiency - a.efficiency);
-
-    console.log(`効率データの計算完了: ${efficiencyData.length}件のデータを生成`);
-    cache.set('efficiencyData', efficiencyData, period);
-    return efficiencyData;
+    const efficiency = calculateEfficiencyData(items, period);
+    console.log(`Efficiency data calculated successfully: ${efficiency.length} items`);
+    return efficiency;
   } catch (error) {
-    console.error('効率データの取得エラー:', error);
+    console.error('Error calculating efficiency data:', error);
     throw error;
   }
-}
+};
 
-// Get impact data
-export async function getImpactData(period: Period = '3months'): Promise<ImpactData> {
-  console.log(`環境影響データの取得開始: 期間=${period}`);
-  const cache = StatisticsCache.getInstance();
-  const cachedData = cache.get<ImpactData>('impactData', period);
-
-  if (cachedData) {
-    console.log('環境影響データのキャッシュが有効、キャッシュから返却');
-    return cachedData;
-  }
-
+// Get impact data (always fresh calculation)
+export const getImpactData = async (period: Period = '3months'): Promise<ImpactData> => {
+  console.log(`Calculating impact data for period: ${period}`);
+  
   try {
-    console.log('環境影響データのキャッシュが無効、計算を開始');
-    // 一元化された関数を使用してデータを取得
     const items = await fetchBaseStatisticsData();
-    console.log(`環境影響データの計算: ${items.length}件のアイテムデータを使用`);
-
-    // Constants for impact calculations
-    console.log('環境影響計算の定数を設定');
-    const ELECTRICITY_PER_WASH = 0.5; // kWh
-    const ELECTRICITY_COST_PER_KWH = 25; // yen
-    const WATER_PER_WASH = 50; // liters
-    const WATER_COST_PER_1000L = 300; // yen
-    const DETERGENT_PER_WASH = 30; // ml
-    const DETERGENT_COST_PER_BOTTLE = 400; // yen (800ml bottle)
-    const CO2_PER_KWH = 0.5; // kg
-    const TREES_PER_KG_CO2 = 0.05; // trees per kg CO2 per year
-    const ITEMS_PER_WASH_LOAD = 5; // average items per wash load
-
-    // Filter items by period
-    console.log(`期間フィルター適用: ${period}`);
-    const filteredItems = items.map(item => {
-      const filteredWearHistory = filterByPeriod(item.wearHistory, period);
-      const filteredWashHistory = filterByPeriod(item.washHistory, period);
-
-      // Calculate washes reduced
-      // If we washed after every wear, we would have filteredWearHistory.length washes
-      // Instead, we only have filteredWashHistory.length washes
-      // Divide by ITEMS_PER_WASH_LOAD to account for multiple items being washed together
-      const washesReduced = parseFloat(((filteredWearHistory.length - filteredWashHistory.length) / ITEMS_PER_WASH_LOAD).toFixed(1));
-
-      return {
-        ...item,
-        filteredWearHistory,
-        filteredWashHistory,
-        washesReduced: Math.max(0, washesReduced) // Ensure non-negative
-      };
-    });
-
-    // Calculate total washes reduced
-    const totalWashesReduced = filteredItems.reduce((sum, item) => sum + (item.washesReduced || 0), 0);
-    console.log(`総洗濯回数削減: ${totalWashesReduced.toFixed(1)}回`);
-
-    // Calculate resource savings
-    console.log('資源節約効果の計算');
-    const electricitySaved = {
-      amount: parseFloat((totalWashesReduced * ELECTRICITY_PER_WASH).toFixed(1)),
-      cost: Math.round(totalWashesReduced * ELECTRICITY_PER_WASH * ELECTRICITY_COST_PER_KWH)
-    };
-    console.log(`電気節約: ${electricitySaved.amount}kWh (${electricitySaved.cost}円)`);
-
-    const waterSaved = {
-      amount: Math.round(totalWashesReduced * WATER_PER_WASH),
-      cost: Math.round(totalWashesReduced * WATER_PER_WASH * WATER_COST_PER_1000L / 1000)
-    };
-    console.log(`水節約: ${waterSaved.amount}L (${waterSaved.cost}円)`);
-
-    const detergentSaved = {
-      amount: Math.round(totalWashesReduced * DETERGENT_PER_WASH),
-      cost: Math.round(totalWashesReduced * DETERGENT_PER_WASH * DETERGENT_COST_PER_BOTTLE / 800)
-    };
-    console.log(`洗剤節約: ${detergentSaved.amount}ml (${detergentSaved.cost}円)`);
-
-    // Calculate CO2 reduction
-    const co2Reduced = parseFloat((electricitySaved.amount * CO2_PER_KWH).toFixed(1));
-    const treeEquivalent = parseFloat((co2Reduced * TREES_PER_KG_CO2).toFixed(1));
-    console.log(`CO2削減: ${co2Reduced}kg (植樹相当: ${treeEquivalent}本)`);
-
-    // Calculate monthly impact
-    console.log('月別環境影響の計算');
-    const monthlyImpact: { month: string; washesReduced: number; co2Reduced: number }[] = [];
-    const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-    const monthlyWashesReduced: Record<string, number> = {};
-
-    // Group wears and washes by month
-    filteredItems.forEach(item => {
-      // Group wears by month
-      const wearsByMonth: Record<string, number> = {};
-      item.filteredWearHistory.forEach(date => {
-        const month = months[new Date(date).getMonth()];
-        wearsByMonth[month] = (wearsByMonth[month] || 0) + 1;
-      });
-
-      // Group washes by month
-      const washesByMonth: Record<string, number> = {};
-      item.filteredWashHistory.forEach(date => {
-        const month = months[new Date(date).getMonth()];
-        washesByMonth[month] = (washesByMonth[month] || 0) + 1;
-      });
-
-      // Calculate washes reduced by month
-      months.forEach(month => {
-        const wears = wearsByMonth[month] || 0;
-        const washes = washesByMonth[month] || 0;
-        const reduced = (wears - washes) / ITEMS_PER_WASH_LOAD;
-        if (reduced > 0) {
-          monthlyWashesReduced[month] = (monthlyWashesReduced[month] || 0) + reduced;
-        }
-      });
-    });
-
-    // Convert to array and calculate CO2 reduction
-    Object.entries(monthlyWashesReduced).forEach(([month, washesReduced]) => {
-      const co2 = parseFloat((washesReduced * ELECTRICITY_PER_WASH * CO2_PER_KWH).toFixed(1));
-      monthlyImpact.push({ month, washesReduced: parseFloat(washesReduced.toFixed(1)), co2Reduced: co2 });
-    });
-
-    // Sort by month
-    monthlyImpact.sort((a, b) => months.indexOf(a.month) - months.indexOf(b.month));
-    console.log(`月別データ生成: ${monthlyImpact.length}ヶ月分のデータを計算`);
-
-    const impactData: ImpactData = {
-      totalWashesReduced,
-      electricitySaved,
-      waterSaved,
-      detergentSaved,
-      co2Reduced,
-      treeEquivalent,
-      monthlyImpact
-    };
-
-    console.log('環境影響データの計算完了、キャッシュに保存');
-    cache.set('impactData', impactData, period);
-    return impactData;
+    const impact = calculateImpactData(items, period);
+    console.log(`Impact data calculated successfully`);
+    return impact;
   } catch (error) {
-    console.error('環境影響データの取得エラー:', error);
+    console.error('Error calculating impact data:', error);
     throw error;
   }
-}
+};
 
-// Get badges
+// Get item detail statistics (always fresh calculation)
+export const getItemDetailStats = async (itemId: string): Promise<ItemDetailStats | null> => {
+  console.log(`Calculating item detail stats for item: ${itemId}`);
+  
+  try {
+    const items = await fetchBaseStatisticsData();
+    const item = items.find(i => i.id === itemId);
+    
+    if (!item) {
+      console.log(`Item not found: ${itemId}`);
+      return null;
+    }
+    
+    const stats = calculateItemDetailStats(item);
+    console.log(`Item detail stats calculated successfully for: ${itemId}`);
+    return stats;
+  } catch (error) {
+    console.error('Error calculating item detail stats:', error);
+    throw error;
+  }
+};
+
+// Get badges (always fresh evaluation)
 export async function getBadges(): Promise<Badge[]> {
-  console.log('getBadges function called from:', new Error().stack?.split('\n')[2]?.trim() || 'unknown');
-
-  const cache = StatisticsCache.getInstance();
-  const cachedData = cache.get<Badge[]>('badges');
-
-  if (cachedData) {
-    console.log('getBadges returning cached data, count:', cachedData.length);
-    return cachedData;
-  }
+  console.log('Evaluating badges (always fresh)');
 
   try {
     // Get user session
     const { data: session } = await auth.getSession();
     const userId = session?.session?.user?.id;
 
-    console.log('Auth session in getBadges:', session ? 'exists' : 'null');
-    console.log('User ID in getBadges:', userId || 'not found');
-
     if (!userId) {
       console.warn('User not authenticated when fetching badges');
-      const defaultBadges = createDefaultBadges();
-      cache.set('badges', defaultBadges);
-      return defaultBadges;
+      return createDefaultBadges();
     }
 
     // Fetch item data and badge data in parallel
     console.log('Fetching item data and badge data in parallel');
 
-    // Start both fetch operations in parallel
-    const itemDataPromise = fetchBaseStatisticsData();
-    const badgeDataPromise = fetchBadgeData();
-    const userBadgesPromise = fetchUserBadges(userId);
-
-    // Wait for all promises to resolve
     const [items, badgeData, userBadges] = await Promise.all([
-      itemDataPromise,
-      badgeDataPromise,
-      userBadgesPromise
+      fetchBaseStatisticsData(),
+      fetchBadgeData(),
+      fetchUserBadges(userId)
     ]);
 
     const { definitions: badgeDefinitions, conditions: badgeConditions } = badgeData;
@@ -659,9 +245,7 @@ export async function getBadges(): Promise<Badge[]> {
     // If no badge definitions found in database, use default hardcoded badges
     if (!badgeDefinitions || badgeDefinitions.length === 0) {
       console.warn('No badge definitions found in database, using default hardcoded badges');
-      const defaultBadges = createDefaultBadges(items, stats);
-      cache.set('badges', defaultBadges);
-      return defaultBadges;
+      return createDefaultBadges(items, stats);
     }
 
     // Process badge definitions and evaluate conditions
@@ -704,7 +288,7 @@ export async function getBadges(): Promise<Badge[]> {
 
             return efficientWashes >= 5;
           });
-        } 
+        }
         // Normal case: evaluate all conditions
         else if (conditions.length > 0) {
           isEarned = conditions.every(condition => 
@@ -782,7 +366,7 @@ export async function getBadges(): Promise<Badge[]> {
         isEarned,
         earnedDate,
         progress: isEarned ? 100 : progress,
-        category: def.category
+        category: def.category as 'usage' | 'efficiency' | 'milestone' | 'special'
       };
     });
 
@@ -791,65 +375,11 @@ export async function getBadges(): Promise<Badge[]> {
       await saveNewlyEarnedBadges(userId, badges);
     }
 
-    // Cache and return badges
-    cache.set('badges', badges);
     console.log('getBadges returning data, count:', badges.length, 'earned:', badges.filter(b => b.isEarned).length);
     return badges;
   } catch (error) {
     console.error('Error fetching badges:', error);
-    const defaultBadges = createDefaultBadges();
-    cache.set('badges', defaultBadges);
-    return defaultBadges;
-  }
-}
-
-// Evaluate badges in background and notify user of new badges
-export async function evaluateBadgesInBackground(): Promise<void> {
-  console.log('Starting background badge evaluation');
-
-  try {
-    // Get user session
-    const { data: session } = await auth.getSession();
-    const userId = session?.session?.user?.id;
-
-    if (!userId) {
-      console.warn('User not authenticated, skipping background badge evaluation');
-      return;
-    }
-
-    // Get cached badges if available
-    const cache = StatisticsCache.getInstance();
-    const cachedBadges = cache.get<Badge[]>('badges');
-
-    // Get current badges (this will evaluate and save new badges)
-    const currentBadges = await getBadges();
-
-    // If we had cached badges, compare to find newly earned badges
-    if (cachedBadges) {
-      const newlyEarnedBadges = currentBadges.filter(
-        current => current.isEarned && 
-                  !cachedBadges.some(cached => cached.id === current.id && cached.isEarned)
-      );
-
-      // Notify user of newly earned badges
-      if (newlyEarnedBadges.length > 0) {
-        console.log(`User earned ${newlyEarnedBadges.length} new badges:`, 
-          newlyEarnedBadges.map(b => b.name).join(', '));
-
-        // Here you would implement the actual notification
-        // This could be a push notification, an in-app notification, etc.
-        // For now, we'll just log it
-        newlyEarnedBadges.forEach(badge => {
-          console.log(`🏆 New badge earned: ${badge.name} - ${badge.description}`);
-          // TODO: Implement actual notification mechanism
-          // Example: showNotification(`新しいバッジを獲得しました: ${badge.name}`, badge.description);
-        });
-      }
-    }
-
-    console.log('Background badge evaluation completed');
-  } catch (error) {
-    console.error('Error in background badge evaluation:', error);
+    return createDefaultBadges();
   }
 }
 
@@ -861,7 +391,7 @@ function createDefaultBadges(items?: AppClothingItem[], stats?: any): Badge[] {
     const allCategories = ['トップス', 'ボトムス', 'アウター', 'シューズ', 'その他', '小物'];
     const hasAllCategories = allCategories.every(cat => categories.has(cat as CategoryValue));
 
-    const badges = [
+    const badges: Badge[] = [
       // Usage badges
       {
         id: 'first-item',
@@ -1013,266 +543,132 @@ function createDefaultBadges(items?: AppClothingItem[], stats?: any): Badge[] {
     ];
 
     console.log('createDefaultBadges with items and stats, count:', badges.length, 'earned:', badges.filter(b => b.isEarned).length);
-    console.log('Badge categories:', badges.reduce((acc, b) => {
-      acc[b.category] = (acc[b.category] || 0) + 1;
-      return acc;
-    }, {}));
-
-    return badges;
-  } else {
-    // Return default badges with isEarned set to false
-    const badges = [
-      // Usage badges
-      {
-        id: 'first-item',
-        name: '初めてのアイテム登録',
-        description: '最初のアイテムを登録しました',
-        imageUrl: 'https://example.com/badges/first-item.png',
-        isEarned: false,
-        progress: 0,
-        category: 'usage'
-      },
-      {
-        id: 'first-wear',
-        name: '初めての着用記録',
-        description: '最初の着用を記録しました',
-        imageUrl: 'https://example.com/badges/first-wear.png',
-        isEarned: false,
-        progress: 0,
-        category: 'usage'
-      },
-      {
-        id: 'first-wash',
-        name: '初めての洗濯記録',
-        description: '最初の洗濯を記録しました',
-        imageUrl: 'https://example.com/badges/first-wash.png',
-        isEarned: false,
-        progress: 0,
-        category: 'usage'
-      },
-
-      // Milestone badges
-      {
-        id: 'item-10-wears',
-        name: '10回着用達成',
-        description: '1つのアイテムを10回着用しました',
-        imageUrl: 'https://example.com/badges/10-wears.png',
-        isEarned: false,
-        progress: 0,
-        category: 'milestone'
-      },
-      {
-        id: 'item-30-wears',
-        name: '30回着用達成',
-        description: '1つのアイテムを30回着用しました',
-        imageUrl: 'https://example.com/badges/30-wears.png',
-        isEarned: false,
-        progress: 0,
-        category: 'milestone'
-      },
-      {
-        id: 'item-50-wears',
-        name: '50回着用達成',
-        description: '1つのアイテムを50回着用しました',
-        imageUrl: 'https://example.com/badges/50-wears.png',
-        isEarned: false,
-        progress: 0,
-        category: 'milestone'
-      },
-
-      // Efficiency badges
-      {
-        id: 'wash-reduced-10',
-        name: '洗濯10回削減',
-        description: '洗濯回数を10回削減しました',
-        imageUrl: 'https://example.com/badges/wash-10.png',
-        isEarned: false,
-        progress: 0,
-        category: 'efficiency'
-      },
-      {
-        id: 'wash-reduced-50',
-        name: '洗濯50回削減',
-        description: '洗濯回数を50回削減しました',
-        imageUrl: 'https://example.com/badges/wash-50.png',
-        isEarned: false,
-        progress: 0,
-        category: 'efficiency'
-      },
-      {
-        id: 'wash-reduced-100',
-        name: '洗濯100回削減',
-        description: '洗濯回数を100回削減しました',
-        imageUrl: 'https://example.com/badges/wash-100.png',
-        isEarned: false,
-        progress: 0,
-        category: 'efficiency'
-      },
-
-      // Special badges
-      {
-        id: 'category-complete',
-        name: 'カテゴリコンプリート',
-        description: '全カテゴリでアイテムを登録しました',
-        imageUrl: 'https://example.com/badges/category-complete.png',
-        isEarned: false,
-        progress: 0,
-        category: 'special'
-      },
-      {
-        id: 'eco-warrior',
-        name: 'エコウォリアー',
-        description: '環境貢献度が高いユーザーに贈られるバッジ',
-        imageUrl: 'https://example.com/badges/eco-warrior.png',
-        isEarned: false,
-        progress: 0,
-        category: 'special'
-      },
-
-      // Additional efficiency badges
-      {
-        id: 'efficient-washer',
-        name: '賢い洗濯',
-        description: '洗濯閾値の90%以上で洗濯を5回実施',
-        imageUrl: 'https://example.com/badges/efficient-washer.png',
-        isEarned: false,
-        progress: 0,
-        category: 'efficiency'
-      }
-    ];
-
-    console.log('createDefaultBadges with default values, count:', badges.length, 'earned:', badges.filter(b => b.isEarned).length);
-    console.log('Badge categories:', badges.reduce((acc, b) => {
-      acc[b.category] = (acc[b.category] || 0) + 1;
-      return acc;
-    }, {}));
-
     return badges;
   }
-}
 
-// Get item detail statistics
-export async function getItemDetailStats(itemId: string): Promise<ItemDetailStats> {
-  console.log(`アイテム詳細統計の取得開始: ID=${itemId}`);
-  const cache = StatisticsCache.getInstance();
-  const cachedData = cache.get<ItemDetailStats>('itemDetailStats', itemId);
+  // Return default badges with isEarned set to false
+  const badges: Badge[] = [
+    // Usage badges
+    {
+      id: 'first-item',
+      name: '初めてのアイテム登録',
+      description: '最初のアイテムを登録しました',
+      imageUrl: 'https://example.com/badges/first-item.png',
+      isEarned: false,
+      progress: 0,
+      category: 'usage'
+    },
+    {
+      id: 'first-wear',
+      name: '初めての着用記録',
+      description: '最初の着用を記録しました',
+      imageUrl: 'https://example.com/badges/first-wear.png',
+      isEarned: false,
+      progress: 0,
+      category: 'usage'
+    },
+    {
+      id: 'first-wash',
+      name: '初めての洗濯記録',
+      description: '最初の洗濯を記録しました',
+      imageUrl: 'https://example.com/badges/first-wash.png',
+      isEarned: false,
+      progress: 0,
+      category: 'usage'
+    },
 
-  if (cachedData) {
-    console.log('アイテム詳細統計のキャッシュが有効、キャッシュから返却');
-    return cachedData;
-  }
+    // Milestone badges
+    {
+      id: 'item-10-wears',
+      name: '10回着用達成',
+      description: '1つのアイテムを10回着用しました',
+      imageUrl: 'https://example.com/badges/10-wears.png',
+      isEarned: false,
+      progress: 0,
+      category: 'milestone'
+    },
+    {
+      id: 'item-30-wears',
+      name: '30回着用達成',
+      description: '1つのアイテムを30回着用しました',
+      imageUrl: 'https://example.com/badges/30-wears.png',
+      isEarned: false,
+      progress: 0,
+      category: 'milestone'
+    },
+    {
+      id: 'item-50-wears',
+      name: '50回着用達成',
+      description: '1つのアイテムを50回着用しました',
+      imageUrl: 'https://example.com/badges/50-wears.png',
+      isEarned: false,
+      progress: 0,
+      category: 'milestone'
+    },
 
-  try {
-    console.log('アイテム詳細統計のキャッシュが無効、計算を開始');
-    // アイテムデータを取得
-    console.log('アイテムデータを個別に取得');
-    const appItem = await fetchSingleItemWithHistory(itemId);
-    console.log('取得したアイテムデータ:', {
-      id: appItem.id,
-      name: appItem.name,
-      brand: appItem.brand,
-      category: appItem.category
-    });
+    // Efficiency badges
+    {
+      id: 'wash-reduced-10',
+      name: '洗濯10回削減',
+      description: '洗濯回数を10回削減しました',
+      imageUrl: 'https://example.com/badges/wash-10.png',
+      isEarned: false,
+      progress: 0,
+      category: 'efficiency'
+    },
+    {
+      id: 'wash-reduced-50',
+      name: '洗濯50回削減',
+      description: '洗濯回数を50回削減しました',
+      imageUrl: 'https://example.com/badges/wash-50.png',
+      isEarned: false,
+      progress: 0,
+      category: 'efficiency'
+    },
+    {
+      id: 'wash-reduced-100',
+      name: '洗濯100回削減',
+      description: '洗濯回数を100回削減しました',
+      imageUrl: 'https://example.com/badges/wash-100.png',
+      isEarned: false,
+      progress: 0,
+      category: 'efficiency'
+    },
 
-    // Calculate statistics
-    console.log(`アイテム統計の計算: 着用履歴=${appItem.wearHistory.length}件, 洗濯履歴=${appItem.washHistory.length}件`);
-    const wearCount = appItem.wearHistory.length;
-    const washCount = appItem.washHistory.length;
-    const wearPerWash = washCount > 0 ? parseFloat((wearCount / washCount).toFixed(1)) : wearCount;
-    const efficiency = appItem.washThreshold > 0 ? parseFloat((wearPerWash / appItem.washThreshold).toFixed(2)) : 0;
-    console.log(`基本効率計算: 着用回数=${wearCount}, 洗濯回数=${washCount}, 着用/洗濯=${wearPerWash}, 効率=${efficiency}`);
+    // Special badges
+    {
+      id: 'category-complete',
+      name: 'カテゴリコンプリート',
+      description: '全カテゴリでアイテムを登録しました',
+      imageUrl: 'https://example.com/badges/category-complete.png',
+      isEarned: false,
+      progress: 0,
+      category: 'special'
+    },
+    {
+      id: 'eco-warrior',
+      name: 'エコウォリアー',
+      description: '環境貢献度が高いユーザーに贈られるバッジ',
+      imageUrl: 'https://example.com/badges/eco-warrior.png',
+      isEarned: false,
+      progress: 0,
+      category: 'special'
+    },
 
-    // Calculate wear by day of week
-    console.log('曜日別着用回数の集計');
-    const wearsByDay: { [day: string]: number } = {
-      '日曜日': 0, '月曜日': 0, '火曜日': 0, '水曜日': 0, '木曜日': 0, '金曜日': 0, '土曜日': 0
-    };
-
-    const dayNames = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
-
-    appItem.wearHistory.forEach(dateStr => {
-      const date = new Date(dateStr);
-      const day = dayNames[date.getDay()];
-      wearsByDay[day]++;
-    });
-    console.log('曜日別着用回数:', wearsByDay);
-
-    // Calculate wear by month
-    console.log('月別着用回数の集計');
-    const wearsByMonth: { [month: string]: number } = {};
-    appItem.wearHistory.forEach(dateStr => {
-      const date = new Date(dateStr);
-      const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      wearsByMonth[month] = (wearsByMonth[month] || 0) + 1;
-    });
-    console.log('月別着用回数:', wearsByMonth);
-
-    // Calculate average wear interval
-    let averageWearInterval = 0;
-    if (appItem.wearHistory.length > 1) {
-      const sortedDates = appItem.wearHistory
-        .map(date => new Date(date).getTime())
-        .sort((a, b) => a - b);
-      
-      const intervals = [];
-      for (let i = 1; i < sortedDates.length; i++) {
-        const interval = (sortedDates[i] - sortedDates[i - 1]) / (1000 * 60 * 60 * 24); // Convert to days
-        intervals.push(interval);
-      }
-      
-      averageWearInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
+    // Additional efficiency badges
+    {
+      id: 'efficient-washer',
+      name: '賢い洗濯',
+      description: '洗濯閾値の90%以上で洗濯を5回実施',
+      imageUrl: 'https://example.com/badges/efficient-washer.png',
+      isEarned: false,
+      progress: 0,
+      category: 'efficiency'
     }
+  ];
 
-    // Create item detail stats
-    const itemDetailStats: ItemDetailStats = {
-      id: appItem.id,
-      name: appItem.name,
-      category: appItem.category,
-      brand: appItem.brand || '',  // ブランド情報を正しく設定
-      imageUrl: appItem.image,
-      image: appItem.image,  // 画像パスを追加
-      wearCount,
-      washCount,
-      wearPerWash,
-      efficiency,
-      wearsByDay,
-      wearsByMonth,
-      averageWearInterval,
-      lastWorn: appItem.lastWorn,
-      memo: appItem.memo,
-      condition: appItem.condition,
-      purchasePrice: appItem.purchasePrice
-    };
-
-    console.log('生成されたItemDetailStats:', {
-      id: itemDetailStats.id,
-      name: itemDetailStats.name,
-      brand: itemDetailStats.brand,
-      category: itemDetailStats.category,
-      image: itemDetailStats.image,
-      imageUrl: itemDetailStats.imageUrl
-    });
-
-    // Cache the result
-    cache.set('itemDetailStats', itemDetailStats, itemId);
-    console.log('アイテム詳細統計の計算完了、キャッシュに保存');
-
-    return itemDetailStats;
-  } catch (error) {
-    console.error('アイテム詳細統計の計算中にエラーが発生:', error);
-    throw error;
-  }
+  console.log('createDefaultBadges with default values, count:', badges.length);
+  return badges;
 }
 
-// Clear all cache
-export function clearCache(): void {
-  const cache = StatisticsCache.getInstance();
-  cache.clear();
-  // clearBaseDataCache() は不要になったため呼び出さない
-}
-
-// Clear specific cache entry
-export function clearCacheEntry(type: string, key: string): void {
-  const cache = StatisticsCache.getInstance();
-  cache.clearEntry(type, key);
-}
+// No cache functions needed - always calculate fresh data

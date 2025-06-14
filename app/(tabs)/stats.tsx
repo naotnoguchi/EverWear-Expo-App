@@ -7,7 +7,7 @@ import { useStatistics } from "../../contexts/StatisticsContext";
 import { useTabReset } from "../../contexts/TabResetContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { getPrivateUrls } from "../../lib/storageClient";
-import { Period } from "../../services/statisticsServiceFactory";
+import { Badge, Period, RankingItem } from "../../services/statisticsServiceFactory";
 
 export default function Stats() {
   const theme = useTheme();
@@ -23,25 +23,20 @@ export default function Stats() {
     rankingData,
     impactData, 
     badges,
-    loading: contextLoading, 
-    error: contextError,
+    isCalculating,
+    calculationError,
     period,
     setPeriod,
-    fetchBasicStats,
-    fetchRankingData,
-    fetchImpactData,
-    fetchBadges
+    recalculateStatistics
   } = useStatistics();
 
   // トップ5アイテムと最新バッジの状態
-  const [topItems, setTopItems] = useState<typeof rankingData>([]);
-  const [recentBadge, setRecentBadge] = useState<typeof badges[0] | null>(null);
+  const [topItems, setTopItems] = useState<RankingItem[]>([]);
+  const [recentBadge, setRecentBadge] = useState<Badge | null>(null);
 
   // ローディングとエラーの状態をコンテキストから取得
-  const loading = contextLoading.basicStats || contextLoading.rankingData || 
-                  contextLoading.impactData || contextLoading.badges;
-  const error = contextError.basicStats || contextError.rankingData || 
-                contextError.impactData || contextError.badges;
+  const loading = isCalculating;
+  const error = calculationError;
 
   // 画像URLを一括で取得
   useEffect(() => {
@@ -89,27 +84,29 @@ export default function Stats() {
   // 統計データを取得
   const fetchStats = useCallback(async (selectedPeriod: Period = period) => {
     try {
-      // 各種統計データを並行して取得
-      await Promise.all([
-        fetchBasicStats(selectedPeriod),
-        fetchRankingData(selectedPeriod, 'most'),
-        fetchImpactData(selectedPeriod),
-        fetchBadges()
-      ]);
+      // 新しいAPIでは期間の変更はsetPeriodで行い、recalculateStatisticsは引数を取らない
+      if (selectedPeriod !== period) {
+        setPeriod(selectedPeriod);
+      }
+      await recalculateStatistics();
     } catch (err) {
       console.error('統計データの取得エラー:', err);
     }
-  }, [fetchBasicStats, fetchRankingData, fetchImpactData, fetchBadges, period]);
+  }, [recalculateStatistics, period, setPeriod]);
 
   // ランキングデータとバッジデータが更新されたときにトップ5と最新バッジを更新
   useEffect(() => {
-    if (rankingData.length > 0) {
+    if (rankingData && Array.isArray(rankingData) && rankingData.length > 0) {
+      console.log('Stats: Setting topItems from rankingData:', rankingData.slice(0, 5).map(item => ({ id: item.id, name: item.name })));
       setTopItems(rankingData.slice(0, 5));
+    } else {
+      console.log('Stats: No rankingData available, setting empty topItems');
+      setTopItems([]);
     }
   }, [rankingData]);
 
   useEffect(() => {
-    if (badges.length > 0) {
+    if (badges && Array.isArray(badges) && badges.length > 0) {
       const earnedBadges = badges.filter(badge => badge.isEarned);
       if (earnedBadges.length > 0) {
         // 獲得日で並べ替え（最新順）
@@ -118,7 +115,11 @@ export default function Stats() {
           return new Date(b.earnedDate).getTime() - new Date(a.earnedDate).getTime();
         });
         setRecentBadge(sortedBadges[0]);
+      } else {
+        setRecentBadge(null);
       }
+    } else {
+      setRecentBadge(null);
     }
   }, [badges]);
 
@@ -142,7 +143,7 @@ export default function Stats() {
   // 期間変更の処理
   const handlePeriodChange = (newPeriod: Period) => {
     setPeriod(newPeriod);
-    fetchStats(newPeriod);
+    // 新しいAPIでは期間変更時に自動で再計算されるため、fetchStatsの呼び出しは不要
   };
 
   const styles = StyleSheet.create({
@@ -633,7 +634,7 @@ export default function Stats() {
 
       {/* Basic statistics grid */}
       <View style={styles.statsGrid}>
-        <View style={styles.statCard}>
+        <View key="total-items" style={styles.statCard}>
           <View style={styles.statIconContainer}>
             <Ionicons name="shirt" size={24} color="#3498db" />
           </View>
@@ -641,7 +642,7 @@ export default function Stats() {
           <Text style={styles.statLabel}>アイテム数</Text>
         </View>
 
-        <View style={styles.statCard}>
+        <View key="total-wears" style={styles.statCard}>
           <View style={styles.statIconContainer}>
             <Ionicons name="repeat" size={24} color="#3498db" />
           </View>
@@ -649,7 +650,7 @@ export default function Stats() {
           <Text style={styles.statLabel}>総着用回数</Text>
         </View>
 
-        <View style={styles.statCard}>
+        <View key="total-washes" style={styles.statCard}>
           <View style={styles.statIconContainer}>
             <Ionicons name="water" size={24} color="#3498db" />
           </View>
@@ -657,7 +658,7 @@ export default function Stats() {
           <Text style={styles.statLabel}>総洗濯回数</Text>
         </View>
 
-        <View style={styles.statCard}>
+        <View key="average-wears" style={styles.statCard}>
           <View style={styles.statIconContainer}>
             <Ionicons name="analytics" size={24} color="#3498db" />
           </View>
@@ -688,24 +689,28 @@ export default function Stats() {
           </TouchableOpacity>
         </View>
 
-        {topItems.length > 0 ? (
+        {topItems && topItems.length > 0 ? (
           <View style={styles.rankingList}>
             {topItems.map((item, index) => (
               <TouchableOpacity 
-                key={item.id}
+                key={item.id || `ranking-item-${index}`}
                 style={styles.rankingItem}
-                onPress={() => router.push({
-                  pathname: '/item/stats/[id]',
-                  params: { id: item.id }
-                })}
+                onPress={() => {
+                  if (item.id) {
+                    router.push({
+                      pathname: '/item/stats/[id]',
+                      params: { id: item.id }
+                    });
+                  }
+                }}
               >
                 <View style={styles.rankBadge}>
                   <Text style={styles.rankText}>{index + 1}</Text>
                 </View>
                 <Image
                   source={{
-                    uri: imageUrls[item.id] || item.imageUrl,
-                    cacheKey: item.imageUrl,
+                    uri: (item.id && imageUrls[item.id]) || item.imageUrl || '',
+                    cacheKey: item.imageUrl || `fallback-${index}`,
                     width: 40,
                     height: 40
                   }}
@@ -713,35 +718,34 @@ export default function Stats() {
                   contentFit="cover"
                   transition={200}
                   onLoadStart={() => {
-                    console.log(`[Image Load Start] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
+                    console.log(`[Image Load Start] Item ID: ${item.id || 'undefined'}, Image: ${(item.imageUrl || '').slice(0, 50)}...`);
                   }}
                   onLoad={(event) => {
-                    console.log(`[Image Loaded] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
-                    console.log('Load event:', event);
+                    console.log(`[Image Loaded] Item ID: ${item.id || 'undefined'}, Image: ${(item.imageUrl || '').slice(0, 50)}...`);
                   }}
                   onLoadEnd={() => {
-                    console.log(`[Image Load End] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
+                    console.log(`[Image Load End] Item ID: ${item.id || 'undefined'}, Image: ${(item.imageUrl || '').slice(0, 50)}...`);
                   }}
                   onError={(error) => {
-                    console.error(`[Image Load Error] Item ID: ${item.id}, Image: ${item.imageUrl.slice(0, 50)}...`);
+                    console.error(`[Image Load Error] Item ID: ${item.id || 'undefined'}, Image: ${(item.imageUrl || '').slice(0, 50)}...`);
                     console.error('Error:', error);
                   }}
                 />
                 <View style={styles.itemInfo}>
                   <Text style={[styles.itemName, { color: theme.text }]} numberOfLines={1}>
-                    {item.name}
+                    {item.name || '名前なし'}
                   </Text>
                   <Text style={[styles.itemCategory, { color: theme.text + "99" }]}>
-                    {item.brand ? `${item.brand} / ${item.category}` : item.category}
+                    {item.brand ? `${item.brand} / ${item.category || 'カテゴリなし'}` : (item.category || 'カテゴリなし')}
                   </Text>
                   <Text style={[styles.itemWears, { color: theme.text }]}>
-                    {item.wearCount}回着用
+                    {item.wearCount || 0}回着用
                   </Text>
                   <View style={styles.barContainer}>
                     <View 
                       style={[
                         styles.bar, 
-                        { width: `${item.percentageOfMax}%`, backgroundColor: theme.primary }
+                        { width: `${item.percentageOfMax || 0}%`, backgroundColor: theme.primary }
                       ]} 
                     />
                   </View>
@@ -834,7 +838,7 @@ export default function Stats() {
         {impactData ? (
           <View style={styles.impactContainer}>
             <View style={styles.impactRow}>
-              <View style={styles.impactItem}>
+              <View key="washes-reduced" style={styles.impactItem}>
                 <View style={[styles.impactIconContainer, { backgroundColor: 'rgba(52, 152, 219, 0.1)' }]}>
                   <Ionicons name="water" size={24} color="#3498db" />
                 </View>
@@ -842,7 +846,7 @@ export default function Stats() {
                 <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>洗濯回数削減</Text>
               </View>
 
-              <View style={styles.impactItem}>
+              <View key="co2-reduced" style={styles.impactItem}>
                 <View style={[styles.impactIconContainer, { backgroundColor: 'rgba(39, 174, 96, 0.1)' }]}>
                   <Ionicons name="leaf" size={24} color="#27ae60" />
                 </View>
@@ -850,7 +854,7 @@ export default function Stats() {
                 <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>CO2削減量</Text>
               </View>
 
-              <View style={styles.impactItem}>
+              <View key="savings" style={styles.impactItem}>
                 <View style={[styles.impactIconContainer, { backgroundColor: 'rgba(241, 196, 15, 0.1)' }]}>
                   <Ionicons name="cash" size={24} color="#f1c40f" />
                 </View>

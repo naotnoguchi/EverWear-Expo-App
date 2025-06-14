@@ -1,10 +1,10 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
-import { useTheme } from "../contexts/ThemeContext";
-import { useState, useEffect, useCallback } from "react";
-import { Badge } from "../services/statisticsServiceFactory";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, router } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../contexts/StatisticsContext";
+import { useTheme } from "../contexts/ThemeContext";
+import { Badge } from "../services/statisticsServiceFactory";
 
 export default function BadgesScreen() {
   const theme = useTheme();
@@ -12,14 +12,14 @@ export default function BadgesScreen() {
   // 統計コンテキストを使用
   const {
     badges,
-    loading: { badges: isLoading },
-    error: { badges: contextError },
-    fetchBadges
+    isCalculating,
+    calculationError,
+    recalculateStatistics
   } = useStatistics();
 
   // ローディングとエラーの状態
-  const loading = isLoading;
-  const error = contextError;
+  const loading = isCalculating;
+  const error = calculationError;
 
   // ローカル状態（コンテキストにない状態）
   const [selectedCategory, setSelectedCategory] = useState<Badge['category'] | 'all'>('all');
@@ -28,7 +28,7 @@ export default function BadgesScreen() {
   // バッジデータを取得
   const fetchBadgesData = useCallback(async () => {
     try {
-      await fetchBadges();
+      await recalculateStatistics();
       console.log('バッジ画面 - バッジデータ取得結果:', 
         `総数=${badges.length},`, 
         `獲得済み=${badges.filter(b => b.isEarned).length},`,
@@ -40,7 +40,7 @@ export default function BadgesScreen() {
     } catch (err) {
       console.error('バッジデータの取得エラー:', err);
     }
-  }, [fetchBadges, badges.length]);
+  }, [recalculateStatistics, badges.length]);
 
   // マウント時にデータを取得
   useEffect(() => {

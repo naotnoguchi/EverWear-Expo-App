@@ -402,8 +402,7 @@ export default function Stats() {
       fontSize: 12,
       fontWeight: 'bold',
       color: "#3498db",
-      marginRight: 8,
-      width: 40,
+      marginBottom: 4,
     },
     barContainer: {
       flex: 1,
@@ -739,7 +738,7 @@ export default function Stats() {
                   <Text style={[styles.itemCategory, { color: theme.text + "99" }]}>
                     {item.brand ? `${item.brand} / ${item.category || 'カテゴリなし'}` : (item.category || 'カテゴリなし')}
                   </Text>
-                  <Text style={[styles.itemWears, { color: theme.text }]}>
+                  <Text style={[styles.itemWears, { color: theme.text }]} numberOfLines={1}>
                     {item.wearCount || 0}回着用
                   </Text>
                   <View style={styles.barContainer}>

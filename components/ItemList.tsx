@@ -268,8 +268,8 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
           source={{
             uri: imageUrls[item.id] || item.image,
             cacheKey: item.image,
-            width: 100,
-            height: 100
+            width: 90,
+            height: 90
           }}
           style={styles.itemImage}
           contentFit="cover"
@@ -337,11 +337,10 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
               <Ionicons
                 name="water"
                 size={20}
-                color={needsWash ? "#e74c3c" : "#3498db"}
+                color={needsWash ? "#e74c3c" : "#2ecc71"}
               />
               <Text style={[
-                styles.actionText,
-                needsWash && styles.washActionText
+                needsWash ? styles.washActionText : styles.washActionTextNormal
               ]}>洗濯</Text>
             </TouchableOpacity>
           </View>
@@ -452,7 +451,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
       flexDirection: "row",
       overflow: "hidden",
       position: "relative", // バッジ表示のため
-      height: 100, // アクション部分の見切れを防ぐため高さを拡大
+      height: 90, // アクション部分の見切れを防ぐため高さを拡大
     },
     needsWashContainer: {
       borderLeftWidth: 4,
@@ -460,8 +459,8 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
       backgroundColor: theme.card === "#ffffff" ? "#fff8f8" : "#3a1a1a", // 薄い赤色の背景に変更（ダークモード対応）
     },
     itemImage: {
-      width: 100,
-      height: 100,
+      width: 90,
+      height: 90,
       backgroundColor: theme.border, // 画像読み込み中の背景色
     },
     contentContainer: {
@@ -543,6 +542,11 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
     actionText: {
       fontSize: 10,
       color: "#3498db",
+      fontWeight: "500",
+    },
+    washActionTextNormal: {
+      fontSize: 10,
+      color: "#2ecc71",
       fontWeight: "500",
     },
     washActionText: {

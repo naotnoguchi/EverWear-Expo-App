@@ -8,10 +8,8 @@ let brands = [...mockBrands];
 
 // Get all clothing items with their history in a single query (optimized version)
 export const getClothingItemsWithHistory = async (): Promise<AppClothingItem[]> => {
-  // Simulate network delay
-  await simulateNetworkDelay();
-  console.log('Mock getClothingItemsWithHistory called - returning all items');
-  return [...clothingItems];
+  // Return all mock items with their histories
+  return mockClothingItems;
 };
 
 // Get all clothing items

@@ -29,14 +29,6 @@ export default function BadgesScreen() {
   const fetchBadgesData = useCallback(async () => {
     try {
       await recalculateStatistics();
-      console.log('バッジ画面 - バッジデータ取得結果:', 
-        `総数=${badges.length},`, 
-        `獲得済み=${badges.filter(b => b.isEarned).length},`,
-        `カテゴリ=${Object.keys(badges.reduce((acc, b) => {
-          acc[b.category] = true;
-          return acc;
-        }, {})).join(',')}`
-      );
     } catch (err) {
       console.error('バッジデータの取得エラー:', err);
     }

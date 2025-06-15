@@ -42,6 +42,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
   });
 
+  // 認証エラー処理関数
+  const handleAuthError = async () => {
+    console.log('Handling auth error - clearing session and redirecting to login');
+    
+    // ローカル状態をクリア
+    setSession(null);
+    setUser(null);
+    
+    // AsyncStorageから認証データを削除
+    try {
+      await AsyncStorage.multiRemove([
+        AUTH_STATE_KEY,
+        'supabase.auth.token',
+        'sb-auth-token',
+        '@supabase/auth-js'
+      ]);
+      
+      // Android向けの追加クリーンアップ
+      if (Platform.OS === 'android') {
+        const allKeys = await AsyncStorage.getAllKeys();
+        const authKeys = allKeys.filter(key => 
+          key.includes('auth') || 
+          key.includes('supabase') || 
+          key.includes('session') ||
+          key.includes('token')
+        );
+        
+        if (authKeys.length > 0) {
+          await AsyncStorage.multiRemove(authKeys);
+        }
+      }
+    } catch (error) {
+      console.warn('Error clearing auth storage:', error);
+    }
+  };
+
   // 初回起動かどうかを確認
   useEffect(() => {
     const checkFirstLaunch = async () => {
@@ -64,27 +100,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // セッションの取得
         const { data, error } = await auth.getSession();
-        if (error) throw error;
+        
+        if (error) {
+          console.error('Auth session error:', error);
+          
+          // リフレッシュトークンエラーの場合は自動的にサインアウト
+          if (error.message?.includes('Invalid Refresh Token') || 
+              error.message?.includes('Refresh Token Not Found') ||
+              error.message?.includes('AuthApiError')) {
+            await handleAuthError();
+            return;
+          }
+          
+          throw error;
+        }
 
         setSession(data.session);
         setUser(data.session?.user ?? null);
 
         // 認証状態の変更を監視
         const { data: authListener, error: listenerError } = auth.onAuthStateChange(
-          (event: AuthChangeEvent, session: Session | null) => {
+          async (event: AuthChangeEvent, session: Session | null) => {
+            console.log('Auth state changed:', event, session?.user?.id || 'no user');
+            
             setSession(session);
             setUser(session?.user ?? null);
+            
+            // トークンリフレッシュに失敗した場合やサインアウトイベント
+            if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
+              console.log('Auth session lost, clearing state');
+              await handleAuthError();
+            }
           }
         );
 
-        if (listenerError) throw listenerError;
+                  if (listenerError) {
+            console.error('Auth listener error:', listenerError);
+          }
 
         return () => {
           authListener.subscription.unsubscribe();
         };
-      } catch (error) {
-        console.error('Error loading auth session:', error);
-      } finally {
+              } catch (error) {
+          console.error('Error loading auth session:', error);
+          
+          // 認証エラーの場合は自動的にクリーンアップ
+          if (error instanceof Error && (
+              error.message?.includes('Invalid Refresh Token') || 
+              error.message?.includes('Refresh Token Not Found') ||
+              error.message?.includes('AuthApiError'))) {
+            await handleAuthError();
+          }
+        } finally {
         setLoading(false);
       }
     };

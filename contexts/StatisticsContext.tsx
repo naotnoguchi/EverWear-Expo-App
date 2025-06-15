@@ -195,16 +195,37 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const initializeBadges = async () => {
       try {
+        console.log('StatisticsContext: Initializing badges on app startup');
         const initialBadges = await statisticsService.getBadges();
+        console.log('StatisticsContext: Initial badges loaded', `count: ${initialBadges.length}`);
         setBadges(initialBadges);
         previousBadgesRef.current = initialBadges;
-      } catch (error) {
-        console.log('StatisticsContext: バッジの初期化中にエラーが発生しましたが、継続します:', error);
-        // エラーが発生してもアプリは継続動作させる
-        // デフォルトバッジを設定
-        const defaultBadges = await statisticsService.getBadges().catch(() => []);
-        setBadges(defaultBadges);
-        previousBadgesRef.current = defaultBadges;
+              } catch (error) {
+          console.error('StatisticsContext: バッジの初期化中にエラーが発生しました:', error);
+          
+          // 認証エラーの場合は空の配列を設定
+          if (error instanceof Error && (
+              error.message?.includes('Invalid Refresh Token') || 
+              error.message?.includes('Refresh Token Not Found') ||
+              error.message?.includes('AuthApiError'))) {
+            console.log('StatisticsContext: 認証エラーのため空のバッジ配列を設定');
+            setBadges([]);
+            previousBadgesRef.current = [];
+            return;
+          }
+        
+        // その他のエラーの場合はデフォルトバッジを試行
+        try {
+          console.log('StatisticsContext: Evaluating badges (always fresh)');
+          const defaultBadges = await statisticsService.getBadges().catch(() => []);
+          console.log('StatisticsContext: createDefaultBadges with default values, count:', defaultBadges.length);
+          setBadges(defaultBadges);
+          previousBadgesRef.current = defaultBadges;
+        } catch (fallbackError) {
+          console.error('StatisticsContext: フォールバック処理も失敗しました:', fallbackError);
+          setBadges([]);
+          previousBadgesRef.current = [];
+        }
       }
     };
 

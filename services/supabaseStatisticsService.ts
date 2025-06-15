@@ -49,10 +49,23 @@ const convertRpcResponseToAppItem = (rpcResponse: any): AppClothingItem => {
 
 // Fetch base statistics data (clothing items with history)
 async function fetchBaseStatisticsData(): Promise<AppClothingItem[]> {
-  const { data: session } = await auth.getSession();
+  const { data: session, error: sessionError } = await auth.getSession();
+  
+  // 認証エラーの場合は空の配列を返す
+  if (sessionError) {
+    if (sessionError.message?.includes('Invalid Refresh Token') || 
+        sessionError.message?.includes('Refresh Token Not Found') ||
+        sessionError.message?.includes('AuthApiError')) {
+      console.log('認証エラーのため空のデータを返します');
+      return [];
+    }
+    throw sessionError;
+  }
+  
   const userId = session?.session?.user?.id;
 
   if (!userId) {
+    console.log('ユーザーが認証されていません');
     return [];
   }
 
@@ -154,11 +167,24 @@ export const getItemDetailStats = async (itemId: string): Promise<ItemDetailStat
 export async function getBadges(): Promise<Badge[]> {
   try {
     // Get user session
-    const { data: session } = await auth.getSession();
+    const { data: session, error: sessionError } = await auth.getSession();
+    
+    // 認証エラーの場合は空の配列を返す
+    if (sessionError) {
+      if (sessionError.message?.includes('Invalid Refresh Token') || 
+          sessionError.message?.includes('Refresh Token Not Found') ||
+          sessionError.message?.includes('AuthApiError')) {
+        console.log('認証エラーが発生しました - 空のバッジ配列を返します');
+        return [];
+      }
+      throw sessionError;
+    }
+    
     const userId = session?.session?.user?.id;
 
     if (!userId) {
-      return createDefaultBadges();
+      console.log('ユーザーが認証されていません - 空のバッジ配列を返します');
+      return [];
     }
 
     // Fetch item data and badge data in parallel
@@ -323,10 +349,21 @@ export async function getBadges(): Promise<Badge[]> {
     }
 
     return badges;
-  } catch (error) {
-    console.error('Error fetching badges:', error);
-    return createDefaultBadges();
-  }
+      } catch (error) {
+      console.error('Error fetching badges:', error);
+      
+      // 認証エラーの場合は空の配列を返す
+      if (error instanceof Error && (
+          error.message?.includes('Invalid Refresh Token') || 
+          error.message?.includes('Refresh Token Not Found') ||
+          error.message?.includes('AuthApiError'))) {
+        console.log('認証エラーが発生しました - 空のバッジ配列を返します');
+        return [];
+      }
+      
+      // その他のエラーの場合はデフォルトバッジを返す
+      return createDefaultBadges();
+    }
 }
 
 // Helper function to create default badges

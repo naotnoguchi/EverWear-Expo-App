@@ -51,8 +51,8 @@ export default function Stats() {
       if (imagePaths.length === 0) return;
 
       try {
-        // 一括で署名付きURLを取得
-        const urls = await getPrivateUrls(imagePaths);
+        // 一括で署名付きURLを取得（高解像度サイズで取得）
+        const urls = await getPrivateUrls(imagePaths, 320, 320);
         
         // 取得したURLをマッピング
         const newImageUrls: Record<string, string> = {};

@@ -32,7 +32,7 @@ export const getAuthenticatedStorage = async () => {
 };
 
 // 認証済みユーザー専用のURLを取得する関数
-export const getPrivateUrl = async (path: string, width: number = 160, height: number = 160): Promise<string | null> => {
+export const getPrivateUrl = async (path: string, width: number = 320, height: number = 320): Promise<string | null> => {
   if (!path) return null;
   
   try {
@@ -61,7 +61,7 @@ export const getPrivateUrl = async (path: string, width: number = 160, height: n
 };
 
 // 複数の画像パスから署名付きURLを一括取得する関数
-export const getPrivateUrls = async (paths: string[], width: number = 160, height: number = 160): Promise<(string | null)[]> => {
+export const getPrivateUrls = async (paths: string[], width: number = 320, height: number = 320): Promise<(string | null)[]> => {
   if (!paths || paths.length === 0) return [];
 
   try {

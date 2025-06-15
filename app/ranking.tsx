@@ -36,8 +36,8 @@ export default function RankingScreen() {
 
   // 画像URLを取得
   const imageUrls = useImageUrls(items || [], { 
-    width: 60, 
-    height: 60
+    width: 320, 
+    height: 320
   });
 
   // 画像URLを一括で取得

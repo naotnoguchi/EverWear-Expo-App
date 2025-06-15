@@ -19,7 +19,7 @@ export const useImageUrls = (
   options: ImageOptions = {}
 ) => {
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
-  const { width = 160, height = 160 } = options;
+  const { width = 320, height = 320 } = options;
 
   useEffect(() => {
     const loadAllImageUrls = async () => {

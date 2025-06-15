@@ -23,8 +23,8 @@ export default function EfficiencyScreen() {
 
   // 画像URLを取得
   const imageUrls = useImageUrls(items || [], { 
-    width: 60, 
-    height: 60
+    width: 320, 
+    height: 320
   });
 
   // ローディングとエラーの状態

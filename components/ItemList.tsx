@@ -268,8 +268,8 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
           source={{
             uri: imageUrls[item.id] || item.image,
             cacheKey: item.image,
-            width: 90,
-            height: 90
+            width: 80,
+            height: 80
           }}
           style={styles.itemImage}
           contentFit="cover"
@@ -451,7 +451,6 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
       flexDirection: "row",
       overflow: "hidden",
       position: "relative", // バッジ表示のため
-      height: 90, // アクション部分の見切れを防ぐため高さを拡大
     },
     needsWashContainer: {
       borderLeftWidth: 4,
@@ -459,9 +458,12 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
       backgroundColor: theme.card === "#ffffff" ? "#fff8f8" : "#3a1a1a", // 薄い赤色の背景に変更（ダークモード対応）
     },
     itemImage: {
-      width: 90,
-      height: 90,
+      width: 80,
+      height: 80,
       backgroundColor: theme.border, // 画像読み込み中の背景色
+      borderRadius: 8, // 角丸を追加
+      alignSelf: 'center', // 上下中央配置
+      marginLeft: 12, // 左の余白
     },
     contentContainer: {
       flex: 1,
@@ -527,13 +529,12 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
       width: 60,
       borderLeftWidth: 1,
       borderLeftColor: theme.border,
-      justifyContent: "space-around",
-      paddingVertical: 4, // 上下に余白を確保して見切れを防ぐ
+      justifyContent: "space-evenly", // ボタンを均等に配置
     },
     actionButton: {
       alignItems: "center",
       justifyContent: "center",
-      paddingVertical: 6, // パディングを少し縮小して見切れを防ぐ
+      paddingVertical: 4, // パディングを調整
     },
     washActionHighlight: {
       backgroundColor: theme.card === "#ffffff" ? "#fff0f0" : "#3a1a1a", // 洗濯ボタンの背景色を変更（ダークモード対応）

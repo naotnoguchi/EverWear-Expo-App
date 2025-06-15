@@ -109,12 +109,7 @@ export default function RankingScreen() {
           width: 80,
           height: 80
         }}
-        style={{
-          width: 80,
-          height: 80, // カードの高さに合わせて画像を大きくし、正方形を維持
-          marginRight: 12,
-          backgroundColor: '#f0f0f0'
-        }}
+        style={styles.itemImage}
         contentFit="cover"
         cachePolicy="disk"
         onError={() => {
@@ -248,7 +243,11 @@ export default function RankingScreen() {
     },
     itemImage: {
       width: 60,
-      height: 80,
+      height: 60,
+      borderRadius: 8,
+      marginLeft: 8,
+      alignSelf: 'center',
+      backgroundColor: theme.border,
     },
     itemInfo: {
       flex: 1,

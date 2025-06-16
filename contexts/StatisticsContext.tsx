@@ -1,14 +1,14 @@
 // contexts/StatisticsContext.tsx
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
-  Badge,
-  BasicStats,
-  EfficiencyItem,
-  ImpactData,
-  ItemDetailStats,
-  Period,
-  RankingItem,
-  statisticsService
+    Badge,
+    BasicStats,
+    EfficiencyItem,
+    ImpactData,
+    ItemDetailStats,
+    Period,
+    RankingItem,
+    statisticsService
 } from '../services/statisticsServiceFactory';
 import { CategoryValue } from '../types/categories';
 import { useClothing } from './ClothingContext';
@@ -103,11 +103,11 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
         impactDataResult,
         badgesResult
       ] = await Promise.all([
-        statisticsService.getBasicStats(period),
-        statisticsService.getRankingData(period, sortOrder, categoryFilter),
-        statisticsService.getEfficiencyData(period),
-        statisticsService.getImpactData(period),
-        statisticsService.getBadges()
+        statisticsService.getBasicStats(clothingItems, period),
+        statisticsService.getRankingData(clothingItems, period, sortOrder, categoryFilter),
+        statisticsService.getEfficiencyData(clothingItems, period),
+        statisticsService.getImpactData(clothingItems, period),
+        statisticsService.getBadges(clothingItems)
       ]);
 
       // 新しいバッジの検出
@@ -160,7 +160,7 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
     }
 
     try {
-      const stats = await statisticsService.getItemDetailStats(itemId);
+      const stats = await statisticsService.getItemDetailStats(clothingItems, itemId);
       if (stats) {
         // キャッシュに保存
         setItemDetailStats(prev => new Map(prev).set(itemId, stats));
@@ -170,7 +170,7 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
       console.error(`StatisticsContext: Failed to get item detail stats for ${itemId}:`, error);
       return null;
     }
-  }, [itemDetailStats]);
+  }, [itemDetailStats, clothingItems]);
 
   // バッジ通知をクリア
   const clearBadgeNotification = useCallback((badgeId: string) => {
@@ -196,7 +196,7 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
     const initializeBadges = async () => {
       try {
         console.log('StatisticsContext: Initializing badges on app startup');
-        const initialBadges = await statisticsService.getBadges();
+        const initialBadges = await statisticsService.getBadges(clothingItems);
         console.log('StatisticsContext: Initial badges loaded', `count: ${initialBadges.length}`);
         setBadges(initialBadges);
         previousBadgesRef.current = initialBadges;
@@ -217,7 +217,7 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
         // その他のエラーの場合はデフォルトバッジを試行
         try {
           console.log('StatisticsContext: Evaluating badges (always fresh)');
-          const defaultBadges = await statisticsService.getBadges().catch(() => []);
+          const defaultBadges = await statisticsService.getBadges(clothingItems).catch(() => []);
           console.log('StatisticsContext: createDefaultBadges with default values, count:', defaultBadges.length);
           setBadges(defaultBadges);
           previousBadgesRef.current = defaultBadges;

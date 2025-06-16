@@ -1,14 +1,15 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
-import { useTheme } from "../contexts/ThemeContext";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { statisticsService, Badge } from "../services/statisticsServiceFactory";
 import { Ionicons } from "@expo/vector-icons";
-import { Stack, router } from "expo-router";
-import { Share } from "react-native";
+import { Stack } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { ActivityIndicator, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import ViewShot from "react-native-view-shot";
+import { useClothing } from "../contexts/ClothingContext";
+import { useTheme } from "../contexts/ThemeContext";
+import { Badge, statisticsService } from "../services/statisticsServiceFactory";
 
 export default function BadgesOverviewScreen() {
   const theme = useTheme();
+  const { clothingItems } = useClothing();
   const viewShotRef = useRef<ViewShot>(null);
 
   // State
@@ -22,13 +23,13 @@ export default function BadgesOverviewScreen() {
     try {
       setLoading(true);
       setError(null);
-      const data = await statisticsService.getBadges();
+      const data = await statisticsService.getBadges(clothingItems);
       // Ensure data is an array before using array methods
       const badgesArray = Array.isArray(data) ? data : [];
       console.log('Badges Overview screen - getBadges result:', 
         `count=${badgesArray.length},`, 
         `earned=${badgesArray.filter(b => b.isEarned).length},`,
-        `categories=${Object.keys(badgesArray.reduce((acc, b) => {
+        `categories=${Object.keys(badgesArray.reduce((acc: Record<string, boolean>, b) => {
           acc[b.category] = true;
           return acc;
         }, {})).join(',')}`
@@ -41,7 +42,7 @@ export default function BadgesOverviewScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clothingItems]);
 
   // Load data on mount
   useEffect(() => {
@@ -72,7 +73,7 @@ export default function BadgesOverviewScreen() {
 
   // Handle screenshot and share
   const handleShare = async () => {
-    if (!viewShotRef.current) return;
+    if (!viewShotRef.current?.capture) return;
 
     try {
       const uri = await viewShotRef.current.capture();

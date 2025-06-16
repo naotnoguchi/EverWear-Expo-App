@@ -2,12 +2,12 @@
 import { CategoryValue } from '../types/categories';
 import { AppClothingItem } from '../types/database';
 import {
-  BasicStats,
-  EfficiencyItem,
-  ImpactData,
-  ItemDetailStats,
-  Period,
-  RankingItem
+    BasicStats,
+    EfficiencyItem,
+    ImpactData,
+    ItemDetailStats,
+    Period,
+    RankingItem
 } from '../types/statistics';
 
 // Helper function to filter items by period

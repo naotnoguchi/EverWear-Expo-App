@@ -1,5 +1,4 @@
 import { auth } from '../lib/authClient';
-import { getAuthenticatedClient } from '../lib/dbClient';
 import { CategoryValue } from '../types/categories';
 import { AppClothingItem } from '../types/database';
 import {
@@ -26,77 +25,9 @@ import {
   saveNewlyEarnedBadges
 } from './badgeService';
 
-// Helper function to convert RPC response to AppClothingItem
-const convertRpcResponseToAppItem = (rpcResponse: any): AppClothingItem => {
-  const item = {
-    id: rpcResponse.item_id,
-    name: rpcResponse.name,
-    category: rpcResponse.category,
-    brand: rpcResponse.brand_name || '',
-    image: rpcResponse.image_path || '',
-    washThreshold: rpcResponse.wash_threshold || 3,
-    lastWorn: rpcResponse.last_worn || '',
-    wearCount: rpcResponse.wear_count || 0,
-    memo: rpcResponse.memo || '',
-    condition: rpcResponse.condition || '',
-    purchasePrice: rpcResponse.purchase_price,
-    wearHistory: Array.isArray(rpcResponse.wear_dates) ? rpcResponse.wear_dates : [],
-    washHistory: Array.isArray(rpcResponse.wash_dates) ? rpcResponse.wash_dates : []
-  };
-  
-  return item;
-};
-
-// Fetch base statistics data (clothing items with history)
-async function fetchBaseStatisticsData(): Promise<AppClothingItem[]> {
-  const { data: session, error: sessionError } = await auth.getSession();
-  
-  // 認証エラーの場合は空の配列を返す
-  if (sessionError) {
-    if (sessionError.message?.includes('Invalid Refresh Token') || 
-        sessionError.message?.includes('Refresh Token Not Found') ||
-        sessionError.message?.includes('AuthApiError')) {
-      console.log('認証エラーのため空のデータを返します');
-      return [];
-    }
-    throw sessionError;
-  }
-  
-  const userId = session?.session?.user?.id;
-
-  if (!userId) {
-    console.log('ユーザーが認証されていません');
-    return [];
-  }
-
-  // Get authenticated client
-  const authClient = await getAuthenticatedClient();
-
-  // Use the optimized RPC function to get all items with history
-  const { data, error } = await authClient
-    .rpc('get_clothing_items_with_history', {
-      user_id_param: userId
-    });
-
-  if (error) {
-    console.error('Error fetching base statistics data:', error);
-    throw error;
-  }
-
-  if (!data || data.length === 0) {
-    return [];
-  }
-
-  // Convert RPC response to AppClothingItem format
-  const items = data.map(convertRpcResponseToAppItem);
-  
-  return items;
-}
-
 // Get basic statistics (always fresh calculation)
-export const getBasicStats = async (period: Period = '3months'): Promise<BasicStats> => {
+export const getBasicStats = async (items: AppClothingItem[], period: Period = '3months'): Promise<BasicStats> => {
   try {
-    const items = await fetchBaseStatisticsData();
     const stats = calculateBasicStats(items, period);
     return stats;
   } catch (error) {
@@ -107,12 +38,12 @@ export const getBasicStats = async (period: Period = '3months'): Promise<BasicSt
 
 // Get ranking data (always fresh calculation)
 export const getRankingData = async (
+  items: AppClothingItem[],
   period: Period = '3months',
   sortOrder: 'most' | 'least' = 'most',
   category: CategoryValue = null
 ): Promise<RankingItem[]> => {
   try {
-    const items = await fetchBaseStatisticsData();
     const ranking = calculateRankingData(items, period, sortOrder, category);
     return ranking;
   } catch (error) {
@@ -122,9 +53,8 @@ export const getRankingData = async (
 };
 
 // Get efficiency data (always fresh calculation)
-export const getEfficiencyData = async (period: Period = '3months'): Promise<EfficiencyItem[]> => {
+export const getEfficiencyData = async (items: AppClothingItem[], period: Period = '3months'): Promise<EfficiencyItem[]> => {
   try {
-    const items = await fetchBaseStatisticsData();
     const efficiency = calculateEfficiencyData(items, period);
     return efficiency;
   } catch (error) {
@@ -134,9 +64,8 @@ export const getEfficiencyData = async (period: Period = '3months'): Promise<Eff
 };
 
 // Get impact data (always fresh calculation)
-export const getImpactData = async (period: Period = '3months'): Promise<ImpactData> => {
+export const getImpactData = async (items: AppClothingItem[], period: Period = '3months'): Promise<ImpactData> => {
   try {
-    const items = await fetchBaseStatisticsData();
     const impact = calculateImpactData(items, period);
     return impact;
   } catch (error) {
@@ -146,9 +75,8 @@ export const getImpactData = async (period: Period = '3months'): Promise<ImpactD
 };
 
 // Get item detail statistics (always fresh calculation)
-export const getItemDetailStats = async (itemId: string): Promise<ItemDetailStats | null> => {
+export const getItemDetailStats = async (items: AppClothingItem[], itemId: string): Promise<ItemDetailStats | null> => {
   try {
-    const items = await fetchBaseStatisticsData();
     const item = items.find(i => i.id === itemId);
     
     if (!item) {
@@ -164,7 +92,7 @@ export const getItemDetailStats = async (itemId: string): Promise<ItemDetailStat
 };
 
 // Get badges (always fresh evaluation)
-export async function getBadges(): Promise<Badge[]> {
+export async function getBadges(items: AppClothingItem[]): Promise<Badge[]> {
   try {
     // Get user session
     const { data: session, error: sessionError } = await auth.getSession();
@@ -187,9 +115,8 @@ export async function getBadges(): Promise<Badge[]> {
       return [];
     }
 
-    // Fetch item data and badge data in parallel
-    const [items, badgeData, userBadges] = await Promise.all([
-      fetchBaseStatisticsData(),
+    // Fetch badge data and user badges in parallel
+    const [badgeData, userBadges] = await Promise.all([
       fetchBadgeData(),
       fetchUserBadges(userId)
     ]);
@@ -362,7 +289,7 @@ export async function getBadges(): Promise<Badge[]> {
       }
       
       // その他のエラーの場合はデフォルトバッジを返す
-      return createDefaultBadges();
+      return createDefaultBadges(items);
     }
 }
 

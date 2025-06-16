@@ -86,7 +86,7 @@ CREATE TABLE public.user_badges (
 
 ### バッジの取得と永続化
 
-`supabaseStatisticsService.ts` の `getBadges()` 関数は以下のように動作します：
+`statisticsService.ts` の `getBadges()` 関数は以下のように動作します：
 
 1. キャッシュからバッジデータを取得（キャッシュがある場合）
 2. ユーザーセッションを取得

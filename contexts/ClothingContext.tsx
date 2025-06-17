@@ -1,14 +1,16 @@
 // contexts/ClothingContext.tsx
-import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { formatDateToLocalISOString } from '../lib/dateUtils';
 import { AppClothingItem, clothingService } from '../services/clothingServiceFactory';
 import { ExtendedBrand } from '../types/database';
+import { usePremiumFeatures } from './PurchaseContext';
 
 // Use AppClothingItem from our database types
 type ClothingItem = AppClothingItem;
 
 interface ClothingContextType {
-  clothingItems: ClothingItem[];
+  clothingItems: ClothingItem[]; // 表示制限適用済みのアイテム（プレミアム状態に応じて15件制限）
+  allClothingItems: ClothingItem[]; // 全てのアイテム（制限なし、内部使用）
   loading: boolean;
   error: string | null;
   wearItem: (id: string, date?: string) => Promise<boolean>; // 成功時はtrue、重複時はfalseを返す
@@ -31,6 +33,9 @@ interface ClothingContextType {
   getBrandSuggestions: (query: string) => string[]; // 検索クエリに基づくブランド候補を取得
   loadBrands: () => Promise<void>; // ブランド情報を読み込む関数
   refreshData: () => Promise<void>; // データを再読み込みする関数
+  
+  // プレミアム制限関連
+  hiddenItemsCount: number; // 制限により非表示になっているアイテム数
 }
 
 const ClothingContext = createContext<ClothingContextType | undefined>(undefined);
@@ -38,7 +43,8 @@ const ClothingContext = createContext<ClothingContextType | undefined>(undefined
 // No longer need hardcoded initial data as we'll load from the service
 
 export function ClothingProvider({ children }: { children: ReactNode }) {
-  const [clothingItems, setClothingItems] = useState<ClothingItem[]>([]);
+  const { isPremium } = usePremiumFeatures();
+  const [allClothingItems, setAllClothingItems] = useState<ClothingItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +58,29 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
   const [brands, setBrands] = useState<string[]>([]);
   const [extendedBrands, setExtendedBrands] = useState<ExtendedBrand[]>([]);
 
-  // 不要となった部分更新ヘルパーは削除（全件再取得戦略に統一）
+  // プレミアム制限を適用したアイテムリストを計算
+  const clothingItems = useMemo(() => {
+    if (isPremium) {
+      return allClothingItems;
+    }
+    
+    // 無課金ユーザーは15件まで表示（登録が古い順）
+    const sortedItems = [...allClothingItems].sort((a, b) => {
+      // IDを数値として比較（UUIDの場合は辞書順）
+      // 通常、データベースのIDは作成順で割り当てられるため、これで十分
+      return a.id.localeCompare(b.id);
+    });
+    
+    return sortedItems.slice(0, 15);
+  }, [allClothingItems, isPremium]);
+
+  // 非表示になっているアイテム数を計算
+  const hiddenItemsCount = useMemo(() => {
+    if (isPremium) {
+      return 0;
+    }
+    return Math.max(0, allClothingItems.length - 15);
+  }, [allClothingItems.length, isPremium]);
 
   // データを読み込む関数
   const loadData = useCallback(async () => {
@@ -61,12 +89,12 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     try {
       // 最適化された関数を使用して衣類アイテムを取得
       const items = await clothingService.getClothingItemsWithHistory();
-      setClothingItems(items);
+      setAllClothingItems(items);
     } catch (err) {
       // 認証エラーなど正常なケースでは、エラー状態を設定せずに空のデータとして扱う
       const errorMessage = err instanceof Error ? err.message : String(err);
       if (errorMessage.includes('User not authenticated')) {
-        setClothingItems([]);
+        setAllClothingItems([]);
       } else {
         console.error('データの読み込みに失敗しました:', err);
         setError('データの読み込みに失敗しました');
@@ -162,7 +190,7 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       const updatedItem = await clothingService.addWearRecord(id, recordDate);
 
       // 差分更新：該当アイテムのみ配列内で更新
-      setClothingItems((items: ClothingItem[]) => 
+      setAllClothingItems((items: ClothingItem[]) => 
         items.map((item: ClothingItem): ClothingItem => 
           item.id === id ? (updatedItem as ClothingItem) : item
         )
@@ -185,7 +213,7 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       const updatedItem = await clothingService.addWashRecord(id, recordDate);
 
       // 差分更新：該当アイテムのみ配列内で更新
-      setClothingItems((items: ClothingItem[]) => 
+      setAllClothingItems((items: ClothingItem[]) => 
         items.map((item: ClothingItem): ClothingItem => 
           item.id === id ? (updatedItem as ClothingItem) : item
         )
@@ -205,7 +233,7 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       const newItem = await clothingService.addClothingItem(item, imageUri);
 
       // 差分更新：新規アイテムを配列に追加
-      setClothingItems((items: ClothingItem[]) => [...items, newItem as ClothingItem]);
+      setAllClothingItems((items: ClothingItem[]) => [...items, newItem as ClothingItem]);
 
     } catch (err) {
       console.error('Failed to add item:', err);
@@ -221,7 +249,7 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       const updatedItemData = await clothingService.updateClothingItem(updatedItem.id, updatedItem, imageUri);
 
       // 差分更新：該当アイテムのみ配列内で更新
-      setClothingItems((items: ClothingItem[]) => 
+      setAllClothingItems((items: ClothingItem[]) => 
         items.map((item: ClothingItem): ClothingItem => 
           item.id === updatedItem.id ? (updatedItemData as ClothingItem) : item
         )
@@ -241,7 +269,7 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       await clothingService.deleteClothingItem(id);
 
       // 差分更新：該当アイテムを配列から削除
-      setClothingItems((items: ClothingItem[]) => 
+      setAllClothingItems((items: ClothingItem[]) => 
         items.filter((item: ClothingItem) => item.id !== id)
       );
 
@@ -259,7 +287,7 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       const updatedItem = await clothingService.deleteWearRecord(itemId, date);
 
       // 差分更新：該当アイテムのみ配列内で更新
-      setClothingItems((items: ClothingItem[]) => 
+      setAllClothingItems((items: ClothingItem[]) => 
         items.map((item: ClothingItem): ClothingItem => 
           item.id === itemId ? (updatedItem as ClothingItem) : item
         )
@@ -279,7 +307,7 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       const updatedItem = await clothingService.deleteWashRecord(itemId, date);
 
       // 差分更新：該当アイテムのみ配列内で更新
-      setClothingItems((items: ClothingItem[]) => 
+      setAllClothingItems((items: ClothingItem[]) => 
         items.map((item: ClothingItem): ClothingItem => 
           item.id === itemId ? (updatedItem as ClothingItem) : item
         )
@@ -296,6 +324,7 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     <ClothingContext.Provider
       value={{
         clothingItems,
+        allClothingItems,
         loading,
         error,
         wearItem,
@@ -312,7 +341,9 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
         extendedBrands,
         getBrandSuggestions,
         loadBrands,
-        refreshData
+        refreshData,
+        // プレミアム制限関連
+        hiddenItemsCount
       }}
     >
       {children}

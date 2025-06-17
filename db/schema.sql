@@ -89,6 +89,45 @@ CREATE TABLE user_badges (
   UNIQUE(user_id, badge_id)
 );
 
+-- Subscription management table
+CREATE TABLE user_subscriptions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  revenue_cat_user_id TEXT NOT NULL,
+  subscription_status TEXT NOT NULL CHECK (subscription_status IN ('active', 'expired', 'cancelled', 'grace_period', 'billing_retry')),
+  product_id TEXT NOT NULL CHECK (product_id IN ('everwear_premium_monthly_v1', 'everwear_premium_annual_v1')),
+  purchase_date TIMESTAMP WITH TIME ZONE,
+  expiration_date TIMESTAMP WITH TIME ZONE,
+  original_purchase_date TIMESTAMP WITH TIME ZONE,
+  revenue_cat_entitlements JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  
+  UNIQUE(user_id)
+);
+
+-- Indexes for subscription table
+CREATE INDEX user_subscriptions_user_id_idx ON user_subscriptions(user_id);
+CREATE INDEX user_subscriptions_status_idx ON user_subscriptions(subscription_status);
+CREATE INDEX user_subscriptions_expiration_idx ON user_subscriptions(expiration_date);
+
+-- RLS policies for subscription table
+ALTER TABLE user_subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own subscription" 
+  ON user_subscriptions FOR SELECT 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Service role can manage subscriptions" 
+  ON user_subscriptions FOR ALL 
+  USING (auth.role() = 'service_role');
+
+-- Trigger to update updated_at column
+CREATE TRIGGER update_user_subscriptions_updated_at
+BEFORE UPDATE ON user_subscriptions
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
 -- Row Level Security Policies
 
 -- Enable RLS on all tables

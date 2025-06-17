@@ -11,6 +11,7 @@ import Onboarding from '../components/Onboarding';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { ClothingProvider } from '../contexts/ClothingContext';
 import { OnboardingProvider, useOnboarding } from '../contexts/OnboardingContext';
+import { PurchaseProvider } from '../contexts/PurchaseContext';
 import { StatisticsProvider, useStatistics } from '../contexts/StatisticsContext';
 import { TabResetProvider } from '../contexts/TabResetContext';
 
@@ -158,6 +159,7 @@ function MainApp() {
         <Stack.Screen name="badges" options={{ title: "バッジ・アチーブメント", headerBackTitle: "戻る" }} />
         <Stack.Screen name="badges-overview" options={{ title: "バッジコレクション", headerBackTitle: "戻る" }} />
         <Stack.Screen name="item/stats/[id]" options={{ title: "アイテム詳細分析", headerBackTitle: "戻る" }} />
+        <Stack.Screen name="subscription" options={{ title: "プレミアムプラン", headerBackTitle: "戻る" }} />
       </Stack>
       <BadgeNotificationManager 
         notifications={badgeNotifications} 
@@ -171,17 +173,19 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.container}>
       <AuthProvider>
-        <OnboardingProvider>
-          <ClothingProvider>
-            <ThemeProvider>
-              <TabResetProvider>
-                <StatisticsProvider>
-                  <MainApp />
-                </StatisticsProvider>
-              </TabResetProvider>
-            </ThemeProvider>
-          </ClothingProvider>
-        </OnboardingProvider>
+        <PurchaseProvider>
+          <OnboardingProvider>
+            <ClothingProvider>
+              <ThemeProvider>
+                <TabResetProvider>
+                  <StatisticsProvider>
+                    <MainApp />
+                  </StatisticsProvider>
+                </TabResetProvider>
+              </ThemeProvider>
+            </ClothingProvider>
+          </OnboardingProvider>
+        </PurchaseProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );

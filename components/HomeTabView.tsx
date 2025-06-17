@@ -1,10 +1,11 @@
 // components/HomeTabView.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { forwardRef, useImperativeHandle, useRef, useState, useMemo } from "react";
-import { Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { Alert, Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useClothing } from "../contexts/ClothingContext";
+import { usePremiumFeatures } from "../contexts/PurchaseContext";
 import SortModal from "./SortModal";
 
 // カテゴリコンポーネントのインポート
@@ -44,6 +45,7 @@ export type HomeTabViewRefType = {
 
 export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
   const router = useRouter();
+  const { isPremium } = usePremiumFeatures();
   const tabScrollViewRef = useRef<ScrollView>(null);
   const contentScrollViewRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -55,7 +57,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
 
   // ソートモーダルの表示状態（他の場所でも使用される可能性があるため維持）
   const [sortModalVisible, setSortModalVisible] = useState(false);
-  const { sortConfig, clothingItems } = useClothing();
+  const { sortConfig, clothingItems, hiddenItemsCount } = useClothing();
 
   // カテゴリごとのアイテム数を計算する関数 - メモ化して再計算を防止
   const categoryItemCounts = useMemo(() => {
@@ -162,6 +164,37 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
     }
   };
 
+  // アイテム追加ボタンのハンドラー
+  const handleAddItem = () => {
+    const currentItemCount = getCategoryItemCount(CategoryId.ALL);
+    
+    // プレミアムユーザーは制限なし
+    if (isPremium) {
+      router.push("/add");
+      return;
+    }
+    
+    // 無課金ユーザーは15件制限
+    if (currentItemCount >= 15) {
+      Alert.alert(
+        "アイテム登録制限",
+        `現在${currentItemCount}件のアイテムが登録されています。\n\n無料プランでは最大15件まで登録可能です。\n\nプレミアムプランにアップグレードすると、無制限にアイテムを登録できます。`,
+        [
+          {
+            text: "キャンセル",
+            style: "cancel"
+          },
+          {
+            text: "プレミアムプランを見る",
+            onPress: () => router.push("/subscription")
+          }
+        ]
+      );
+    } else {
+      router.push("/add");
+    }
+  };
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -254,6 +287,25 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
       shadowRadius: 3.84,
       zIndex: 100,
     },
+    hiddenItemsBanner: {
+      backgroundColor: '#2c3e50',
+      borderBottomWidth: 1,
+      borderBottomColor: '#FFD700',
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+    },
+    bannerContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    bannerText: {
+      flex: 1,
+      fontSize: 14,
+      color: '#FFD700',
+      textAlign: 'center',
+      fontWeight: '500',
+    },
   });
 
   return (
@@ -308,6 +360,22 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
         </View>
       </View>
 
+      {/* 非表示アイテム通知バナー */}
+      {!isPremium && hiddenItemsCount > 0 && (
+        <TouchableOpacity 
+          style={styles.hiddenItemsBanner}
+          onPress={() => router.push('/subscription')}
+        >
+          <View style={styles.bannerContent}>
+            <Ionicons name="eye-off" size={20} color="#FFD700" />
+            <Text style={styles.bannerText}>
+              {hiddenItemsCount}件のアイテムが非表示になっています
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#FFD700" />
+          </View>
+        </TouchableOpacity>
+      )}
+
       {/* 水平スクロール可能なコンテンツエリア */}
       <View style={styles.contentWrapper}>
         <ScrollView
@@ -345,7 +413,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
       {/* 固定位置に追加ボタンを配置 */}
       <TouchableOpacity
         style={styles.floatingButton}
-        onPress={() => router.push("/add")}
+        onPress={handleAddItem}
       >
         <Ionicons name="add" size={24} color="#fff" /* Keep white for contrast on blue background */ />
       </TouchableOpacity>

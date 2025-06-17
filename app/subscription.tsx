@@ -1,19 +1,86 @@
-import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
-import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { PurchasesPackage } from "react-native-purchases";
+import { usePremiumFeatures, usePurchase } from "../contexts/PurchaseContext";
 import { useTheme } from "../contexts/ThemeContext";
 
 export default function SubscriptionScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const { subscription, offerings, loading, error, purchasePackage, restorePurchases } = usePurchase();
+  const { isPremium } = usePremiumFeatures();
+  const [purchasing, setPurchasing] = useState(false);
+
+  const monthlyPackage = offerings
+    .flatMap(offering => offering.availablePackages)
+    .find(pkg => pkg.product.identifier === process.env.EXPO_PUBLIC_PREMIUM_MONTHLY_PRODUCT_ID);
+
+  const yearlyPackage = offerings
+    .flatMap(offering => offering.availablePackages)
+    .find(pkg => pkg.product.identifier === process.env.EXPO_PUBLIC_PREMIUM_YEARLY_PRODUCT_ID);
+
+  const handlePurchase = async (packageToPurchase: PurchasesPackage) => {
+    try {
+      setPurchasing(true);
+      await purchasePackage(packageToPurchase);
+      
+      Alert.alert(
+        "購入完了",
+        "プレミアムプランにアップグレードしました！",
+        [
+          {
+            text: "OK",
+            onPress: () => router.back(),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Purchase error:', error);
+      Alert.alert(
+        "購入エラー",
+        "購入処理中にエラーが発生しました。もう一度お試しください。"
+      );
+    } finally {
+      setPurchasing(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    try {
+      setPurchasing(true);
+      await restorePurchases();
+      
+      Alert.alert(
+        "購入履歴の復元",
+        "購入履歴を確認しました。"
+      );
+    } catch (error) {
+      console.error('Restore error:', error);
+      Alert.alert(
+        "復元エラー",
+        "購入履歴の復元中にエラーが発生しました。"
+      );
+    } finally {
+      setPurchasing(false);
+    }
+  };
+
+  const formatPrice = (price: number, currencyCode: string) => {
+    return new Intl.NumberFormat('ja-JP', {
+      style: 'currency',
+      currency: currencyCode,
+    }).format(price);
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -41,9 +108,21 @@ export default function SubscriptionScreen() {
     },
     headerSubtitle: {
       fontSize: 16,
-      color: theme.text + "99", // with transparency
+      color: theme.text + "99",
       marginTop: 8,
       textAlign: "center",
+    },
+    premiumBadge: {
+      backgroundColor: "#FFD700",
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      marginTop: 16,
+    },
+    premiumBadgeText: {
+      color: "#000",
+      fontWeight: "bold",
+      fontSize: 14,
     },
     planSection: {
       backgroundColor: theme.card,
@@ -106,7 +185,7 @@ export default function SubscriptionScreen() {
     },
     yearlyPrice: {
       fontSize: 14,
-      color: theme.text + "99", // with transparency
+      color: theme.text + "99",
       marginTop: 4,
     },
     planFeatures: {
@@ -122,54 +201,131 @@ export default function SubscriptionScreen() {
       fontSize: 14,
       color: theme.text,
     },
-    referralCard: {
-      padding: 16,
-      backgroundColor: theme.background,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: theme.border,
-    },
-    referralText: {
-      fontSize: 16,
-      fontWeight: "bold",
-      color: theme.text,
-      marginBottom: 16,
-    },
-    referralFeature: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginBottom: 12,
-    },
-    referralFeatureText: {
-      marginLeft: 8,
-      fontSize: 14,
-      color: theme.text,
-    },
-    ctaSection: {
-      alignItems: "center",
-      padding: 24,
-      margin: 16,
-    },
-    ctaButton: {
+    purchaseButton: {
       backgroundColor: "#3498db",
       borderRadius: 8,
       paddingVertical: 16,
       paddingHorizontal: 32,
-      width: "100%",
+      margin: 16,
       alignItems: "center",
     },
-    ctaButtonText: {
+    purchaseButtonDisabled: {
+      backgroundColor: theme.text + "40",
+    },
+    purchaseButtonText: {
       color: "white",
       fontSize: 18,
       fontWeight: "bold",
     },
+    restoreButton: {
+      backgroundColor: "transparent",
+      borderRadius: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 32,
+      marginHorizontal: 16,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    restoreButtonText: {
+      color: theme.text,
+      fontSize: 16,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 20,
+    },
+    errorText: {
+      fontSize: 16,
+      color: theme.text,
+      textAlign: "center",
+      marginBottom: 20,
+    },
     ctaNote: {
       marginTop: 16,
       fontSize: 12,
-      color: theme.text + "99", // with transparency
+      color: theme.text + "99",
       textAlign: "center",
     },
+    infoItem: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      marginBottom: 12,
+    },
+    infoText: {
+      marginLeft: 8,
+      fontSize: 14,
+      color: theme.text,
+      flex: 1,
+      lineHeight: 20,
+    },
   });
+
+  if (loading) {
+    return (
+      <>
+        <Stack.Screen
+          options={{
+            title: "プレミアムプラン",
+            headerTitleStyle: {
+              color: theme.text,
+            },
+            headerStyle: {
+              backgroundColor: theme.background,
+            },
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => router.back()}>
+                <Ionicons name="arrow-back" size={24} color={theme.text} />
+              </TouchableOpacity>
+            ),
+          }}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3498db" />
+          <Text style={[styles.errorText, { marginTop: 16 }]}>
+            読み込み中...
+          </Text>
+        </View>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Stack.Screen
+          options={{
+            title: "プレミアムプラン",
+            headerTitleStyle: {
+              color: theme.text,
+            },
+            headerStyle: {
+              backgroundColor: theme.background,
+            },
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => router.back()}>
+                <Ionicons name="arrow-back" size={24} color={theme.text} />
+              </TouchableOpacity>
+            ),
+          }}
+        />
+        <View style={styles.errorContainer}>
+          <Ionicons name="warning" size={48} color="#e74c3c" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.restoreButton} onPress={() => router.back()}>
+            <Text style={styles.restoreButtonText}>戻る</Text>
+          </TouchableOpacity>
+        </View>
+      </>
+    );
+  }
 
   return (
     <>
@@ -196,6 +352,11 @@ export default function SubscriptionScreen() {
           <Text style={styles.headerSubtitle}>
             あなたの洋服管理をさらに便利に
           </Text>
+          {isPremium && (
+            <View style={styles.premiumBadge}>
+              <Text style={styles.premiumBadgeText}>プレミアム会員</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.planSection}>
@@ -222,76 +383,150 @@ export default function SubscriptionScreen() {
             </View>
           </View>
 
-          <View style={[styles.planCard, styles.premiumCard]}>
-            <View style={styles.planHeader}>
-              <Text style={[styles.planTitle, styles.premiumTitle]}>プレミアムプラン</Text>
-              <Text style={styles.planPrice}>¥480/月</Text>
-              <Text style={styles.yearlyPrice}>年間プラン: ¥4,800 (¥400/月)</Text>
+          {/* 月額プラン */}
+          {monthlyPackage && (
+            <View style={[styles.planCard, styles.premiumCard]}>
+              <View style={styles.planHeader}>
+                <Text style={[styles.planTitle, styles.premiumTitle]}>月額プラン</Text>
+                <Text style={styles.planPrice}>
+                  {formatPrice(monthlyPackage.product.price, monthlyPackage.product.currencyCode)}
+                </Text>
+              </View>
+              <View style={styles.planFeatures}>
+                <View style={styles.featureItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
+                  <Text style={styles.featureText}>アイテム登録: 無制限</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
+                  <Text style={styles.featureText}>高度な分析機能</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
+                  <Text style={styles.featureText}>広告非表示</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
+                  <Text style={styles.featureText}>着用頻度グラフ</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
+                  <Text style={styles.featureText}>洗濯サイクル最適化</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
+                  <Text style={styles.featureText}>ブランド別統計</Text>
+                </View>
+              </View>
+              {!isPremium && (
+                <TouchableOpacity 
+                  style={[styles.purchaseButton, (purchasing ? styles.purchaseButtonDisabled : {})]}
+                  onPress={() => handlePurchase(monthlyPackage)}
+                  disabled={purchasing}
+                >
+                  {purchasing ? (
+                    <ActivityIndicator color="white" />
+                  ) : (
+                    <Text style={styles.purchaseButtonText}>月額プランを購入</Text>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
-            <View style={styles.planFeatures}>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                <Text style={styles.featureText}>アイテム登録: 無制限</Text>
+          )}
+
+          {/* 年額プラン */}
+          {yearlyPackage && (
+            <View style={[styles.planCard, styles.premiumCard]}>
+              <View style={styles.planHeader}>
+                <Text style={[styles.planTitle, styles.premiumTitle]}>年額プラン</Text>
+                <Text style={styles.planPrice}>
+                  {formatPrice(yearlyPackage.product.price, yearlyPackage.product.currencyCode)}
+                </Text>
+                <Text style={styles.yearlyPrice}>
+                  月額換算: {formatPrice(yearlyPackage.product.price / 12, yearlyPackage.product.currencyCode)}
+                </Text>
               </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                <Text style={styles.featureText}>高度な分析機能</Text>
+              <View style={styles.planFeatures}>
+                <View style={styles.featureItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
+                  <Text style={styles.featureText}>アイテム登録: 無制限</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
+                  <Text style={styles.featureText}>高度な分析機能</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
+                  <Text style={styles.featureText}>広告非表示</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
+                  <Text style={styles.featureText}>着用頻度グラフ</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
+                  <Text style={styles.featureText}>洗濯サイクル最適化</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
+                  <Text style={styles.featureText}>ブランド別統計</Text>
+                </View>
               </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                <Text style={styles.featureText}>広告非表示</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                <Text style={styles.featureText}>着用頻度グラフ</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                <Text style={styles.featureText}>洗濯サイクル最適化</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                <Text style={styles.featureText}>ブランド別統計</Text>
-              </View>
+              {!isPremium && (
+                <TouchableOpacity 
+                  style={[styles.purchaseButton, (purchasing ? styles.purchaseButtonDisabled : {})]}
+                  onPress={() => handlePurchase(yearlyPackage)}
+                  disabled={purchasing}
+                >
+                  {purchasing ? (
+                    <ActivityIndicator color="white" />
+                  ) : (
+                    <Text style={styles.purchaseButtonText}>年額プランを購入</Text>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
-          </View>
+          )}
         </View>
 
+        {/* 購入履歴復元ボタン */}
+        <TouchableOpacity 
+          style={styles.restoreButton}
+          onPress={handleRestore}
+          disabled={purchasing}
+        >
+          <Text style={styles.restoreButtonText}>購入履歴を復元</Text>
+        </TouchableOpacity>
+
+        {/* データ保持に関する重要な説明 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>友達紹介プログラム</Text>
-          <View style={styles.referralCard}>
-            <Text style={styles.referralText}>
-              友達を招待して特典をゲット！
+          <Text style={styles.sectionTitle}>データ保持について</Text>
+          <View style={styles.infoItem}>
+            <Ionicons name="information-circle" size={20} color={theme.primary} />
+            <Text style={styles.infoText}>
+              プレミアム登録中に作成したアイテムは、サブスクリプションをキャンセルした後も安全に保持されます。
             </Text>
-            <View style={styles.referralFeature}>
-              <Ionicons name="gift" size={20} color="#e74c3c" />
-              <Text style={styles.referralFeatureText}>
-                友達を招待すると、あなたに1ヶ月のプレミアム特典
-              </Text>
-            </View>
-            <View style={styles.referralFeature}>
-              <Ionicons name="gift" size={20} color="#e74c3c" />
-              <Text style={styles.referralFeatureText}>
-                招待された友達には14日間のプレミアム機能トライアル
-              </Text>
-            </View>
-            <View style={styles.referralFeature}>
-              <Ionicons name="gift" size={20} color="#e74c3c" />
-              <Text style={styles.referralFeatureText}>
-                3人招待で3ヶ月プレミアム、5人招待で6ヶ月プレミアム
-              </Text>
-            </View>
+          </View>
+          <View style={styles.infoItem}>
+            <Ionicons name="eye" size={20} color={theme.primary} />
+            <Text style={styles.infoText}>
+              無料プランでは最新の15件のアイテムのみ表示されますが、16件目以降のデータは削除されません。
+            </Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Ionicons name="refresh" size={20} color={theme.primary} />
+            <Text style={styles.infoText}>
+              プレミアムプランに再度アップグレードすると、保存されている全てのアイテムが再び表示されます。
+            </Text>
           </View>
         </View>
 
-        <View style={styles.ctaSection}>
-          <TouchableOpacity style={styles.ctaButton}>
-            <Text style={styles.ctaButtonText}>プレミアムを始める</Text>
-          </TouchableOpacity>
-          <Text style={styles.ctaNote}>
-            ※ 課金機能は現在開発中です。実際の課金は発生しません。
-          </Text>
-        </View>
+        <Text style={styles.ctaNote}>
+          {isPremium 
+            ? "プレミアム機能をお楽しみください！" 
+            : "※ 実際の課金が発生します。購入前にご確認ください。"
+          }
+        </Text>
       </ScrollView>
     </>
   );

@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { usePremiumFeatures } from "../../../contexts/PurchaseContext";
 import { useStatistics } from "../../../contexts/StatisticsContext";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { getPrivateUrl } from "../../../lib/storageClient";
@@ -11,7 +12,9 @@ import { CategoryValue } from "../../../types/categories";
 
 export default function ItemDetailScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { isPremium } = usePremiumFeatures();
 
   // 統計コンテキストを使用（新しいAPI）
   const { getItemDetailStats } = useStatistics();
@@ -292,6 +295,72 @@ export default function ItemDetailScreen() {
     infoIcon: {
       marginLeft: 8,
     },
+    // プレミアム制限のスタイル
+    restrictedOverlay: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.background,
+      padding: 20,
+    },
+    restrictedContent: {
+      alignItems: 'center',
+      backgroundColor: theme.card,
+      borderRadius: 16,
+      padding: 32,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+      width: '100%',
+      maxWidth: 400,
+    },
+    restrictedIcon: {
+      marginBottom: 24,
+    },
+    restrictedTitle: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      color: theme.text,
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+    restrictedDescription: {
+      fontSize: 16,
+      color: theme.text + "CC",
+      marginBottom: 32,
+      textAlign: 'center',
+      lineHeight: 24,
+    },
+    upgradeButton: {
+      backgroundColor: '#FFD700',
+      paddingVertical: 16,
+      paddingHorizontal: 32,
+      borderRadius: 12,
+      marginBottom: 16,
+      width: '100%',
+    },
+    upgradeButtonText: {
+      color: '#000',
+      fontSize: 16,
+      fontWeight: 'bold',
+      textAlign: 'center',
+    },
+    backButton: {
+      backgroundColor: 'transparent',
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.border,
+      width: '100%',
+    },
+    backButtonText: {
+      color: theme.text,
+      fontSize: 14,
+      textAlign: 'center',
+    },
   }), [theme]);
 
   // アイテム詳細データを取得
@@ -437,9 +506,45 @@ export default function ItemDetailScreen() {
         options={{
           title: "アイテム詳細分析",
           headerBackTitle: "戻る",
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color={theme.text} />
+            </TouchableOpacity>
+          ),
         }} 
       />
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+      
+      {!isPremium ? (
+        <View style={styles.restrictedOverlay}>
+          <View style={styles.restrictedContent}>
+            <View style={styles.restrictedIcon}>
+              <Ionicons name="lock-closed" size={48} color="#FFD700" />
+            </View>
+            
+            <Text style={styles.restrictedTitle}>プレミアム限定機能</Text>
+            <Text style={styles.restrictedDescription}>
+              アイテム詳細分析はプレミアムプラン限定の機能です。{'\n'}
+              アップグレードして詳細な統計情報を確認しませんか？
+            </Text>
+            
+            <TouchableOpacity 
+              style={styles.upgradeButton} 
+              onPress={() => router.push('/subscription')}
+            >
+              <Text style={styles.upgradeButtonText}>プレミアムプランを見る</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => router.back()}
+            >
+              <Text style={styles.backButtonText}>戻る</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        <>
+        <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
         {/* Item basic info */}
         <View style={styles.card}>
           <Text style={styles.itemName}>
@@ -918,6 +1023,8 @@ export default function ItemDetailScreen() {
           </View>
         </View>
       </Modal>
+      </>
+      )}
     </>
   );
 }

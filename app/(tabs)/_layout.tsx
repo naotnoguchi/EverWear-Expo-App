@@ -1,8 +1,8 @@
-import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../contexts/ThemeContext";
-import { useTabReset } from "../../contexts/TabResetContext";
+import { Tabs } from "expo-router";
 import { useEffect } from "react";
+import { useTabReset } from "../../contexts/TabResetContext";
+import { useTheme } from "../../contexts/ThemeContext";
 
 export default function TabsLayout() {
   const theme = useTheme();
@@ -10,7 +10,7 @@ export default function TabsLayout() {
 
   // Set initial tab name on component mount
   useEffect(() => {
-    setLastTabName("(home)");
+    setLastTabName("home");
   }, []);
 
   // Handle tab press
@@ -44,7 +44,7 @@ export default function TabsLayout() {
       }}
     >
         <Tabs.Screen
-            name="(home)"
+            name="home"
             options={{
                 title: "ホーム",
                 headerTitle: "クローゼット",
@@ -53,7 +53,7 @@ export default function TabsLayout() {
                 ),
             }}
             listeners={{
-              tabPress: () => handleTabPress("(home)"),
+              tabPress: () => handleTabPress("home"),
             }}
         />
       <Tabs.Screen

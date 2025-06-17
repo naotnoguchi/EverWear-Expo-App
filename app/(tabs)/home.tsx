@@ -1,10 +1,9 @@
-// app/(tabs)/(home)/index.tsx
-import React, { useRef, useEffect } from "react";
-import { View, StyleSheet } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import HomeTabView, { HomeTabViewRefType } from "../../../components/HomeTabView";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useTabReset } from "../../../contexts/TabResetContext";
+import React, { useEffect, useRef } from "react";
+import { StyleSheet } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import HomeTabView, { HomeTabViewRefType } from "../../components/HomeTabView";
+import { useTabReset } from "../../contexts/TabResetContext";
 
 export default function HomeScreen() {
     const theme = useTheme();
@@ -13,7 +12,7 @@ export default function HomeScreen() {
 
     // Register the reset function with the TabResetContext
     useEffect(() => {
-        registerResetFunction("(home)", () => {
+        registerResetFunction("home", () => {
             if (homeTabViewRef.current) {
                 homeTabViewRef.current.resetTab();
             }
@@ -32,4 +31,4 @@ export default function HomeScreen() {
         <HomeTabView ref={homeTabViewRef} />
       </GestureHandlerRootView>
   );
-}
+} 

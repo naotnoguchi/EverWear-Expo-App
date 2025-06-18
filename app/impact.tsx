@@ -43,7 +43,7 @@ export default function ImpactScreen() {
 
 総節約金額: ${((impact?.electricitySaved.cost || 0) + (impact?.waterSaved.cost || 0) + (impact?.detergentSaved.cost || 0))}円
 
-ClothesManagerAppで洋服の寿命を延ばしながら環境にも貢献しよう！
+EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
 `;
 
       await Share.share({

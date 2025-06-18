@@ -315,7 +315,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resetPassword = async (email: string) => {
     try {
       const { error } = await auth.resetPasswordForEmail(email, {
-        redirectTo: 'clothesmanagerapp://auth/callback?type=recovery',
+        redirectTo: 'everwear://auth/callback?type=recovery',
       });
       if (error) throw error;
     } catch (error) {

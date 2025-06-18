@@ -1,4 +1,4 @@
--- Supabase Storage Policies for ClothesManagerApp
+-- Supabase Storage Policies for EverWear
 
 -- 1. Create the clothing-images bucket if it doesn't exist
 -- This needs to be done in the Supabase dashboard or via the API

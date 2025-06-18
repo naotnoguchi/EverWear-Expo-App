@@ -1,4 +1,4 @@
--- Initial data for ClothesManagerApp
+-- Initial data for EverWear
 
 -- Badge definitions
 INSERT INTO public.badge_definitions 

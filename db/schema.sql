@@ -1,4 +1,4 @@
--- Database schema for ClothesManagerApp
+-- Database schema for EverWear
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

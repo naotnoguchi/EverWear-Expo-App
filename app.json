@@ -15,7 +15,9 @@
       ],
       "bundleIdentifier": "com.naotnoguchi.everwear",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "アプリが衣類の写真を撮影するために、カメラへのアクセスが必要です。",
+        "NSPhotoLibraryUsageDescription": "アプリが衣類の写真を管理するために、フォトライブラリへのアクセスが必要です。"
       }
     },
     "android": {
@@ -53,7 +55,14 @@
     },
     "plugins": [
       "expo-router",
-      "expo-dev-client"
+      "expo-dev-client",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "アプリが衣類の写真を管理するために、フォトライブラリへのアクセスが必要です。",
+          "cameraPermission": "アプリが衣類の写真を撮影するために、カメラへのアクセスが必要です。"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

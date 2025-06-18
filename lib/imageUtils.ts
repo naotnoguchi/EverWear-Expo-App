@@ -56,49 +56,63 @@ const getContentType = (extension: string): string => {
 
 // アルバムから画像を選択する関数
 export const pickImageFromGallery = async (): Promise<string | null> => {
-  // 権限の確認
-  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (status !== 'granted') {
-    Alert.alert('権限エラー', '画像を選択するには、写真へのアクセス許可が必要です。');
+  try {
+    // 権限の確認
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('権限エラー', '画像を選択するには、写真へのアクセス許可が必要です。');
+      return null;
+    }
+
+    // 画像ピッカーを起動
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1.0,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      return result.assets[0].uri;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('[ImagePicker] Gallery selection error:', error);
+    Alert.alert('エラー', 'アルバムからの画像選択中にエラーが発生しました');
     return null;
   }
-
-  // 画像ピッカーを起動
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    allowsEditing: true,
-    aspect: [1, 1],
-    quality: 1.0,
-  });
-
-  if (!result.canceled && result.assets && result.assets.length > 0) {
-    return result.assets[0].uri;
-  }
-
-  return null;
 };
 
 // カメラで画像を撮影する関数
 export const takePhotoWithCamera = async (): Promise<string | null> => {
-  // カメラ権限の確認
-  const { status } = await ImagePicker.requestCameraPermissionsAsync();
-  if (status !== 'granted') {
-    Alert.alert('権限エラー', '写真を撮影するには、カメラへのアクセス許可が必要です。');
+  try {
+    // カメラ権限の確認
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('権限エラー', '写真を撮影するには、カメラへのアクセス許可が必要です。');
+      return null;
+    }
+
+    // カメラを起動
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1.0,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      return result.assets[0].uri;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('[ImagePicker] Camera capture error:', error);
+    Alert.alert('エラー', 'カメラでの撮影中にエラーが発生しました');
     return null;
   }
-
-  // カメラを起動
-  const result = await ImagePicker.launchCameraAsync({
-    allowsEditing: true,
-    aspect: [1, 1],
-    quality: 1.0,
-  });
-
-  if (!result.canceled && result.assets && result.assets.length > 0) {
-    return result.assets[0].uri;
-  }
-
-  return null;
 };
 
 // 画像選択オプションを表示する関数
@@ -111,15 +125,27 @@ export const showImagePickerOptions = async (): Promise<string | null> => {
         {
           text: 'カメラで撮影',
           onPress: async () => {
-            const uri = await takePhotoWithCamera();
-            resolve(uri);
+            try {
+              const uri = await takePhotoWithCamera();
+              resolve(uri);
+            } catch (error) {
+              console.error('[ImagePicker] Camera option error:', error);
+              Alert.alert('エラー', 'カメラでの撮影中にエラーが発生しました');
+              resolve(null);
+            }
           },
         },
         {
           text: 'アルバムから選択',
           onPress: async () => {
-            const uri = await pickImageFromGallery();
-            resolve(uri);
+            try {
+              const uri = await pickImageFromGallery();
+              resolve(uri);
+            } catch (error) {
+              console.error('[ImagePicker] Gallery option error:', error);
+              Alert.alert('エラー', 'アルバムからの画像選択中にエラーが発生しました');
+              resolve(null);
+            }
           },
         },
         {

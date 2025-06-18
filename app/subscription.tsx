@@ -266,6 +266,63 @@ export default function SubscriptionScreen() {
       flex: 1,
       lineHeight: 20,
     },
+    subscriptionDetailCard: {
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 8,
+      marginBottom: 16,
+      overflow: "hidden",
+    },
+    subscriptionHeader: {
+      padding: 16,
+      backgroundColor: theme.background,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    subscriptionTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      color: theme.text,
+      marginBottom: 8,
+    },
+    activeBadge: {
+      backgroundColor: "#FFD700",
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      marginTop: 8,
+    },
+    activeBadgeText: {
+      color: "#000",
+      fontWeight: "bold",
+      fontSize: 14,
+    },
+    subscriptionInfo: {
+      padding: 16,
+    },
+    subscriptionInfoItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    subscriptionInfoLabel: {
+      fontSize: 14,
+      fontWeight: "bold",
+      color: theme.text,
+      marginRight: 8,
+    },
+    subscriptionInfoValue: {
+      fontSize: 14,
+      color: theme.text,
+    },
+    subscriptionActions: {
+      padding: 16,
+    },
+    subscriptionNote: {
+      fontSize: 12,
+      color: theme.text + "99",
+      textAlign: "center",
+    },
   });
 
   if (loading) {
@@ -358,6 +415,56 @@ export default function SubscriptionScreen() {
             </View>
           )}
         </View>
+
+        {/* プレミアム契約済みユーザー向けの契約詳細 */}
+        {isPremium && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>契約詳細</Text>
+            
+            <View style={styles.subscriptionDetailCard}>
+              <View style={styles.subscriptionHeader}>
+                <Ionicons name="star" size={24} color="#FFD700" />
+                <Text style={styles.subscriptionTitle}>アクティブなプレミアムプラン</Text>
+                <View style={styles.activeBadge}>
+                  <Text style={styles.activeBadgeText}>有効</Text>
+                </View>
+              </View>
+              
+              <View style={styles.subscriptionInfo}>
+                <View style={styles.subscriptionInfoItem}>
+                  <Text style={styles.subscriptionInfoLabel}>契約プラン</Text>
+                  <Text style={styles.subscriptionInfoValue}>
+                    {subscription.productId === process.env.EXPO_PUBLIC_PREMIUM_YEARLY_PRODUCT_ID ? '年額プラン' : '月額プラン'}
+                  </Text>
+                </View>
+                
+                {subscription.purchaseDate && (
+                  <View style={styles.subscriptionInfoItem}>
+                    <Text style={styles.subscriptionInfoLabel}>契約開始日</Text>
+                    <Text style={styles.subscriptionInfoValue}>
+                      {subscription.purchaseDate.toLocaleDateString('ja-JP')}
+                    </Text>
+                  </View>
+                )}
+                
+                {subscription.expirationDate && (
+                  <View style={styles.subscriptionInfoItem}>
+                    <Text style={styles.subscriptionInfoLabel}>次回更新日</Text>
+                    <Text style={styles.subscriptionInfoValue}>
+                      {subscription.expirationDate.toLocaleDateString('ja-JP')}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              
+              <View style={styles.subscriptionActions}>
+                <Text style={styles.subscriptionNote}>
+                  サブスクリプションの解約や変更は、App Store（iOS）またはGoogle Play（Android）から行ってください。
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         <View style={styles.planSection}>
           <Text style={styles.sectionTitle}>プラン比較</Text>

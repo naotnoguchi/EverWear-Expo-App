@@ -1,19 +1,20 @@
-import { useState, useRef, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Switch,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useOnboarding } from "../../contexts/OnboardingContext";
 import { useRouter } from "expo-router";
-import { useTheme } from "../../contexts/ThemeContext";
-import { useTabReset } from "../../contexts/TabResetContext";
+import React, { useEffect, useRef, useState } from "react";
+import {
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
+import { useOnboarding } from "../../contexts/OnboardingContext";
+import { usePremiumFeatures, usePurchase } from "../../contexts/PurchaseContext";
+import { useTabReset } from "../../contexts/TabResetContext";
+import { useTheme } from "../../contexts/ThemeContext";
 
 export default function Settings() {
   // State for settings
@@ -27,6 +28,10 @@ export default function Settings() {
 
   // Get auth functions
   const { signOut } = useAuth();
+
+  // Get premium features and subscription info
+  const { isPremium } = usePremiumFeatures();
+  const { subscription } = usePurchase();
 
   // Get theme
   const theme = useTheme();
@@ -244,6 +249,61 @@ export default function Settings() {
       color: theme.text + "77", // Adding more transparency for footer text
       textAlign: "center",
     },
+    premiumActiveContainer: {
+      paddingVertical: 8,
+    },
+    premiumStatusHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    premiumActiveTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      marginLeft: 8,
+      marginRight: 8,
+      color: theme.text,
+    },
+    premiumBadge: {
+      backgroundColor: "#4CAF50",
+      borderRadius: 12,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    premiumBadgeText: {
+      fontSize: 12,
+      fontWeight: "bold",
+      color: "white",
+    },
+    premiumInfoItem: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    premiumInfoLabel: {
+      fontSize: 16,
+      color: theme.text,
+    },
+    premiumInfoValue: {
+      fontSize: 16,
+      color: theme.text + "99",
+      fontWeight: "500",
+    },
+    manageSubscriptionButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 12,
+      marginTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+    },
+    manageSubscriptionText: {
+      fontSize: 16,
+      color: "#3498db",
+      marginLeft: 8,
+    },
   });
 
   return (
@@ -328,16 +388,66 @@ export default function Settings() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>プレミアムプラン</Text>
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.premiumButton]} 
-          onPress={() => router.push("/subscription")}
-        >
-          <Ionicons name="star" size={24} color="#FFD700" />
-          <Text style={styles.actionButtonText}>プレミアムプランを見る</Text>
-        </TouchableOpacity>
-        <Text style={styles.premiumDescription}>
-          プレミアムプランでは、アイテム登録数の制限解除、高度な分析機能、広告非表示などの特典があります。
-        </Text>
+        
+        {isPremium ? (
+          // プレミアム契約済みの場合
+          <View style={styles.premiumActiveContainer}>
+            <View style={styles.premiumStatusHeader}>
+              <Ionicons name="star" size={24} color="#FFD700" />
+              <Text style={styles.premiumActiveTitle}>プレミアム会員</Text>
+              <View style={styles.premiumBadge}>
+                <Text style={styles.premiumBadgeText}>有効</Text>
+              </View>
+            </View>
+            
+            <View style={styles.premiumInfoItem}>
+              <Text style={styles.premiumInfoLabel}>契約プラン</Text>
+              <Text style={styles.premiumInfoValue}>
+                {subscription.productId === process.env.EXPO_PUBLIC_PREMIUM_YEARLY_PRODUCT_ID ? '年額プラン' : '月額プラン'}
+              </Text>
+            </View>
+            
+            {subscription.expirationDate && (
+              <View style={styles.premiumInfoItem}>
+                <Text style={styles.premiumInfoLabel}>有効期限</Text>
+                <Text style={styles.premiumInfoValue}>
+                  {subscription.expirationDate.toLocaleDateString('ja-JP')}
+                </Text>
+              </View>
+            )}
+            
+            {subscription.purchaseDate && (
+              <View style={styles.premiumInfoItem}>
+                <Text style={styles.premiumInfoLabel}>契約開始日</Text>
+                <Text style={styles.premiumInfoValue}>
+                  {subscription.purchaseDate.toLocaleDateString('ja-JP')}
+                </Text>
+              </View>
+            )}
+            
+            <TouchableOpacity 
+              style={styles.manageSubscriptionButton}
+              onPress={() => router.push("/subscription")}
+            >
+              <Ionicons name="settings" size={20} color="#3498db" />
+              <Text style={styles.manageSubscriptionText}>契約管理</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          // 無料プランの場合
+          <>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.premiumButton]} 
+              onPress={() => router.push("/subscription")}
+            >
+              <Ionicons name="star" size={24} color="#FFD700" />
+              <Text style={styles.actionButtonText}>プレミアムプランを見る</Text>
+            </TouchableOpacity>
+            <Text style={styles.premiumDescription}>
+              プレミアムプランでは、アイテム登録数の制限解除、高度な分析機能、広告非表示などの特典があります。
+            </Text>
+          </>
+        )}
       </View>
 
       <View style={styles.section}>

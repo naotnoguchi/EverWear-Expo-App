@@ -117,11 +117,31 @@ export class PurchaseService {
         throw new Error('User not authenticated');
       }
 
+      // エンタイトルメントから product_id を取得
+      const entitlements = customerInfo.entitlements.all;
+      const premiumEntitlement = entitlements['EverWear Subscription'];
+      
+      // product_id を確実に取得
+      let productId = subscriptionInfo.productId;
+      if (!productId && premiumEntitlement) {
+        productId = premiumEntitlement.productIdentifier;
+      }
+      
+      // それでも取得できない場合は、subscriptionsByProductIdentifier から取得
+      if (!productId) {
+        const subscriptions = Object.values(customerInfo.subscriptionsByProductIdentifier);
+        if (subscriptions.length > 0) {
+          productId = subscriptions[0].productIdentifier;
+        }
+      }
+      
+      console.log('Syncing subscription with product_id:', productId);
+
       const subscriptionData = {
         user_id: user.data.user.id,
         revenue_cat_user_id: customerInfo.originalAppUserId,
         subscription_status: subscriptionInfo.isActive ? 'active' : 'expired',
-        product_id: subscriptionInfo.productId,
+        product_id: productId, // 確実にproduct_idを設定
         purchase_date: subscriptionInfo.purchaseDate?.toISOString(),
         expiration_date: subscriptionInfo.expirationDate?.toISOString(),
         original_purchase_date: subscriptionInfo.purchaseDate?.toISOString(),
@@ -149,18 +169,59 @@ export class PurchaseService {
 
   private parseCustomerInfo(customerInfo: CustomerInfo): SubscriptionInfo {
     const entitlements = customerInfo.entitlements.all;
-    const premiumEntitlement = entitlements['EverWear Subscription'];
-
-    if (premiumEntitlement && premiumEntitlement.isActive) {
-      return {
-        isActive: true,
-        productId: premiumEntitlement.productIdentifier,
-        expirationDate: premiumEntitlement.expirationDate ? new Date(premiumEntitlement.expirationDate) : null,
-        purchaseDate: premiumEntitlement.originalPurchaseDate ? new Date(premiumEntitlement.originalPurchaseDate) : null,
-        isTrialPeriod: false,
-      };
+    
+    // デバッグ: 利用可能なエンタイトルメントをログ出力
+    console.log('Available entitlements:', Object.keys(entitlements));
+    console.log('Customer info:', JSON.stringify(customerInfo, null, 2));
+    
+    // 複数のエンタイトルメント名を試す
+    const possibleEntitlementNames = ['EverWear Subscription', 'premium', 'Premium', 'everwear_premium'];
+    let premiumEntitlement = null;
+    
+    for (const name of possibleEntitlementNames) {
+      if (entitlements[name]) {
+        console.log(`Found entitlement: ${name}`, entitlements[name]);
+        premiumEntitlement = entitlements[name];
+        break;
+      }
+    }
+    
+    // もしくは、最初のアクティブなエンタイトルメントを使用
+    if (!premiumEntitlement) {
+      const activeEntitlements = Object.values(entitlements).filter(e => e.isActive);
+      if (activeEntitlements.length > 0) {
+        console.log('Using first active entitlement:', activeEntitlements[0]);
+        premiumEntitlement = activeEntitlements[0];
+      }
     }
 
+    if (premiumEntitlement) {
+      console.log('Premium entitlement found:', {
+        productId: premiumEntitlement.productIdentifier,
+        expirationDate: premiumEntitlement.expirationDate,
+        isActive: premiumEntitlement.isActive,
+        isSandbox: premiumEntitlement.isSandbox
+      });
+      
+      // サブスクリプションの有効性をチェック（期限切れは期限切れとして扱う）
+      console.log('Subscription evaluation:', {
+        isActive: premiumEntitlement.isActive,
+        expirationDate: premiumEntitlement.expirationDate,
+        isSandbox: premiumEntitlement.isSandbox
+      });
+      
+      if (premiumEntitlement.isActive) {
+        return {
+          isActive: true,
+          productId: premiumEntitlement.productIdentifier,
+          expirationDate: premiumEntitlement.expirationDate ? new Date(premiumEntitlement.expirationDate) : null,
+          purchaseDate: premiumEntitlement.originalPurchaseDate ? new Date(premiumEntitlement.originalPurchaseDate) : null,
+          isTrialPeriod: false,
+        };
+      }
+    }
+
+    console.log('No active premium entitlement found');
     return this.getDefaultSubscriptionInfo();
   }
 

@@ -32,9 +32,10 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
   const [offerings, setOfferings] = useState<PurchasesOffering[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [initializing, setInitializing] = useState(true); // 初期化中フラグを追加
 
-  // 開発環境では期限切れサブスクリプションでもプレミアム機能を有効にする
-  const isPremium = subscription.isActive;
+  // 初期化が完了するまではプレミアム制限を適用しない（フラッシュを防ぐため）
+  const isPremium = initializing ? true : subscription.isActive;
 
   // Revenue Cat初期化
   useEffect(() => {
@@ -78,28 +79,26 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
       // Revenue Cat設定
       await purchaseService.configure(user!.id);
 
-      // 現在のサブスクリプション状態を取得
-      await refreshSubscription();
-
-      // オファリング情報を取得
-      await loadOfferings();
-      
-      // サンドボックス環境では自動的に購入履歴を復元
+      // サンドボックス環境では自動的に購入履歴を復元（他の処理より先に実行）
       if (__DEV__) {
         console.log('Development mode: attempting to restore purchases');
         try {
           await purchaseService.restorePurchases();
-          await refreshSubscription();
         } catch (restoreError) {
           console.log('Restore failed (this is normal if no previous purchases):', restoreError);
         }
       }
+
+      // RevenueCatのリクエストを順次実行（同時実行を避ける）
+      await refreshSubscription();
+      await loadOfferings();
 
     } catch (err) {
       console.error('Error initializing purchases:', err);
       setError(err instanceof Error ? err.message : 'Purchase initialization failed');
     } finally {
       setLoading(false);
+      setInitializing(false); // 初期化完了をマーク
     }
   };
 
@@ -175,7 +174,7 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
   const contextValue: PurchaseContextType = {
     subscription,
     offerings,
-    loading,
+    loading: loading || initializing, // 初期化中もローディング状態として扱う
     error,
     isPremium,
     purchasePackage: handlePurchasePackage,
@@ -200,13 +199,14 @@ export function usePurchase(): PurchaseContextType {
 
 // プレミアム機能の制限チェック用フック
 export function usePremiumFeatures() {
-  const { isPremium } = usePurchase();
+  const { isPremium, loading } = usePurchase();
   
   return {
     isPremium,
+    loading, // ローディング状態も提供
     canAccessPremiumFeatures: () => isPremium,
     canAddMoreItems: (currentCount: number) => isPremium || currentCount < 15,
     canAccessStatistics: () => isPremium,
-    shouldShowAds: () => !isPremium,
+    shouldShowAds: () => !isPremium && !loading, // 初期化中は広告も表示しない
   };
 } 

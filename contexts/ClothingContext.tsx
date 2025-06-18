@@ -3,7 +3,7 @@ import React, { createContext, ReactNode, useCallback, useContext, useEffect, us
 import { formatDateToLocalISOString } from '../lib/dateUtils';
 import { AppClothingItem, clothingService } from '../services/clothingServiceFactory';
 import { ExtendedBrand } from '../types/database';
-import { usePremiumFeatures } from './PurchaseContext';
+import { usePurchase } from './PurchaseContext';
 
 // Use AppClothingItem from our database types
 type ClothingItem = AppClothingItem;
@@ -43,7 +43,7 @@ const ClothingContext = createContext<ClothingContextType | undefined>(undefined
 // No longer need hardcoded initial data as we'll load from the service
 
 export function ClothingProvider({ children }: { children: ReactNode }) {
-  const { isPremium } = usePremiumFeatures();
+  const { isPremium, loading: purchaseLoading } = usePurchase(); // PurchaseContextのローディング状態も取得
   const [allClothingItems, setAllClothingItems] = useState<ClothingItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,11 +76,12 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
 
   // 非表示になっているアイテム数を計算
   const hiddenItemsCount = useMemo(() => {
-    if (isPremium) {
+    // PurchaseContextの初期化中は制限を表示しない（フラッシュを防ぐため）
+    if (isPremium || purchaseLoading) {
       return 0;
     }
     return Math.max(0, allClothingItems.length - 15);
-  }, [allClothingItems.length, isPremium]);
+  }, [allClothingItems.length, isPremium, purchaseLoading]);
 
   // データを読み込む関数
   const loadData = useCallback(async () => {

@@ -402,7 +402,10 @@ export default function SubscriptionScreen() {
           ),
         }}
       />
-      <ScrollView style={styles.container}>
+      <ScrollView 
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 24 }}
+      >
         <View style={styles.header}>
           <Ionicons name="star" size={60} color="#FFD700" />
           <Text style={styles.headerTitle}>プレミアムプランで全機能を解放</Text>
@@ -608,12 +611,11 @@ export default function SubscriptionScreen() {
           </View>
         </View>
 
-        <Text style={styles.ctaNote}>
-          {isPremium 
-            ? "プレミアム機能をお楽しみください！" 
-            : "※ 実際の課金が発生します。購入前にご確認ください。"
-          }
-        </Text>
+        {!isPremium && (
+          <Text style={styles.ctaNote}>
+            ※ 実際の課金が発生します。購入前にご確認ください。
+          </Text>
+        )}
       </ScrollView>
     </>
   );

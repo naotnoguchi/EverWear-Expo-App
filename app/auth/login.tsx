@@ -133,7 +133,7 @@ export default function LoginScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.title, { color: theme.text }]}>ClothesManagerApp</Text>
+      <Text style={[styles.title, { color: theme.text }]}>EverWear</Text>
       <Text style={[styles.subtitle, { color: theme.text }]}>アカウントにログイン</Text>
 
       {!showResetForm && (

@@ -1,6 +1,6 @@
-# Supabase Storage Implementation for ClothesManagerApp
+# Supabase Storage Implementation for EverWear
 
-This document describes the implementation of Supabase Storage for handling image uploads in the ClothesManagerApp.
+This document describes the implementation of Supabase Storage for handling image uploads in the EverWear.
 
 ## Overview
 

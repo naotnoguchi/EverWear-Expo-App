@@ -1,4 +1,4 @@
-// Database type definitions for ClothesManagerApp
+// Database type definitions for EverWear
 import { CategoryValue } from './categories';
 
 // User type (matches Supabase auth user)

@@ -1,4 +1,4 @@
-// Statistics type definitions for ClothesManagerApp
+// Statistics type definitions for EverWear
 import { CategoryValue } from './categories';
 
 // Period type for filtering statistics

@@ -477,15 +477,19 @@ export default function SubscriptionScreen() {
             <View style={styles.planFeatures}>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle" size={20} color="#3498db" />
-                <Text style={styles.featureText}>アイテム登録: 最大15件</Text>
+                <Text style={styles.featureText}>大切な洋服15件まで登録可能</Text>
               </View>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle" size={20} color="#3498db" />
-                <Text style={styles.featureText}>基本的な着用記録機能</Text>
+                <Text style={styles.featureText}>日々の着用・洗濯を簡単記録</Text>
               </View>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle" size={20} color="#3498db" />
-                <Text style={styles.featureText}>洗濯タイミング通知</Text>
+                <Text style={styles.featureText}>着用履歴でスタイリングを振り返り</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <Ionicons name="checkmark-circle" size={20} color="#3498db" />
+                <Text style={styles.featureText}>基本統計でワードローブの全体像を把握</Text>
               </View>
             </View>
           </View>
@@ -502,27 +506,15 @@ export default function SubscriptionScreen() {
               <View style={styles.planFeatures}>
                 <View style={styles.featureItem}>
                   <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>アイテム登録: 無制限</Text>
+                  <Text style={styles.featureText}>無料プランのすべての機能</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>高度な分析機能</Text>
+                  <Text style={styles.featureText}>お気に入りアイテムを無制限登録</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>広告非表示</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>着用頻度グラフ</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>洗濯サイクル最適化</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>ブランド別統計</Text>
+                  <Text style={styles.featureText}>洗濯効率の最適化と環境・節約効果を可視化</Text>
                 </View>
               </View>
               {!isPremium && (
@@ -556,27 +548,15 @@ export default function SubscriptionScreen() {
               <View style={styles.planFeatures}>
                 <View style={styles.featureItem}>
                   <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>アイテム登録: 無制限</Text>
+                  <Text style={styles.featureText}>無料プランのすべての機能</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>高度な分析機能</Text>
+                  <Text style={styles.featureText}>お気に入りアイテムを無制限登録</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>広告非表示</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>着用頻度グラフ</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>洗濯サイクル最適化</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>ブランド別統計</Text>
+                  <Text style={styles.featureText}>洗濯効率の最適化と環境・節約効果を可視化</Text>
                 </View>
               </View>
               {!isPremium && (

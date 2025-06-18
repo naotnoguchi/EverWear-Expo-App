@@ -1,9 +1,9 @@
 import { Platform } from 'react-native';
 import Purchases, {
-    CustomerInfo,
-    LOG_LEVEL,
-    PurchasesOffering,
-    PurchasesPackage
+  CustomerInfo,
+  LOG_LEVEL,
+  PurchasesOffering,
+  PurchasesPackage
 } from 'react-native-purchases';
 import { auth } from '../lib/authClient';
 import { getAuthenticatedClient } from '../lib/dbClient';
@@ -149,7 +149,7 @@ export class PurchaseService {
 
   private parseCustomerInfo(customerInfo: CustomerInfo): SubscriptionInfo {
     const entitlements = customerInfo.entitlements.all;
-    const premiumEntitlement = entitlements['premium'] || entitlements['Premium'];
+    const premiumEntitlement = entitlements['EverWear Subscription'];
 
     if (premiumEntitlement && premiumEntitlement.isActive) {
       return {

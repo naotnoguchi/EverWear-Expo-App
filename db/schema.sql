@@ -118,6 +118,14 @@ CREATE POLICY "Users can view their own subscription"
   ON user_subscriptions FOR SELECT 
   USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can insert their own subscription" 
+  ON user_subscriptions FOR INSERT 
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own subscription" 
+  ON user_subscriptions FOR UPDATE 
+  USING (auth.uid() = user_id);
+
 CREATE POLICY "Service role can manage subscriptions" 
   ON user_subscriptions FOR ALL 
   USING (auth.role() = 'service_role');

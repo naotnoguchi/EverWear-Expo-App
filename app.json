@@ -13,7 +13,10 @@
       "associatedDomains": [
         "applinks:jxfihlecaqzowheeomxt.supabase.co"
       ],
-      "bundleIdentifier": "com.naotnoguchi.everwear"
+      "bundleIdentifier": "com.naotnoguchi.everwear",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {

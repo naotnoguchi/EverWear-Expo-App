@@ -33,6 +33,7 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 開発環境では期限切れサブスクリプションでもプレミアム機能を有効にする
   const isPremium = subscription.isActive;
 
   // Revenue Cat初期化
@@ -41,6 +42,33 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
       initializePurchases();
     }
   }, [user?.id]);
+
+  // 開発環境では定期的にサブスクリプション状態をチェック（短期間テスト用）
+  useEffect(() => {
+    if (!__DEV__ || !subscription.isActive || !subscription.expirationDate) {
+      return;
+    }
+
+    const checkInterval = setInterval(() => {
+      const now = Date.now();
+      const expiration = subscription.expirationDate!.getTime();
+      const timeUntilExpiration = expiration - now;
+
+      // 期限まで1分以内の場合、30秒ごとにチェック
+      if (timeUntilExpiration <= 60000 && timeUntilExpiration > 0) {
+        console.log('Subscription expiring soon, refreshing status...');
+        refreshSubscription();
+      }
+      // 期限切れの場合、即座にチェック
+      else if (timeUntilExpiration <= 0) {
+        console.log('Subscription may have expired, refreshing status...');
+        refreshSubscription();
+        clearInterval(checkInterval);
+      }
+    }, 30000); // 30秒ごとにチェック
+
+    return () => clearInterval(checkInterval);
+  }, [subscription.isActive, subscription.expirationDate]);
 
   const initializePurchases = async () => {
     try {
@@ -55,6 +83,17 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
 
       // オファリング情報を取得
       await loadOfferings();
+      
+      // サンドボックス環境では自動的に購入履歴を復元
+      if (__DEV__) {
+        console.log('Development mode: attempting to restore purchases');
+        try {
+          await purchaseService.restorePurchases();
+          await refreshSubscription();
+        } catch (restoreError) {
+          console.log('Restore failed (this is normal if no previous purchases):', restoreError);
+        }
+      }
 
     } catch (err) {
       console.error('Error initializing purchases:', err);
@@ -67,6 +106,17 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
   const refreshSubscription = async () => {
     try {
       const subscriptionInfo = await purchaseService.getCurrentSubscription();
+      console.log('Subscription info refreshed:', {
+        isActive: subscriptionInfo.isActive,
+        productId: subscriptionInfo.productId,
+        expirationDate: subscriptionInfo.expirationDate,
+        purchaseDate: subscriptionInfo.purchaseDate,
+        // 開発環境では期限までの残り時間も表示
+        ...__DEV__ && subscriptionInfo.expirationDate && {
+          timeUntilExpiration: subscriptionInfo.expirationDate.getTime() - Date.now(),
+          timeUntilExpirationMinutes: Math.round((subscriptionInfo.expirationDate.getTime() - Date.now()) / 60000)
+        }
+      });
       setSubscription(subscriptionInfo);
     } catch (err) {
       console.error('Error refreshing subscription:', err);

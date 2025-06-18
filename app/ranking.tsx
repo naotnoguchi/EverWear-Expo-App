@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { Stack, useRouter } from "expo-router";
+import { router, Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { PremiumUpgradeModal } from "../components/PremiumUpgradeModal";
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { usePremiumFeatures } from "../contexts/PurchaseContext";
 import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
@@ -13,7 +12,6 @@ import { Period, RankingItem } from "../services/statisticsServiceFactory";
 import { CategoryValue } from "../types/categories";
 
 export default function RankingScreen() {
-  const router = useRouter();
   const theme = useTheme();
   const { isPremium } = usePremiumFeatures();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -168,96 +166,9 @@ export default function RankingScreen() {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.background,
-    },
-    restrictedOverlay: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: theme.background + 'CC',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 10,
-    },
-    restrictedContent: {
-      backgroundColor: theme.card,
-      borderRadius: 16,
-      padding: 24,
-      margin: 20,
-      alignItems: 'center',
-      shadowColor: theme.text,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 3,
-    },
-    restrictedIcon: {
-      marginBottom: 16,
-    },
-    restrictedTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      color: theme.text,
-      textAlign: 'center',
-      marginBottom: 12,
-    },
-    restrictedDescription: {
-      fontSize: 16,
-      color: theme.text + '99',
-      textAlign: 'center',
-      marginBottom: 24,
-      lineHeight: 22,
-    },
-    upgradeButton: {
-      backgroundColor: '#FFD700',
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: 8,
-      marginBottom: 12,
-    },
-    upgradeButtonText: {
-      color: '#000',
-      fontSize: 16,
-      fontWeight: 'bold',
-    },
-    backButton: {
-      backgroundColor: 'transparent',
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: theme.border,
-    },
-    backButtonText: {
-      color: theme.text,
-      fontSize: 16,
-    },
-    // 通常のコンテンツ用スタイル（プレミアムユーザー向け）
-    content: {
-      flex: 1,
       padding: 16,
+      backgroundColor: theme.background, // 固定の白色から変更
     },
-    section: {
-      backgroundColor: theme.card,
-      borderRadius: 8,
-      padding: 16,
-      marginBottom: 16,
-      shadowColor: theme.text,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 1,
-    },
-    sectionTitle: {
-      fontSize: 18,
-      fontWeight: "bold",
-      marginBottom: 12,
-      color: theme.text,
-    },
-    sectionText: {
-      fontSize: 16,
-      color: theme.text,
-      lineHeight: 24,
-    },
-    // 既存のスタイルを維持（プレミアムユーザー向け）
     centerContent: {
       justifyContent: 'center',
       alignItems: 'center',
@@ -296,81 +207,62 @@ export default function RankingScreen() {
       color: "white",
       fontWeight: 'bold',
     },
-    sortContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      backgroundColor: theme.card,
-      borderRadius: 8,
-      marginBottom: 16,
-    },
-    sortLabel: {
-      fontSize: 16,
-      fontWeight: 'bold',
-      color: theme.text,
-    },
-    sortButton: {
+    sortToggle: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 12,
-      paddingVertical: 6,
-      backgroundColor: theme.primary,
+      paddingVertical: 8,
       borderRadius: 16,
     },
-    sortButtonText: {
-      color: 'white',
+    sortToggleText: {
       fontSize: 14,
-      fontWeight: 'bold',
-      marginRight: 4,
+      marginLeft: 8,
     },
     listContent: {
-      paddingBottom: 24,
+      paddingBottom: 16,
     },
     itemCard: {
       flexDirection: 'row',
       backgroundColor: theme.card,
       borderRadius: 8,
-      padding: 16,
-      marginBottom: 8,
-      alignItems: 'center',
-      shadowColor: theme.text,
+      marginBottom: 12,
+      overflow: 'hidden',
+      elevation: 2,
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
+      shadowOpacity: 0.1,
       shadowRadius: 2,
-      elevation: 1,
     },
     itemRank: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: theme.primary,
-      justifyContent: 'center',
+      width: 30,
       alignItems: 'center',
-      marginRight: 12,
+      justifyContent: 'center',
+      backgroundColor: theme.primary,
     },
     rankText: {
       color: 'white',
-      fontSize: 14,
       fontWeight: 'bold',
+      fontSize: 16,
     },
     itemImage: {
-      width: 80,
-      height: 80,
+      width: 60,
+      height: 60,
       borderRadius: 8,
-      marginRight: 12,
+      marginLeft: 8,
+      alignSelf: 'center',
+      backgroundColor: theme.border,
     },
     itemInfo: {
       flex: 1,
+      padding: 12,
     },
     itemName: {
-      fontSize: 16,
       fontWeight: 'bold',
-      marginBottom: 4,
+      fontSize: 16,
+      marginBottom: 2,
     },
     itemCategory: {
-      fontSize: 14,
+      fontSize: 12,
       marginBottom: 4,
     },
     itemWears: {
@@ -382,16 +274,16 @@ export default function RankingScreen() {
       height: 4,
       backgroundColor: theme.border,
       borderRadius: 2,
+      overflow: 'hidden',
     },
     bar: {
       height: '100%',
-      borderRadius: 2,
     },
     emptyContainer: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: 48,
+      padding: 24,
     },
     emptyText: {
       fontSize: 18,
@@ -417,92 +309,240 @@ export default function RankingScreen() {
       color: 'white',
       fontWeight: 'bold',
     },
+    // プレミアム制限のスタイル
+    restrictedOverlay: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.background,
+      padding: 20,
+    },
+    restrictedContent: {
+      alignItems: 'center',
+      backgroundColor: theme.card,
+      borderRadius: 16,
+      padding: 32,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+      width: '100%',
+      maxWidth: 400,
+    },
+    restrictedIcon: {
+      marginBottom: 24,
+    },
+    restrictedTitle: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      color: theme.text,
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+    restrictedDescription: {
+      fontSize: 16,
+      color: theme.text + "CC",
+      marginBottom: 32,
+      textAlign: 'center',
+      lineHeight: 24,
+    },
+    upgradeButton: {
+      backgroundColor: '#FFD700',
+      paddingVertical: 16,
+      paddingHorizontal: 32,
+      borderRadius: 12,
+      marginBottom: 16,
+      width: '100%',
+    },
+    upgradeButtonText: {
+      color: '#000',
+      fontSize: 16,
+      fontWeight: 'bold',
+      textAlign: 'center',
+    },
+    backButton: {
+      backgroundColor: 'transparent',
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.border,
+      width: '100%',
+    },
+    backButtonText: {
+      color: theme.text,
+      fontSize: 14,
+      textAlign: 'center',
+    },
   });
+
+  // Render loading state
+  if (loading && items.length === 0) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={{ marginTop: 16, color: theme.text }}>ランキングデータを読み込み中...</Text>
+      </View>
+    );
+  }
+
+  // Render error state
+  if (error && items.length === 0) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
+        <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={recalculateStatistics}>
+          <Text style={styles.retryButtonText}>再試行</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <>
-      <Stack.Screen
+      <Stack.Screen 
         options={{
           title: "着用回数ランキング",
-          headerTitleStyle: {
-            color: theme.text,
-          },
-          headerStyle: {
-            backgroundColor: theme.background,
-          },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color={theme.text} />
-            </TouchableOpacity>
-          ),
-        }}
+          headerBackTitle: "戻る",
+        }} 
       />
       
-      <View style={styles.container}>
-        {!isPremium ? (
-          <View style={styles.restrictedOverlay}>
-            <View style={styles.restrictedContent}>
-              <View style={styles.restrictedIcon}>
-                <Ionicons name="lock-closed" size={48} color="#FFD700" />
+      {!isPremium ? (
+        <View style={styles.restrictedOverlay}>
+          <View style={styles.restrictedContent}>
+            <View style={styles.restrictedIcon}>
+              <Ionicons name="lock-closed" size={48} color="#FFD700" />
+            </View>
+            
+            <Text style={styles.restrictedTitle}>プレミアム限定機能</Text>
+            <Text style={styles.restrictedDescription}>
+              着用回数ランキングはプレミアムプラン限定の機能です。{'\n'}
+              アップグレードして詳細な統計情報を確認しませんか？
+            </Text>
+            
+            <TouchableOpacity 
+              style={styles.upgradeButton} 
+              onPress={() => router.push('/subscription')}
+            >
+              <Text style={styles.upgradeButtonText}>プレミアムプランを見る</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => router.back()}
+            >
+              <Text style={styles.backButtonText}>戻る</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.container}>
+          {/* Filters */}
+          <View style={styles.filtersContainer}>
+            {/* Period selector */}
+            <View style={styles.filterSection}>
+              <Text style={[styles.filterLabel, { color: theme.text }]}>期間</Text>
+              <View style={styles.optionsRow}>
+                {periodOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.filterOption,
+                      period === option.value && styles.filterOptionSelected,
+                      { borderColor: theme.border }
+                    ]}
+                    onPress={() => handlePeriodChange(option.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterOptionText,
+                        { color: theme.text },
+                        period === option.value && styles.filterOptionTextSelected,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-              
-              <Text style={styles.restrictedTitle}>プレミアム限定機能</Text>
-              <Text style={styles.restrictedDescription}>
-                着用回数ランキングはプレミアムプラン限定の機能です。{'\n'}
-                アップグレードして詳細な統計情報を確認しませんか？
-              </Text>
-              
-              <TouchableOpacity 
-                style={styles.upgradeButton} 
-                onPress={() => router.push('/subscription')}
+            </View>
+
+            {/* Sort order toggle */}
+            <View style={styles.filterSection}>
+              <Text style={[styles.filterLabel, { color: theme.text }]}>並び順</Text>
+              <TouchableOpacity
+                style={[styles.sortToggle, { backgroundColor: theme.card }]}
+                onPress={handleSortOrderChange}
               >
-                <Text style={styles.upgradeButtonText}>プレミアムプランを見る</Text>
+                <Ionicons 
+                  name={sortOrder === 'most' ? "arrow-down" : "arrow-up"} 
+                  size={16} 
+                  color={theme.text} 
+                />
+                <Text style={[styles.sortToggleText, { color: theme.text }]}>
+                  {sortOrder === 'most' ? '着用回数 多い順' : '着用回数 少ない順'}
+                </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.backButton} 
-                onPress={() => router.back()}
-              >
-                <Text style={styles.backButtonText}>戻る</Text>
-              </TouchableOpacity>
+            </View>
+
+            {/* Category selector */}
+            <View style={styles.filterSection}>
+              <Text style={[styles.filterLabel, { color: theme.text }]}>カテゴリ</Text>
+              <View style={styles.optionsRow}>
+                <FlatList
+                  data={categoryOptions}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.filterOption,
+                        selectedCategory === item.value && styles.filterOptionSelected,
+                        { borderColor: theme.border }
+                      ]}
+                      onPress={() => handleCategoryChange(item.value)}
+                    >
+                      <Text
+                        style={[
+                          styles.filterOptionText,
+                          { color: theme.text },
+                          selectedCategory === item.value && styles.filterOptionTextSelected,
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  keyExtractor={(item) => item.label}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                />
+              </View>
             </View>
           </View>
-        ) : (
-          <ScrollView style={styles.content}>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>着用回数ランキング</Text>
-              <Text style={styles.sectionText}>
-                登録したアイテムの着用回数をランキング形式で表示します。
+
+          {/* Results */}
+          {items.length > 0 ? (
+            <FlatList
+              data={items}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="shirt-outline" size={64} color={theme.text + "66"} />
+              <Text style={[styles.emptyText, { color: theme.text }]}>
+                該当するアイテムがありません
+              </Text>
+              <Text style={[styles.emptySubtext, { color: theme.text + "99" }]}>
+                フィルター条件を変更してお試しください
               </Text>
             </View>
-            
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>📊 ランキング統計</Text>
-              <Text style={styles.sectionText}>
-                総アイテム数: {items?.length || 0}件{'\n'}
-                最多着用アイテム: {items?.[0]?.wearCount || 0}回{'\n'}
-                平均着用回数: {items?.length ? Math.round(items.reduce((sum, item) => sum + item.wearCount, 0) / items.length) : 0}回
-              </Text>
-            </View>
-            
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🏆 トップ3アイテム</Text>
-              <Text style={styles.sectionText}>
-                {items?.slice(0, 3).map((item, index) => 
-                  `${index + 1}位: ${item.name} (${item.wearCount}回)`
-                ).join('\n') || '登録されたアイテムがありません'}
-              </Text>
-            </View>
-          </ScrollView>
-        )}
-        
-        <PremiumUpgradeModal
-          visible={showUpgradeModal}
-          onClose={() => setShowUpgradeModal(false)}
-          feature="着用回数ランキング"
-          description="アイテムの着用回数ランキングや詳細な統計情報はプレミアムプラン限定の機能です。"
-        />
-      </View>
+          )}
+        </View>
+      )}
     </>
   );
 }

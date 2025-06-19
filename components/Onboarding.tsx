@@ -1,18 +1,17 @@
-import React, { useState, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   Dimensions,
   FlatList,
-  SafeAreaView,
   Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { useOnboarding } from '../contexts/OnboardingContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -39,63 +38,71 @@ const PlaceholderImage = ({ iconName, color }: { iconName: keyof typeof Ionicons
 const onboardingSteps = [
   {
     id: '1',
-    title: '大切な洋服を、もっと長持ち。',
+    title: 'お気に入りを、一生ものに',
     description: [
-      '洗いすぎを防ぎ、生地の傷み・電気代・水のムダを減らしましょう。',
-      '服にもお財布にも、そして環境にもやさしい管理をサポートします。'
+      '適切な洗濯頻度で衣類のの寿命を延ばす',
+      'お財布にも環境にもやさしい衣類管理',
+      'データで効果を実感できる'
     ],
     iconName: 'shirt' as keyof typeof Ionicons.glyphMap,
     iconColor: '#3498db',
-    buttonText: 'さっそく始める',
+    buttonText: '次へ',
     footer: 'データは安全に管理されます',
+    isBulletPoints: true,
   },
   {
     id: '2',
-    title: '登録は、写真を撮るだけ。',
+    title: '写真を撮って、簡単登録',
     description: [
-      '大切な洋服をスマホでパシャっと撮影。',
-      '「○回着たら1回洗う」という洗濯ルールを簡単に設定。',
-      '一覧でいつでも着用回数をチェックできます。'
+      'お気に入りのアイテムをスマホで撮影',
+      '「何回着たら洗濯するか」を設定',
+      'ブランドや購入価格、メモも残せる'
     ],
     iconName: 'camera' as keyof typeof Ionicons.glyphMap,
     iconColor: '#e74c3c',
-    buttonText: 'アイテムを登録する',
+    buttonText: '次へ',
+    isBulletPoints: true,
   },
   {
     id: '3',
-    title: '着用したら、タップするだけ。',
+    title: '着用・洗濯をタップで記録',
     description: [
-      '着るたびに1タップで記録完了。',
-      '「あと何回着られるか」が一目でわかります。',
-      '誤タップした場合も、あとから簡単に修正できます。'
+      '着るたびに1タップで記録完了',
+      '洗濯するときも1タップ',
+      '適切な洗濯タイミングがひと目でわかる'
     ],
-    iconName: 'finger-print' as keyof typeof Ionicons.glyphMap,
+    iconName: 'checkmark-circle' as keyof typeof Ionicons.glyphMap,
     iconColor: '#2ecc71',
-    buttonText: 'なるほど！',
+    buttonText: '次へ',
+    isBulletPoints: true,
   },
   {
     id: '4',
-    title: '洗濯のタイミング、もう迷わない。',
+    title: '履歴でコーディネートを振り返り',
     description: [
-      '着用回数が設定した回数に達したら、自動で通知。',
-      '忘れてしまっても、入力リマインダーが優しくお知らせします。',
-      '通知はいつでもオン・オフできます。'
+      'カレンダー表示で過去の着用履歴を確認',
+      'アイテムごとの使用状況もひと目でわかる',
+      'コーディネートの振り返りに活用'
     ],
-    iconName: 'notifications' as keyof typeof Ionicons.glyphMap,
+    iconName: 'calendar' as keyof typeof Ionicons.glyphMap,
     iconColor: '#f39c12',
-    buttonText: '通知をオンにする',
+    buttonText: '次へ',
+    isBulletPoints: true,
   },
   {
     id: '5',
-    title: 'アプリを開かず、すぐ記録。',
+    title: 'データで可視化、効果を実感',
     description: [
-      'ホーム画面やロック画面のウィジェットから、いつでも着用・洗濯の記録が可能。',
-      'iPhone、Android両方に対応しています。'
+      '洗濯効率や環境への影響、節約効果を可視化',
+      'あなたのファッション傾向も分析',
+      '衣類の寿命を延ばせるようにサポート'
     ],
-    iconName: 'apps' as keyof typeof Ionicons.glyphMap,
+    iconName: 'stats-chart' as keyof typeof Ionicons.glyphMap,
     iconColor: '#9b59b6',
-    buttonText: 'ウィジェットの設定方法を見る',
+    buttonText: '始める',
+    footer: '衣類にも地球にも、お財布にもやさしいファッションライフを実現しましょう！',
     finalStep: true,
+    isBulletPoints: true,
   },
 ];
 
@@ -160,6 +167,13 @@ export default function Onboarding() {
     },
     description: {
       fontSize: 16,
+      textAlign: 'center',
+      color: theme.text + "99", // with transparency
+      marginBottom: 8,
+      lineHeight: 24,
+    },
+    descriptionBullet: {
+      fontSize: 16,
       textAlign: 'left',
       color: theme.text + "99", // with transparency
       marginBottom: 8,
@@ -167,9 +181,11 @@ export default function Onboarding() {
     },
     footer: {
       fontSize: 14,
-      color: theme.text + "77", // with more transparency
+      color: theme.text + "99", // less transparency for better readability
       marginTop: 20,
       textAlign: 'center',
+      fontWeight: '500', // slightly bolder for emphasis
+      lineHeight: 20, // better line spacing for readability
     },
     button: {
       backgroundColor: '#3498db', // Keep blue for brand consistency
@@ -197,7 +213,17 @@ export default function Onboarding() {
     },
   });
 
-  const renderItem = ({ item, index }: { item: typeof onboardingSteps[0], index: number }) => {
+  const renderItem = ({ item, index }: { item: {
+    id: string;
+    title: string;
+    description: string | string[];
+    iconName: keyof typeof Ionicons.glyphMap;
+    iconColor: string;
+    buttonText: string;
+    footer?: string;
+    finalStep?: boolean;
+    isBulletPoints?: boolean;
+  }, index: number }) => {
     return (
       <View style={styles.slide}>
         <View style={styles.imageContainer}>
@@ -210,11 +236,15 @@ export default function Onboarding() {
         <View style={styles.textContainer}>
           <Text style={styles.title}>{item.title}</Text>
 
-          {item.description.map((desc, i) => (
-            <Text key={i} style={styles.description}>
-              • {desc}
-            </Text>
-          ))}
+          {Array.isArray(item.description) ? (
+            item.description.map((desc, i) => (
+              <Text key={i} style={item.isBulletPoints ? styles.descriptionBullet : styles.description}>
+                {item.isBulletPoints ? '• ' : ''}{desc}
+              </Text>
+            ))
+          ) : (
+            <Text style={styles.description}>{item.description}</Text>
+          )}
 
           {item.footer && (
             <Text style={styles.footer}>{item.footer}</Text>

@@ -37,6 +37,7 @@ export const addClothingItem = async (item: Omit<AppClothingItem, 'id'>): Promis
     id: Date.now().toString(), // Simple ID generation
     wearHistory: item.wearHistory || [],
     washHistory: item.washHistory || [],
+    createdAt: new Date().toISOString(), // 現在時刻をcreatedAtとして設定
   };
 
   clothingItems.push(newItem);
@@ -53,26 +54,19 @@ export const addClothingItem = async (item: Omit<AppClothingItem, 'id'>): Promis
 export const updateClothingItem = async (id: string, updates: Partial<AppClothingItem>): Promise<AppClothingItem> => {
   await simulateNetworkDelay();
 
-  const index = clothingItems.findIndex(i => i.id === id);
+  const index = clothingItems.findIndex(item => item.id === id);
   if (index === -1) {
     throw new Error(`Clothing item with ID ${id} not found`);
   }
 
-  // Get the current item to merge with updates
-  const currentItem = clothingItems[index];
+  // Merge updates while preserving createdAt
+  clothingItems[index] = { 
+    ...clothingItems[index], 
+    ...updates,
+    createdAt: clothingItems[index].createdAt // 既存のcreatedAtを保持
+  };
 
-  // Merge updates with current item
-  const updatedItem = { ...currentItem, ...updates };
-
-  // Update the item in the array
-  clothingItems[index] = updatedItem;
-
-  // No longer adding brands to the list as they should be selected from master list
-  // if (updatedItem.brand && !brands.includes(updatedItem.brand)) {
-  //   brands.push(updatedItem.brand);
-  // }
-
-  return { ...updatedItem };
+  return { ...clothingItems[index] };
 };
 
 // Delete a clothing item
@@ -87,42 +81,6 @@ export const deleteClothingItem = async (id: string): Promise<void> => {
   clothingItems.splice(index, 1);
 };
 
-// Add a wear record
-export const addWearRecord = async (clothingItemId: string, wearDate: string): Promise<boolean> => {
-  await simulateNetworkDelay();
-
-  const index = clothingItems.findIndex(item => item.id === clothingItemId);
-  if (index === -1) {
-    throw new Error(`Clothing item with ID ${clothingItemId} not found`);
-  }
-
-  // Check if the wear date already exists
-  if (clothingItems[index].wearHistory.includes(wearDate)) {
-    return false; // Date already exists
-  }
-
-  // Add wear record
-  const updatedWearHistory = [...clothingItems[index].wearHistory, wearDate].sort();
-
-  // 最新の洗濯日を取得
-  const latestWashDate = clothingItems[index].washHistory.length > 0 
-    ? clothingItems[index].washHistory.sort().slice(-1)[0] 
-    : '';
-
-  // 最新の洗濯日以降の着用回数を計算
-  const updatedWearCount = latestWashDate 
-    ? updatedWearHistory.filter(date => date > latestWashDate).length 
-    : updatedWearHistory.length;
-
-  clothingItems[index] = {
-    ...clothingItems[index],
-    wearCount: updatedWearCount,
-    lastWorn: wearDate,
-    wearHistory: updatedWearHistory,
-  };
-
-  return true;
-};
 
 // Delete a wear record
 export const deleteWearRecord = async (clothingItemId: string, wearDate: string): Promise<boolean> => {

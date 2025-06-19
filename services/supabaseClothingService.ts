@@ -19,7 +19,8 @@ const convertRpcResponseToAppItem = (rpcResponse: any): AppClothingItem => {
     condition: rpcResponse.condition || '',
     purchasePrice: rpcResponse.purchase_price,
     wearHistory: Array.isArray(rpcResponse.wear_history) ? rpcResponse.wear_history : [],
-    washHistory: Array.isArray(rpcResponse.wash_history) ? rpcResponse.wash_history : []
+    washHistory: Array.isArray(rpcResponse.wash_history) ? rpcResponse.wash_history : [],
+    createdAt: rpcResponse.created_at || ''
   };
 };
 
@@ -210,7 +211,12 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
 
   try {
     // Merge updates with current item and new image URL
-    const updatedItem = { ...currentItem, ...updates, image: imageUrl };
+    const updatedItem = { 
+      ...currentItem, 
+      ...updates, 
+      image: imageUrl,
+      createdAt: currentItem.createdAt // 既存のcreatedAtを保持
+    };
 
     // Find brand ID if brand is being updated
     let brandId = null;

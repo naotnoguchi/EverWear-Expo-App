@@ -66,9 +66,8 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     
     // 無課金ユーザーは15件まで表示（登録が古い順）
     const sortedItems = [...allClothingItems].sort((a, b) => {
-      // IDを数値として比較（UUIDの場合は辞書順）
-      // 通常、データベースのIDは作成順で割り当てられるため、これで十分
-      return a.id.localeCompare(b.id);
+      // created_atで登録が古い順にソート
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
     
     return sortedItems.slice(0, 15);

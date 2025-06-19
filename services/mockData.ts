@@ -1,5 +1,5 @@
 // Mock data for development
-import { AppClothingItem, Brand } from '../types/database';
+import { AppClothingItem } from '../types/database';
 
 // Mock user ID
 export const MOCK_USER_ID = 'mock-user-id';
@@ -30,6 +30,7 @@ export const mockClothingItems: AppClothingItem[] = [
     memo: "フォーマルな場面で着用。シルク混紡で肌触りが良い。",
     condition: "新品",
     purchasePrice: 35000,
+    createdAt: "2025-01-01T00:00:00Z",
     wearHistory: [
       "2025-01-05", "2025-01-15", "2025-01-25",
       "2025-02-10", "2025-02-20",
@@ -58,6 +59,7 @@ export const mockClothingItems: AppClothingItem[] = [
     memo: "ビジネスカジュアルに最適。シワになりにくい素材。",
     condition: "新品",
     purchasePrice: 42000,
+    createdAt: "2025-01-02T00:00:00Z",
     wearHistory: [
       "2025-01-08", "2025-01-18", "2025-01-28",
       "2025-02-08", "2025-02-18", "2025-02-28",
@@ -86,6 +88,7 @@ export const mockClothingItems: AppClothingItem[] = [
     memo: "カジュアルな場面に。経年変化を楽しむ。",
     condition: "中古",
     purchasePrice: 28000,
+    createdAt: "2025-01-03T00:00:00Z",
     wearHistory: [
       "2025-01-12", "2025-01-22",
       "2025-02-05", "2025-02-15", "2025-02-25",
@@ -112,6 +115,7 @@ export const mockClothingItems: AppClothingItem[] = [
     memo: "カシミヤ混。ドライクリーニング推奨。",
     condition: "新品",
     purchasePrice: 65000,
+    createdAt: "2025-01-04T00:00:00Z",
     wearHistory: [
       "2025-01-03", "2025-01-13", "2025-01-23",
       "2025-02-03", "2025-02-13", "2025-02-23",
@@ -137,9 +141,10 @@ export const mockClothingItems: AppClothingItem[] = [
     image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=397&q=80",
     washThreshold: 4,
     lastWorn: "2025-05-22",
-    memo: null,
-    condition: null,
+    memo: "",
+    condition: "",
     purchasePrice: null,
+    createdAt: "2025-01-05T00:00:00Z",
     wearHistory: [
       "2025-01-07", "2025-01-17", "2025-01-27",
       "2025-02-07", "2025-02-17", "2025-02-27",
@@ -168,6 +173,7 @@ export const mockClothingItems: AppClothingItem[] = [
     memo: "限定モデル。レザーケア製品で定期的にメンテナンス。",
     condition: "新品",
     purchasePrice: 89000,
+    createdAt: "2025-01-06T00:00:00Z",
     wearHistory: [
       "2025-01-10", "2025-01-20", "2025-01-30",
       "2025-02-09", "2025-02-19",
@@ -194,6 +200,7 @@ export const mockClothingItems: AppClothingItem[] = [
     memo: "誕生日プレゼントで頂いたもの。大切に使用。",
     condition: "新品",
     purchasePrice: null,
+    createdAt: "2025-01-07T00:00:00Z",
     wearHistory: [
       "2025-01-02", "2025-01-12", "2025-01-22",
       "2025-02-01", "2025-02-11", "2025-02-21",
@@ -218,9 +225,10 @@ export const mockClothingItems: AppClothingItem[] = [
     image: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
     washThreshold: 6,
     lastWorn: "2025-05-21",
-    memo: null,
+    memo: "",
     condition: "中古",
     purchasePrice: 120000,
+    createdAt: "2025-01-08T00:00:00Z",
     wearHistory: [
       "2025-01-05", "2025-01-15", "2025-01-25",
       "2025-02-04", "2025-02-14", "2025-02-24",
@@ -247,6 +255,7 @@ export const mockClothingItems: AppClothingItem[] = [
     memo: "結婚式やフォーマルな場で使用。",
     condition: "新品",
     purchasePrice: 25000,
+    createdAt: "2025-01-09T00:00:00Z",
     wearHistory: [
       "2025-01-08", "2025-01-18", "2025-01-28",
       "2025-02-07", "2025-02-17", "2025-02-27",
@@ -271,9 +280,10 @@ export const mockClothingItems: AppClothingItem[] = [
     image: "https://images.unsplash.com/photo-1605812860427-4024433a70fd?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=735&q=80",
     washThreshold: 8,
     lastWorn: "2025-05-25",
-    memo: null,
+    memo: "",
     condition: "中古",
     purchasePrice: 45000,
+    createdAt: "2025-01-10T00:00:00Z",
     wearHistory: [
       "2025-01-03", "2025-01-13", "2025-01-23",
       "2025-02-02", "2025-02-12", "2025-02-22",
@@ -285,6 +295,182 @@ export const mockClothingItems: AppClothingItem[] = [
       "2025-02-05",
       "2025-04-05"
     ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
+  },
+  {
+    id: "11",
+    name: "スポーツジャケット",
+    category: "アウター",
+    brand: "Nike",
+    image: "https://images.unsplash.com/photo-1544966503-7cc5ac882d5c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=776&q=80",
+    washThreshold: 4,
+    lastWorn: "2025-05-26",
+    memo: "ジム用に購入",
+    condition: "新品",
+    purchasePrice: 12000,
+    createdAt: "2025-01-11T00:00:00Z",
+    wearHistory: [
+      "2025-01-11", "2025-01-21", "2025-01-31",
+      "2025-02-10", "2025-02-20",
+      "2025-03-02", "2025-03-12", "2025-03-22",
+      "2025-04-01", "2025-04-11", "2025-04-21",
+      "2025-05-01", "2025-05-11", "2025-05-26"
+    ],
+    washHistory: [
+      "2025-02-01",
+      "2025-03-15",
+      "2025-05-01"
+    ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
+  },
+  {
+    id: "12",
+    name: "カーディガン",
+    category: "トップス",
+    brand: "Uniqlo",
+    image: "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=870&q=80",
+    washThreshold: 3,
+    lastWorn: "2025-05-27",
+    memo: "軽くて着心地が良い",
+    condition: "新品",
+    purchasePrice: 3990,
+    createdAt: "2025-01-12T00:00:00Z",
+    wearHistory: [
+      "2025-01-12", "2025-01-22",
+      "2025-02-01", "2025-02-11", "2025-02-21",
+      "2025-03-03", "2025-03-13", "2025-03-23",
+      "2025-04-02", "2025-04-12", "2025-04-22",
+      "2025-05-02", "2025-05-12", "2025-05-27"
+    ],
+    washHistory: [
+      "2025-01-25",
+      "2025-02-25",
+      "2025-03-25",
+      "2025-04-25"
+    ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
+  },
+  {
+    id: "13",
+    name: "デニムパンツ",
+    category: "ボトムス",
+    brand: "Lee",
+    image: "https://images.unsplash.com/photo-1542272604-787c3835535d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=726&q=80",
+    washThreshold: 5,
+    lastWorn: "2025-05-28",
+    memo: "定番デニム",
+    condition: "中古",
+    purchasePrice: 8000,
+    createdAt: "2025-01-13T00:00:00Z",
+    wearHistory: [
+      "2025-01-13", "2025-01-23",
+      "2025-02-02", "2025-02-12", "2025-02-22",
+      "2025-03-04", "2025-03-14", "2025-03-24",
+      "2025-04-03", "2025-04-13", "2025-04-23",
+      "2025-05-03", "2025-05-13", "2025-05-28"
+    ],
+    washHistory: [
+      "2025-02-05",
+      "2025-03-20",
+      "2025-05-05"
+    ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
+  },
+  {
+    id: "14",
+    name: "ランニングシューズ",
+    category: "シューズ",
+    brand: "Adidas",
+    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=870&q=80",
+    washThreshold: 15,
+    lastWorn: "2025-05-29",
+    memo: "ランニング専用",
+    condition: "新品",
+    purchasePrice: 15000,
+    createdAt: "2025-01-14T00:00:00Z",
+    wearHistory: [
+      "2025-01-14", "2025-01-24",
+      "2025-02-03", "2025-02-13", "2025-02-23",
+      "2025-03-05", "2025-03-15", "2025-03-25",
+      "2025-04-04", "2025-04-14", "2025-04-24",
+      "2025-05-04", "2025-05-14", "2025-05-29"
+    ],
+    washHistory: [
+      "2025-03-01",
+      "2025-05-15"
+    ],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
+  },
+  {
+    id: "15",
+    name: "時計",
+    category: "小物",
+    brand: "Casio",
+    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1199&q=80",
+    washThreshold: 100,
+    lastWorn: "2025-05-30",
+    memo: "日常使い",
+    condition: "新品",
+    purchasePrice: 5000,
+    createdAt: "2025-01-15T00:00:00Z",
+    wearHistory: [
+      "2025-01-15", "2025-01-25",
+      "2025-02-04", "2025-02-14", "2025-02-24",
+      "2025-03-06", "2025-03-16", "2025-03-26",
+      "2025-04-05", "2025-04-15", "2025-04-25",
+      "2025-05-05", "2025-05-15", "2025-05-30"
+    ],
+    washHistory: [],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
+  },
+  {
+    id: "16",
+    name: "新しいTシャツ",
+    category: "トップス",
+    brand: "H&M",
+    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=880&q=80",
+    washThreshold: 2,
+    lastWorn: "2025-05-31",
+    memo: "最近購入したアイテム（16件目）",
+    condition: "新品",
+    purchasePrice: 1500,
+    createdAt: "2025-01-16T00:00:00Z",
+    wearHistory: [
+      "2025-05-30", "2025-05-31"
+    ],
+    washHistory: [],
+    get wearCount() {
+      return calculateWearCount(this.wearHistory, this.washHistory);
+    },
+  },
+  {
+    id: "17",
+    name: "新しいパンツ",
+    category: "ボトムス",
+    brand: "ZARA",
+    image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
+    washThreshold: 3,
+    lastWorn: "2025-06-01",
+    memo: "最近購入したアイテム（17件目）",
+    condition: "新品",
+    purchasePrice: 4500,
+    createdAt: "2025-01-17T00:00:00Z",
+    wearHistory: [
+      "2025-06-01"
+    ],
+    washHistory: [],
     get wearCount() {
       return calculateWearCount(this.wearHistory, this.washHistory);
     },

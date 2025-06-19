@@ -38,7 +38,8 @@ export async function getClothingItemsWithHistory(): Promise<AppClothingItem[]> 
       condition: item.condition || '',
       purchasePrice: item.purchase_price,
       wearHistory: Array.isArray(item.wear_dates) ? item.wear_dates : [],
-      washHistory: Array.isArray(item.wash_dates) ? item.wash_dates : []
+      washHistory: Array.isArray(item.wash_dates) ? item.wash_dates : [],
+      createdAt: item.created_at
     };
   });
 
@@ -89,7 +90,8 @@ export async function getSingleItemWithHistory(itemId: string): Promise<AppCloth
     condition: item.condition || '',
     purchasePrice: item.purchase_price,
     wearHistory: Array.isArray(item.wear_dates) ? item.wear_dates : [],
-    washHistory: Array.isArray(item.wash_dates) ? item.wash_dates : []
+    washHistory: Array.isArray(item.wash_dates) ? item.wash_dates : [],
+    createdAt: item.created_at
   };
 
   return result;

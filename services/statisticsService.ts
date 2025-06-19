@@ -272,7 +272,12 @@ export async function getBadges(items: AppClothingItem[]): Promise<Badge[]> {
 
     // Save newly earned badges to database
     if (userId) {
-      await saveNewlyEarnedBadges(userId, badges);
+      try {
+        await saveNewlyEarnedBadges(userId, badges);
+      } catch (error) {
+        console.error('Failed to save badges, but continuing with badge data:', error);
+        // バッジ保存に失敗してもバッジデータは返す
+      }
     }
 
     return badges;

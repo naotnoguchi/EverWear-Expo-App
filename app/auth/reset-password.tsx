@@ -1,14 +1,14 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { router, useLocalSearchParams } from 'expo-router';
 
 export default function ResetPasswordScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { updatePassword } = useAuth();
+  const { updatePassword, recoveryToken, clearRecoveryToken, signOut } = useAuth();
   const theme = useTheme();
   const params = useLocalSearchParams();
 
@@ -25,17 +25,39 @@ export default function ResetPasswordScreen() {
 
     try {
       setIsLoading(true);
-      // トークンはURLパラメータから取得
-      const token = params.token as string;
+      
+      // コンテキストのrecoveryTokenまたはパラメータのtokenを使用
+      const token = (params.token as string) || recoveryToken;
+      
+      if (!token) {
+        Alert.alert('エラー', '認証トークンが見つかりません。パスワードリセットリンクを再度クリックしてください。');
+        return;
+      }
       
       await updatePassword(password, token);
 
-      Alert.alert(
-        'パスワード変更完了',
-        'パスワードが正常に変更されました。',
-        [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
-      );
-    } catch (error) {
+      // セキュリティのため、パスワード変更後は一度ログアウト
+      console.log('Password reset successful, signing out for security');
+      
+      // リカバリートークンをクリア
+      clearRecoveryToken();
+      
+      // ログアウト処理を先に実行
+      await signOut();
+
+      // ログアウト完了後にアラート表示
+      setTimeout(() => {
+        Alert.alert(
+          'パスワード変更完了',
+          'セキュリティのため、新しいパスワードで再度ログインしてください。',
+          [{ 
+            text: 'OK', 
+            onPress: () => router.replace('/auth/login')
+          }]
+        );
+      }, 100); // 100ms待機してからアラート表示
+    } catch (error: any) {
+      console.error('Password reset error:', error);
       Alert.alert('エラー', error.message || 'パスワードの変更に失敗しました');
     } finally {
       setIsLoading(false);

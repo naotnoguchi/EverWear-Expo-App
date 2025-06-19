@@ -81,11 +81,10 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
 
       // サンドボックス環境では自動的に購入履歴を復元（他の処理より先に実行）
       if (__DEV__) {
-        console.log('Development mode: attempting to restore purchases');
         try {
           await purchaseService.restorePurchases();
         } catch (restoreError) {
-          console.log('Restore failed (this is normal if no previous purchases):', restoreError);
+          // 購入履歴がない場合は正常
         }
       }
 
@@ -105,17 +104,6 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
   const refreshSubscription = async () => {
     try {
       const subscriptionInfo = await purchaseService.getCurrentSubscription();
-      console.log('Subscription info refreshed:', {
-        isActive: subscriptionInfo.isActive,
-        productId: subscriptionInfo.productId,
-        expirationDate: subscriptionInfo.expirationDate,
-        purchaseDate: subscriptionInfo.purchaseDate,
-        // 開発環境では期限までの残り時間も表示
-        ...__DEV__ && subscriptionInfo.expirationDate && {
-          timeUntilExpiration: subscriptionInfo.expirationDate.getTime() - Date.now(),
-          timeUntilExpirationMinutes: Math.round((subscriptionInfo.expirationDate.getTime() - Date.now()) / 60000)
-        }
-      });
       setSubscription(subscriptionInfo);
     } catch (err) {
       console.error('Error refreshing subscription:', err);

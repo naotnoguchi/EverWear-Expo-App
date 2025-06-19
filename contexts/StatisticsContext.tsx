@@ -1,14 +1,15 @@
 // contexts/StatisticsContext.tsx
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { auth } from '../lib/authClient';
 import {
-    Badge,
-    BasicStats,
-    EfficiencyItem,
-    ImpactData,
-    ItemDetailStats,
-    Period,
-    RankingItem,
-    statisticsService
+  Badge,
+  BasicStats,
+  EfficiencyItem,
+  ImpactData,
+  ItemDetailStats,
+  Period,
+  RankingItem,
+  statisticsService
 } from '../services/statisticsServiceFactory';
 import { CategoryValue } from '../types/categories';
 import { useClothing } from './ClothingContext';
@@ -88,6 +89,19 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
   // バックグラウンドで統計を計算する関数
   const calculateStatisticsInBackground = useCallback(async () => {
     if (clothingLoading || clothingItems.length === 0) {
+      return;
+    }
+
+    // 認証状態を確認してから統計計算を実行
+    const { data: { user } } = await auth.getUser();
+    if (!user) {
+      // 認証されていない場合は空の状態を設定
+      setBasicStats(null);
+      setRankingData([]);
+      setEfficiencyData([]);
+      setImpactData(null);
+      setBadges([]);
+      previousBadgesRef.current = [];
       return;
     }
 
@@ -195,30 +209,33 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const initializeBadges = async () => {
       try {
-        console.log('StatisticsContext: Initializing badges on app startup');
+        // 認証状態を確認してからバッジを初期化
+        const { data: { user } } = await auth.getUser();
+        if (!user) {
+          setBadges([]);
+          previousBadgesRef.current = [];
+          return;
+        }
+        
         const initialBadges = await statisticsService.getBadges(clothingItems);
-        console.log('StatisticsContext: Initial badges loaded', `count: ${initialBadges.length}`);
         setBadges(initialBadges);
         previousBadgesRef.current = initialBadges;
-              } catch (error) {
-          console.error('StatisticsContext: バッジの初期化中にエラーが発生しました:', error);
-          
-          // 認証エラーの場合は空の配列を設定
-          if (error instanceof Error && (
-              error.message?.includes('Invalid Refresh Token') || 
-              error.message?.includes('Refresh Token Not Found') ||
-              error.message?.includes('AuthApiError'))) {
-            console.log('StatisticsContext: 認証エラーのため空のバッジ配列を設定');
-            setBadges([]);
-            previousBadgesRef.current = [];
-            return;
-          }
+      } catch (error) {
+        console.error('StatisticsContext: バッジの初期化中にエラーが発生しました:', error);
         
+        // 認証エラーの場合は空の配列を設定
+        if (error instanceof Error && (
+            error.message?.includes('Invalid Refresh Token') || 
+            error.message?.includes('Refresh Token Not Found') ||
+            error.message?.includes('AuthApiError'))) {
+          setBadges([]);
+          previousBadgesRef.current = [];
+          return;
+        }
+      
         // その他のエラーの場合はデフォルトバッジを試行
         try {
-          console.log('StatisticsContext: Evaluating badges (always fresh)');
           const defaultBadges = await statisticsService.getBadges(clothingItems).catch(() => []);
-          console.log('StatisticsContext: createDefaultBadges with default values, count:', defaultBadges.length);
           setBadges(defaultBadges);
           previousBadgesRef.current = defaultBadges;
         } catch (fallbackError) {

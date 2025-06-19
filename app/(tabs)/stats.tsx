@@ -97,10 +97,8 @@ export default function Stats() {
   // ランキングデータとバッジデータが更新されたときにトップ5と最新バッジを更新
   useEffect(() => {
     if (rankingData && Array.isArray(rankingData) && rankingData.length > 0) {
-      console.log('Stats: Setting topItems from rankingData:', rankingData.slice(0, 5).map(item => ({ id: item.id, name: item.name })));
       setTopItems(rankingData.slice(0, 5));
     } else {
-      console.log('Stats: No rankingData available, setting empty topItems');
       setTopItems([]);
     }
   }, [rankingData]);
@@ -717,18 +715,8 @@ export default function Stats() {
                   contentFit="cover"
                   transition={200}
                   cachePolicy="disk"
-                  onLoadStart={() => {
-                    console.log(`[Image Load Start] Item ID: ${item.id || 'undefined'}, Image: ${(item.imageUrl || '').slice(0, 50)}...`);
-                  }}
-                  onLoad={(event) => {
-                    console.log(`[Image Loaded] Item ID: ${item.id || 'undefined'}, Image: ${(item.imageUrl || '').slice(0, 50)}...`);
-                  }}
-                  onLoadEnd={() => {
-                    console.log(`[Image Load End] Item ID: ${item.id || 'undefined'}, Image: ${(item.imageUrl || '').slice(0, 50)}...`);
-                  }}
                   onError={(error) => {
-                    console.error(`[Image Load Error] Item ID: ${item.id || 'undefined'}, Image: ${(item.imageUrl || '').slice(0, 50)}...`);
-                    console.error('Error:', error);
+                    console.error(`[Image Load Error] Item ID: ${item.id || 'undefined'}`);
                   }}
                 />
                 <View style={styles.itemInfo}>

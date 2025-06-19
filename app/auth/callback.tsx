@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -16,74 +17,159 @@ export default function CallbackScreen() {
     const processCallback = async () => {
       try {
         console.log('Processing auth callback');
+        console.log('Raw params:', params);
 
-        // URLパラメータから基本情報を取得
-        const type = params.type as string | null;
+        // AuthContextでの処理を待つための遅延
+        // AuthContextのhandleDeepLinkが先に実行されるため、少し待つ
+        await new Promise(resolve => setTimeout(resolve, 200));
 
-        if (!type) {
-          console.error('No type parameter found');
-          setStatus('error');
-          setMessage('認証タイプが指定されていません');
+        // AuthContextで既に認証が成功している場合は、ホーム画面にリダイレクト
+        const { data: currentSession } = await auth.getSession();
+        if (currentSession.session) {
+          console.log('Already authenticated, redirecting to home');
+          setStatus('success');
+          setMessage('メールアドレスが確認されました。\n\nアプリにリダイレクトします...');
+          setTimeout(() => {
+            router.replace('/');
+          }, 2000);
           return;
         }
 
-        // トークンの種類に応じて処理
-        if (type === 'signup') {
-          // メールアドレス確認の処理（サインアップはrecoveryTokenを使用しない）
-          const token = params.token as string;
-          if (!token) {
-            setStatus('error');
-            setMessage('サインアップ確認用のトークンが見つかりません');
-            return;
-          }
+        // Linking APIを使用してURLを取得し、フラグメントパラメータを処理
+        const handleUrl = async (url: string) => {
+          console.log('Processing URL in callback:', url);
           
-          const { error } = await auth.verifyOtp({
-            token_hash: token,
-            type: 'email',
-          });
+          try {
+            const parsedUrl = new URL(url);
+            let type = null;
+            let access_token = null;
+            let token_hash = null;
+            let token = null;
+            let refresh_token = null;
+            let error = null;
+            let error_code = null;
+            let error_description = null;
 
-          if (error) throw error;
-          
-          setStatus('success');
-          setMessage('メールアドレスが確認されました。アプリにリダイレクトします...');
-          
-          // 成功したら3秒後にログイン画面に遷移
-          setTimeout(() => {
-            router.replace('/auth/login');
-          }, 3000);
-        } else if (type === 'recovery') {
-          // パスワードリセットの処理
-          if (!recoveryToken) {
-            console.error('No recovery token found');
+            // フラグメント（#）からパラメータを取得
+            if (parsedUrl.hash) {
+              const hashParams = new URLSearchParams(parsedUrl.hash.substring(1));
+              type = hashParams.get('type');
+              access_token = hashParams.get('access_token');
+              token_hash = hashParams.get('token_hash');
+              token = hashParams.get('token');
+              refresh_token = hashParams.get('refresh_token');
+              error = hashParams.get('error');
+              error_code = hashParams.get('error_code');
+              error_description = hashParams.get('error_description');
+            }
+
+            console.log('Parsed parameters from URL:', { type, error, error_code, has_access_token: !!access_token });
+
+            // エラーが存在する場合の処理
+            if (error) {
+              console.log('Authentication error detected:', { error, error_code, error_description });
+              
+              let errorMessage = '認証に失敗しました';
+              
+              if (error_code === 'otp_expired' || error_description?.includes('expired')) {
+                errorMessage = 'メール確認リンクの有効期限が切れています。\n\n新しい確認メールを再送信してください。';
+              } else if (error === 'access_denied') {
+                errorMessage = 'メール確認がキャンセルされたか、無効なリンクです。\n\n新しい確認メールを再送信してください。';
+              } else if (error_description) {
+                errorMessage = `認証エラー: ${decodeURIComponent(error_description.replace(/\+/g, ' '))}`;
+              }
+              
+              setStatus('error');
+              setMessage(errorMessage);
+              return;
+            }
+
+            if (!type) {
+              console.error('No type parameter found in URL');
+              setStatus('error');
+              setMessage('認証タイプが指定されていません\n\n有効な認証リンクを使用してください。');
+              return;
+            }
+
+            // AuthContextで処理されなかった場合のフォールバック処理
+            if (type === 'signup' && access_token) {
+              console.log('Fallback: Processing signup in callback');
+              const { error } = await auth.setSession({
+                access_token: access_token,
+                refresh_token: refresh_token || ''
+              });
+
+              if (error) throw error;
+              
+              setStatus('success');
+              setMessage('メールアドレスが確認されました。\n\nアプリにリダイレクトします...');
+              
+              setTimeout(() => {
+                router.replace('/');
+              }, 3000);
+            } else if (type === 'recovery') {
+              // パスワードリセットの処理
+              if (!recoveryToken) {
+                console.error('No recovery token found');
+                setStatus('error');
+                setMessage('認証トークンが見つかりません\n\nパスワードリセットリンクを再度クリックしてください。');
+                return;
+              }
+              
+              setStatus('success');
+              setMessage('パスワードリセットが確認されました。\n\nアプリにリダイレクトします...');
+              
+              setTimeout(() => {
+                router.replace({
+                  pathname: '/auth/reset-password',
+                  params: { token: recoveryToken }
+                });
+              }, 3000);
+            } else {
+              setStatus('error');
+              setMessage(`処理できない認証タイプです: ${type}\n\n新しい認証リンクを取得してください。`);
+            }
+          } catch (urlError) {
+            console.error('Error parsing URL:', urlError);
             setStatus('error');
-            setMessage('認証トークンが見つかりません');
-            return;
+            setMessage('認証URLの解析に失敗しました\n\n新しい認証リンクを取得してください。');
           }
-          
-          setStatus('success');
-          setMessage('パスワードリセットが確認されました。アプリにリダイレクトします...');
-          
-          // パスワードリセット画面に遷移
-          setTimeout(() => {
-            router.replace({
-              pathname: '/auth/reset-password',
-              params: { token: recoveryToken }
-            });
-            // トークンは後でパスワード更新完了時にクリア
-          }, 3000);
-        } else {
-          setStatus('error');
-          setMessage('不明な認証タイプです');
+        };
+
+        // 現在のURLを取得（アプリ起動時）
+        const initialUrl = await Linking.getInitialURL();
+        console.log('Initial URL:', initialUrl);
+        
+        if (initialUrl) {
+          await handleUrl(initialUrl);
+          return;
         }
+
+        // アプリが既に起動中の場合はURLイベントリスナーを設定
+        const subscription = Linking.addEventListener('url', async (event) => {
+          console.log('URL event received:', event.url);
+          await handleUrl(event.url);
+          subscription?.remove();
+        });
+
+        // 3秒後にURLが受信されなかった場合はエラー表示
+        setTimeout(() => {
+          subscription?.remove();
+          if (status === 'loading') {
+            setStatus('error');
+            setMessage('認証URLが見つかりませんでした\n\n新しい認証リンクを使用してください。');
+          }
+        }, 3000);
+
       } catch (error: any) {
         console.error('認証エラー:', error);
         setStatus('error');
-        setMessage(`認証に失敗しました: ${error.message || '不明なエラー'}`);
+        setMessage(`認証に失敗しました: ${error.message || '不明なエラー'}\n\n新しい認証リンクを取得してください。`);
       }
     };
 
     processCallback();
-  }, [params]);
+  }, [params, recoveryToken]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -113,6 +199,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
     marginBottom: 20,
+    lineHeight: 24,
   },
   link: {
     fontSize: 16,

@@ -1,31 +1,42 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
-import { auth } from '../../lib/authClient';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { auth } from '../../lib/authClient';
 
 export default function CallbackScreen() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('認証を処理中...');
   const params = useLocalSearchParams();
   const theme = useTheme();
+  const { recoveryToken, clearRecoveryToken } = useAuth();
 
   useEffect(() => {
     const processCallback = async () => {
       try {
-        // URLパラメータからトークンを取得
-        const token = params.token as string;
-        const type = params.type as string;
+        console.log('Processing auth callback');
 
-        if (!token) {
+        // URLパラメータから基本情報を取得
+        const type = params.type as string | null;
+
+        if (!type) {
+          console.error('No type parameter found');
           setStatus('error');
-          setMessage('認証トークンが見つかりません');
+          setMessage('認証タイプが指定されていません');
           return;
         }
 
         // トークンの種類に応じて処理
         if (type === 'signup') {
-          // メールアドレス確認の処理
+          // メールアドレス確認の処理（サインアップはrecoveryTokenを使用しない）
+          const token = params.token as string;
+          if (!token) {
+            setStatus('error');
+            setMessage('サインアップ確認用のトークンが見つかりません');
+            return;
+          }
+          
           const { error } = await auth.verifyOtp({
             token_hash: token,
             type: 'email',
@@ -42,6 +53,13 @@ export default function CallbackScreen() {
           }, 3000);
         } else if (type === 'recovery') {
           // パスワードリセットの処理
+          if (!recoveryToken) {
+            console.error('No recovery token found');
+            setStatus('error');
+            setMessage('認証トークンが見つかりません');
+            return;
+          }
+          
           setStatus('success');
           setMessage('パスワードリセットが確認されました。アプリにリダイレクトします...');
           
@@ -49,14 +67,15 @@ export default function CallbackScreen() {
           setTimeout(() => {
             router.replace({
               pathname: '/auth/reset-password',
-              params: { token }
+              params: { token: recoveryToken }
             });
+            // トークンは後でパスワード更新完了時にクリア
           }, 3000);
         } else {
           setStatus('error');
           setMessage('不明な認証タイプです');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('認証エラー:', error);
         setStatus('error');
         setMessage(`認証に失敗しました: ${error.message || '不明なエラー'}`);

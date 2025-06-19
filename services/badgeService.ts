@@ -98,6 +98,13 @@ export async function saveNewlyEarnedBadges(userId: string, earnedBadges: Badge[
       return;
     }
 
+    // 認証状態を確認してからバッジを保存
+    const { auth } = await import('../lib/authClient');
+    const { data: { user } } = await auth.getUser();
+    if (!user) {
+      return;
+    }
+
     // Get existing badges
     const existingBadges = await fetchUserBadges(userId);
 
@@ -129,7 +136,6 @@ export async function saveNewlyEarnedBadges(userId: string, earnedBadges: Badge[
       console.error('Error saving badges to database:', error);
       throw error;
     }
-
 
   } catch (e) {
     console.error('Exception in saveNewlyEarnedBadges:', e);
@@ -169,7 +175,7 @@ export function evaluateBadgeCondition(
       return stats.washesReduced >= value.min;
 
     case 'all_categories':
-      return value.categories.every(cat => stats.categories.has(cat));
+      return value.categories.every((cat: string) => stats.categories.has(cat as CategoryValue));
 
     case 'efficient_washer':
       // Complex condition for efficient washer badge

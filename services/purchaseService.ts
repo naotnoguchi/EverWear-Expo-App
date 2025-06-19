@@ -1,9 +1,9 @@
 import { Platform } from 'react-native';
 import Purchases, {
-  CustomerInfo,
-  LOG_LEVEL,
-  PurchasesOffering,
-  PurchasesPackage
+    CustomerInfo,
+    LOG_LEVEL,
+    PurchasesOffering,
+    PurchasesPackage
 } from 'react-native-purchases';
 import { auth } from '../lib/authClient';
 import { getAuthenticatedClient } from '../lib/dbClient';
@@ -45,8 +45,8 @@ export class PurchaseService {
         throw new Error('Revenue Cat API key not found');
       }
 
-      // Revenue Cat設定
-      await Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+      // Revenue Cat設定 - プロダクション環境では詳細ログを無効化
+      await Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.WARN : LOG_LEVEL.ERROR);
       await Purchases.configure({ apiKey });
       
       // ユーザーID設定
@@ -110,12 +110,14 @@ export class PurchaseService {
 
   async syncSubscriptionToSupabase(customerInfo: CustomerInfo): Promise<void> {
     try {
-      const subscriptionInfo = this.parseCustomerInfo(customerInfo);
+      // 認証状態を確認してから同期処理を実行
       const user = await auth.getUser();
       
       if (!user.data.user) {
-        throw new Error('User not authenticated');
+        return;
       }
+      
+      const subscriptionInfo = this.parseCustomerInfo(customerInfo);
 
       // エンタイトルメントから product_id を取得
       const entitlements = customerInfo.entitlements.all;
@@ -134,8 +136,6 @@ export class PurchaseService {
           productId = subscriptions[0].productIdentifier;
         }
       }
-      
-      console.log('Syncing subscription with product_id:', productId);
 
       const subscriptionData = {
         user_id: user.data.user.id,
@@ -160,7 +160,6 @@ export class PurchaseService {
         throw error;
       }
 
-      console.log('Subscription synced to Supabase successfully');
     } catch (error) {
       console.error('Error syncing subscription:', error);
       // エラーが発生してもユーザー体験を阻害しないようにログのみ出力
@@ -170,17 +169,12 @@ export class PurchaseService {
   private parseCustomerInfo(customerInfo: CustomerInfo): SubscriptionInfo {
     const entitlements = customerInfo.entitlements.all;
     
-    // デバッグ: 利用可能なエンタイトルメントをログ出力
-    console.log('Available entitlements:', Object.keys(entitlements));
-    console.log('Customer info:', JSON.stringify(customerInfo, null, 2));
-    
     // 複数のエンタイトルメント名を試す
     const possibleEntitlementNames = ['EverWear Subscription', 'premium', 'Premium', 'everwear_premium'];
     let premiumEntitlement = null;
     
     for (const name of possibleEntitlementNames) {
       if (entitlements[name]) {
-        console.log(`Found entitlement: ${name}`, entitlements[name]);
         premiumEntitlement = entitlements[name];
         break;
       }
@@ -190,38 +184,20 @@ export class PurchaseService {
     if (!premiumEntitlement) {
       const activeEntitlements = Object.values(entitlements).filter(e => e.isActive);
       if (activeEntitlements.length > 0) {
-        console.log('Using first active entitlement:', activeEntitlements[0]);
         premiumEntitlement = activeEntitlements[0];
       }
     }
 
-    if (premiumEntitlement) {
-      console.log('Premium entitlement found:', {
+    if (premiumEntitlement && premiumEntitlement.isActive) {
+      return {
+        isActive: true,
         productId: premiumEntitlement.productIdentifier,
-        expirationDate: premiumEntitlement.expirationDate,
-        isActive: premiumEntitlement.isActive,
-        isSandbox: premiumEntitlement.isSandbox
-      });
-      
-      // サブスクリプションの有効性をチェック（期限切れは期限切れとして扱う）
-      console.log('Subscription evaluation:', {
-        isActive: premiumEntitlement.isActive,
-        expirationDate: premiumEntitlement.expirationDate,
-        isSandbox: premiumEntitlement.isSandbox
-      });
-      
-      if (premiumEntitlement.isActive) {
-        return {
-          isActive: true,
-          productId: premiumEntitlement.productIdentifier,
-          expirationDate: premiumEntitlement.expirationDate ? new Date(premiumEntitlement.expirationDate) : null,
-          purchaseDate: premiumEntitlement.originalPurchaseDate ? new Date(premiumEntitlement.originalPurchaseDate) : null,
-          isTrialPeriod: false,
-        };
-      }
+        expirationDate: premiumEntitlement.expirationDate ? new Date(premiumEntitlement.expirationDate) : null,
+        purchaseDate: premiumEntitlement.originalPurchaseDate ? new Date(premiumEntitlement.originalPurchaseDate) : null,
+        isTrialPeriod: false,
+      };
     }
 
-    console.log('No active premium entitlement found');
     return this.getDefaultSubscriptionInfo();
   }
 

@@ -24,6 +24,9 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (password: string, token?: string) => Promise<void>;
   handleDeepLink: (url: string) => Promise<void>;
+  recoveryToken: string | null;
+  recoveryRefreshToken: string | null;
+  clearRecoveryToken: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,10 +36,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean>(true);
+  const [recoveryToken, setRecoveryToken] = useState<string | null>(null);
+  const [recoveryRefreshToken, setRecoveryRefreshToken] = useState<string | null>(null);
+  const [isPasswordResetting, setIsPasswordResetting] = useState<boolean>(false);
 
   // Google認証の設定
   const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+    clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -118,10 +124,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(data.session);
         setUser(data.session?.user ?? null);
 
-        // 認証状態の変更を監視
-        const { data: authListener, error: listenerError } = auth.onAuthStateChange(
+                // 認証状態の変更を監視
+        const { data: authListener } = auth.onAuthStateChange(
           async (event: AuthChangeEvent, session: Session | null) => {
             console.log('Auth state changed:', event, session?.user?.id || 'no user');
+            
+            // パスワードリセット中は一時的なセッション変更を無視
+            if (isPasswordResetting && event === 'SIGNED_IN') {
+              console.log('Password reset in progress, ignoring temporary session change');
+              return;
+            }
             
             setSession(session);
             setUser(session?.user ?? null);
@@ -133,10 +145,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
         );
-
-                  if (listenerError) {
-            console.error('Auth listener error:', listenerError);
-          }
 
         return () => {
           authListener.subscription.unsubscribe();
@@ -235,7 +243,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         throw new Error('Apple Sign In is only available on iOS devices');
       }
-    } catch (error) {
+    } catch (error: any) {
       if (error.code !== 'ERR_CANCELED') {
         console.error('Error signing in with Apple:', error);
         throw error;
@@ -315,7 +323,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resetPassword = async (email: string) => {
     try {
       const { error } = await auth.resetPasswordForEmail(email, {
-        redirectTo: 'everwear://auth/callback?type=recovery',
+        redirectTo: 'clothesmanagerapp://auth/callback?type=recovery',
       });
       if (error) throw error;
     } catch (error) {
@@ -327,42 +335,140 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // パスワードの更新
   const updatePassword = async (password: string, token?: string) => {
     try {
-      const { error } = await auth.updateUser({
+      console.log('Password update started');
+      
+      // パスワードリセット中フラグを設定
+      setIsPasswordResetting(true);
+      
+      // recoveryTokenを使用（パラメータのtokenまたはコンテキストのrecoveryToken）
+      const activeToken = token || recoveryToken;
+      
+      if (!activeToken) {
+        throw new Error('認証トークンが見つかりません。パスワードリセットリンクを再度クリックしてください。');
+      }
+      
+      // recovery用のaccess_tokenとrefresh_tokenでセッションを設定
+      const { data: sessionData, error: sessionError } = await auth.setSession({
+        access_token: activeToken,
+        refresh_token: recoveryRefreshToken || ''
+      });
+      
+      if (sessionError) {
+        console.error('Session setup error:', sessionError);
+        
+        // トークンの有効期限切れやトークンが無効な場合
+        if (sessionError.message?.includes('expired') || 
+            sessionError.message?.includes('invalid') ||
+            sessionError.message?.includes('Token has expired') ||
+            sessionError.message?.includes('Invalid token')) {
+          throw new Error('パスワードリセットリンクの有効期限が切れています。新しいリセットリンクを取得してください。');
+        }
+        
+        throw new Error(`セッションの設定に失敗しました: ${sessionError.message}`);
+      }
+      
+      // セッション設定後、パスワードを更新
+      const { data, error } = await auth.updateUser({
         password: password
       });
-      if (error) throw error;
-    } catch (error) {
+      
+      if (error) {
+        console.error('Password update error:', error);
+        
+        // トークンの有効期限切れやトークンが無効な場合
+        if (error.message?.includes('expired') || 
+            error.message?.includes('invalid') ||
+            error.message?.includes('Token has expired') ||
+            error.message?.includes('Invalid token')) {
+          throw new Error('パスワードリセットリンクの有効期限が切れています。新しいリセットリンクを取得してください。');
+        }
+        
+        // その他のエラー
+        throw new Error(`パスワードの更新に失敗しました: ${error.message}`);
+      }
+      
+      console.log('Password update successful');
+      
+      // 成功したらrecoveryTokenをクリア
+      setRecoveryToken(null);
+      setRecoveryRefreshToken(null);
+      
+    } catch (error: any) {
       console.error('Error updating password:', error);
       throw error;
+    } finally {
+      // パスワードリセット中フラグをクリア
+      setIsPasswordResetting(false);
     }
   };
 
   // ディープリンクの処理
   const handleDeepLink = async (url: string) => {
     try {
-      if (!url) return;
+      if (!url) {
+        return;
+      }
 
       console.log('Processing deep link:', url);
 
-      // URLからパラメータを抽出
       const parsedUrl = new URL(url);
-      const token = parsedUrl.searchParams.get('token');
-      const type = parsedUrl.searchParams.get('type');
 
-      if (token) {
+      // URLパラメータとハッシュフラグメントの両方からパラメータを取得
+      let token = parsedUrl.searchParams.get('token');
+      let access_token = parsedUrl.searchParams.get('access_token');
+      let token_hash = parsedUrl.searchParams.get('token_hash');
+      let type = parsedUrl.searchParams.get('type');
+
+      // ハッシュフラグメントからもパラメータを取得（Supabaseのパスワードリセットはこちらを使用）
+      if (parsedUrl.hash) {
+        const hashParams = new URLSearchParams(parsedUrl.hash.substring(1));
+        
+        // ハッシュからパラメータを取得（存在しない場合は既存値を保持）
+        token = token || hashParams.get('token');
+        access_token = access_token || hashParams.get('access_token');
+        token_hash = token_hash || hashParams.get('token_hash');
+        type = type || hashParams.get('type');
+      }
+
+      // トークンまたはaccess_tokenのいずれかが存在する場合に処理を続行
+      const hasValidToken = token || access_token || token_hash;
+      
+      if (hasValidToken && type) {
         // トークンの種類に応じて処理
         if (type === 'signup') {
+          console.log('Processing signup confirmation');
           // メールアドレス確認の処理
-          const { error } = await auth.verifyOtp({
-            token_hash: token,
-            type: 'email',
-          });
-          if (error) throw error;
+          const verifyToken = token_hash || token;
+          if (verifyToken) {
+            const { error } = await auth.verifyOtp({
+              token_hash: verifyToken,
+              type: 'email',
+            });
+            if (error) {
+              console.error('Signup verification error:', error);
+              throw error;
+            }
+          } else {
+            console.error('No valid token found for signup verification');
+          }
         } else if (type === 'recovery') {
-          // パスワードリセットの場合は何もしない（画面で処理）
+          console.log('Processing password recovery');
+          // パスワードリセットの場合は、access_tokenとrefresh_tokenを保存
+          const recoveryAccessToken = access_token || token;
+          const refreshToken = parsedUrl.hash ? new URLSearchParams(parsedUrl.hash.substring(1)).get('refresh_token') : null;
+          
+          if (recoveryAccessToken) {
+            setRecoveryToken(recoveryAccessToken);
+          }
+          
+          if (refreshToken) {
+            setRecoveryRefreshToken(refreshToken);
+          }
+          
           return;
         }
       }
+      
     } catch (error) {
       console.error('Error handling deep link:', error);
       throw error;
@@ -377,6 +483,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error setting first launch status:', error);
     }
+  };
+
+  // リカバリートークンをクリア
+  const clearRecoveryToken = () => {
+    setRecoveryToken(null);
+    setRecoveryRefreshToken(null);
   };
 
   return (
@@ -395,6 +507,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         resetPassword,
         updatePassword,
         handleDeepLink,
+        recoveryToken,
+        recoveryRefreshToken,
+        clearRecoveryToken,
       }}
     >
       {children}

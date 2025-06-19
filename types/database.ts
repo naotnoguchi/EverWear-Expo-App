@@ -156,6 +156,7 @@ export interface AppClothingItem {
   purchasePrice: number | null;
   wearHistory: string[];
   washHistory: string[];
+  createdAt: string;
 }
 
 // Conversion functions between database and app models
@@ -173,7 +174,8 @@ export const toAppClothingItem = (dbItem: ClothingItem, wearHistory: WearHistory
     condition: dbItem.condition || '',
     purchasePrice: dbItem.purchase_price,
     wearHistory: wearHistory.map(wh => wh.wear_date),
-    washHistory: washHistory.map(wh => wh.wash_date)
+    washHistory: washHistory.map(wh => wh.wash_date),
+    createdAt: dbItem.created_at
   };
 };
 

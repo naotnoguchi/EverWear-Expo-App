@@ -22,6 +22,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   setFirstLaunchComplete: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  resendConfirmation: (email: string) => Promise<void>;
   updatePassword: (password: string, token?: string) => Promise<void>;
   handleDeepLink: (url: string) => Promise<void>;
   recoveryToken: string | null;
@@ -193,18 +194,77 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string) => {
     try {
       const { error } = await auth.signUp({ email, password });
-      if (error) throw error;
+      if (error) {
+        const translatedError = new Error(translateAuthError(error));
+        throw translatedError;
+      }
     } catch (error) {
       console.error('Error signing up:', error);
       throw error;
     }
   };
 
+  // Supabaseエラーメッセージを日本語に変換する関数
+  const translateAuthError = (error: any): string => {
+    if (!error) return 'ログインに失敗しました';
+    
+    const errorMessage = error.message || '';
+    const errorCode = error.code || '';
+    
+    // メール未確認エラー
+    if (errorMessage.includes('Email not confirmed') || errorCode === 'email_not_confirmed') {
+      return 'メールアドレスの確認が完了していません。\n\n登録時に送信された確認メールをご確認いただき、メール内のリンクをクリックしてメールアドレスを確認してください。\n\n確認メールが見つからない場合は、迷惑メールフォルダもご確認ください。';
+    }
+    
+    // パスワード間違い・ユーザー不存在
+    if (errorMessage.includes('Invalid login credentials') || 
+        errorMessage.includes('Invalid credentials') ||
+        errorMessage.includes('Email not found') ||
+        errorCode === 'invalid_credentials') {
+      return 'メールアドレスまたはパスワードが正しくありません。\n\n入力内容をご確認の上、再度お試しください。';
+    }
+    
+    // アカウントロック・レート制限
+    if (errorMessage.includes('too many requests') || 
+        errorMessage.includes('rate limit') ||
+        errorMessage.includes('For security purposes') ||
+        errorMessage.includes('wait') ||
+        errorCode === 'too_many_requests') {
+      return 'リクエスト回数が上限に達しました。\n\nセキュリティ上の理由により、しばらく時間をおいてから再度お試しください。';
+    }
+    
+    // パスワード強度不足（サインアップ時）
+    if (errorMessage.includes('Password should be at least') ||
+        errorMessage.includes('weak password')) {
+      return 'パスワードが要件を満たしていません。\n\n8文字以上で、大文字・小文字・数字を含むパスワードを設定してください。';
+    }
+    
+    // メールアドレス形式エラー
+    if (errorMessage.includes('Invalid email') || 
+        errorMessage.includes('email format') ||
+        errorCode === 'invalid_email') {
+      return 'メールアドレスの形式が正しくありません。\n\n正しいメールアドレスを入力してください。';
+    }
+    
+    // ネットワークエラー
+    if (errorMessage.includes('network') || 
+        errorMessage.includes('fetch') ||
+        errorCode === 'network_error') {
+      return 'ネットワークエラーが発生しました。\n\nインターネット接続を確認の上、再度お試しください。';
+    }
+    
+    // その他のエラー
+    return 'ログインに失敗しました。\n\n問題が続く場合は、しばらく時間をおいてから再度お試しください。';
+  };
+
   // メール/パスワードでサインイン
   const signIn = async (email: string, password: string) => {
     try {
       const { error } = await auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      if (error) {
+        const translatedError = new Error(translateAuthError(error));
+        throw translatedError;
+      }
     } catch (error) {
       console.error('Error signing in:', error);
       throw error;
@@ -325,9 +385,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await auth.resetPasswordForEmail(email, {
         redirectTo: 'clothesmanagerapp://auth/callback?type=recovery',
       });
-      if (error) throw error;
+      if (error) {
+        const translatedError = new Error(translateAuthError(error));
+        throw translatedError;
+      }
     } catch (error) {
       console.error('Error resetting password:', error);
+      throw error;
+    }
+  };
+
+  // メール確認の再送信
+  const resendConfirmation = async (email: string) => {
+    try {
+      const { error } = await auth.resend({
+        type: 'signup',
+        email: email,
+      });
+      if (error) {
+        const translatedError = new Error(translateAuthError(error));
+        throw translatedError;
+      }
+    } catch (error) {
+      console.error('Error resending confirmation:', error);
       throw error;
     }
   };
@@ -419,7 +499,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let token_hash = parsedUrl.searchParams.get('token_hash');
       let type = parsedUrl.searchParams.get('type');
 
-      // ハッシュフラグメントからもパラメータを取得（Supabaseのパスワードリセットはこちらを使用）
+      // ハッシュフラグメントからもパラメータを取得（Supabaseの認証はこちらを使用）
       if (parsedUrl.hash) {
         const hashParams = new URLSearchParams(parsedUrl.hash.substring(1));
         
@@ -428,6 +508,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         access_token = access_token || hashParams.get('access_token');
         token_hash = token_hash || hashParams.get('token_hash');
         type = type || hashParams.get('type');
+        
+        // エラー情報も取得
+        const error = hashParams.get('error');
+        const error_code = hashParams.get('error_code');
+        const error_description = hashParams.get('error_description');
+        
+        // エラーが存在する場合は処理を中断
+        if (error) {
+          console.log('Authentication error in deep link:', { error, error_code, error_description });
+          // エラーの場合はcallback.tsxに処理を委ねる
+          return;
+        }
       }
 
       // トークンまたはaccess_tokenのいずれかが存在する場合に処理を続行
@@ -437,19 +529,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // トークンの種類に応じて処理
         if (type === 'signup') {
           console.log('Processing signup confirmation');
-          // メールアドレス確認の処理
-          const verifyToken = token_hash || token;
-          if (verifyToken) {
-            const { error } = await auth.verifyOtp({
-              token_hash: verifyToken,
-              type: 'email',
+          console.log('Available tokens:', { access_token: !!access_token, token_hash: !!token_hash, token: !!token });
+          
+          // メールアドレス確認の処理 - 新しいSupabaseバージョンではaccess_tokenを使用
+          if (access_token) {
+            const refresh_token = parsedUrl.hash ? new URLSearchParams(parsedUrl.hash.substring(1)).get('refresh_token') : null;
+            
+            console.log('Setting session with access_token');
+            const { error } = await auth.setSession({
+              access_token: access_token,
+              refresh_token: refresh_token || ''
             });
+            
             if (error) {
               console.error('Signup verification error:', error);
               throw error;
             }
+            
+            console.log('Signup confirmation successful, redirecting to home');
+            // 処理が成功した場合はreturnして重複処理を避ける
+            return;
           } else {
-            console.error('No valid token found for signup verification');
+            // 古いバージョンの処理（fallback）
+            const verifyToken = token_hash || token;
+            if (verifyToken) {
+              console.log('Using verifyOtp with token:', verifyToken);
+              const { error } = await auth.verifyOtp({
+                token_hash: verifyToken,
+                type: 'email',
+              });
+              if (error) {
+                console.error('Signup verification error:', error);
+                throw error;
+              }
+            } else {
+              console.error('No valid token found for signup verification');
+              console.error('Debug - URL:', url);
+              console.error('Debug - parsedUrl.hash:', parsedUrl.hash);
+            }
           }
         } else if (type === 'recovery') {
           console.log('Processing password recovery');
@@ -505,6 +622,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut,
         setFirstLaunchComplete,
         resetPassword,
+        resendConfirmation,
         updatePassword,
         handleDeepLink,
         recoveryToken,

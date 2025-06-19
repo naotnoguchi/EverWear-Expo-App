@@ -10,9 +10,11 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [resetEmail, setResetEmail] = useState('');
+  const [resendEmail, setResendEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showResetForm, setShowResetForm] = useState(false);
-  const { signIn, signInWithGoogle, signInWithApple, resetPassword } = useAuth();
+  const [showResendForm, setShowResendForm] = useState(false);
+  const { signIn, signInWithGoogle, signInWithApple, resetPassword, resendConfirmation } = useAuth();
   const { resetOnboarding } = useOnboarding();
   const theme = useTheme();
 
@@ -26,7 +28,7 @@ export default function LoginScreen() {
       setIsLoading(true);
       await signIn(email, password);
       router.replace('/');
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('ログインエラー', error.message || 'ログインに失敗しました');
     } finally {
       setIsLoading(false);
@@ -38,7 +40,7 @@ export default function LoginScreen() {
       setIsLoading(true);
       await signInWithGoogle();
       // 注: Google認証はリダイレクトベースなので、AuthContextのuseEffectで処理
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('Googleログインエラー', error.message || 'Googleログインに失敗しました');
     } finally {
       setIsLoading(false);
@@ -50,7 +52,7 @@ export default function LoginScreen() {
       setIsLoading(true);
       await signInWithApple();
       // 注: Apple認証の成功はAuthContextで処理
-    } catch (error) {
+    } catch (error: any) {
       if (error.code !== 'ERR_CANCELED') {
         Alert.alert('Appleログインエラー', error.message || 'Appleログインに失敗しました');
       }
@@ -68,7 +70,7 @@ export default function LoginScreen() {
       await resetOnboarding();
       // After resetting onboarding status, the app will automatically show the onboarding screen
       // due to the logic in _layout.tsx
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('エラー', 'オンボーディングの表示に失敗しました');
     }
   };
@@ -88,8 +90,30 @@ export default function LoginScreen() {
         'パスワードリセットのリンクを送信しました。メールを確認してください。',
         [{ text: 'OK', onPress: () => setShowResetForm(false) }]
       );
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('エラー', error.message || 'パスワードリセットに失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // メール確認再送信処理
+  const handleResendConfirmation = async () => {
+    if (!resendEmail) {
+      Alert.alert('エラー', 'メールアドレスを入力してください');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await resendConfirmation(resendEmail);
+      Alert.alert(
+        '確認メール再送信',
+        'メールアドレス確認のリンクを再送信しました。\n\nメールを確認してください。メールが届かない場合は、迷惑メールフォルダもご確認ください。',
+        [{ text: 'OK', onPress: () => setShowResendForm(false) }]
+      );
+    } catch (error: any) {
+      Alert.alert('エラー', error.message || 'メール再送信に失敗しました');
     } finally {
       setIsLoading(false);
     }
@@ -131,12 +155,51 @@ export default function LoginScreen() {
     );
   };
 
+  // メール確認再送信フォームを表示する関数
+  const renderResendForm = () => {
+    if (!showResendForm) return null;
+
+    return (
+      <View style={styles.resetForm}>
+        <Text style={[styles.resetTitle, { color: theme.text }]}>
+          メール確認を再送信
+        </Text>
+        <Text style={[styles.resendDescription, { color: theme.textSecondary }]}>
+          アカウント登録時のメールアドレスを入力してください
+        </Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
+          placeholder="メールアドレス"
+          placeholderTextColor={theme.textSecondary}
+          value={resendEmail}
+          onChangeText={setResendEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: theme.primary }]}
+          onPress={handleResendConfirmation}
+          disabled={isLoading}
+        >
+          <Text style={styles.buttonText}>
+            {isLoading ? '送信中...' : '確認メールを再送信'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setShowResendForm(false)}>
+          <Text style={[styles.cancelText, { color: theme.textSecondary }]}>
+            キャンセル
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={[styles.title, { color: theme.text }]}>EverWear</Text>
       <Text style={[styles.subtitle, { color: theme.text }]}>アカウントにログイン</Text>
 
-      {!showResetForm && (
+      {!showResetForm && !showResendForm && (
         <>
           <TextInput
             style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
@@ -167,65 +230,78 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => setShowResetForm(true)}>
-            <Text style={[styles.forgotPassword, { color: theme.primary }]}>
-              パスワードをお忘れですか？
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.linkContainer}>
+            <TouchableOpacity onPress={() => setShowResetForm(true)}>
+              <Text style={[styles.forgotPassword, { color: theme.primary }]}>
+                パスワードをお忘れですか？
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity onPress={() => setShowResendForm(true)}>
+              <Text style={[styles.forgotPassword, { color: theme.primary }]}>
+                メール確認を再送信
+              </Text>
+            </TouchableOpacity>
+          </View>
         </>
       )}
 
       {renderResetForm()}
+      {renderResendForm()}
 
-      <View style={styles.divider}>
-        <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-        <Text style={[styles.dividerText, { color: theme.textSecondary }]}>または</Text>
-        <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-      </View>
+      {!showResetForm && !showResendForm && (
+        <>
+          <View style={styles.divider}>
+            <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+            <Text style={[styles.dividerText, { color: theme.textSecondary }]}>または</Text>
+            <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+          </View>
 
-      <TouchableOpacity
-        style={[
-          styles.socialButton, 
-          styles.googleButton,
-          { 
-            backgroundColor: theme.card,
-            borderColor: theme.border
-          }
-        ]}
-        onPress={handleGoogleLogin}
-        disabled={isLoading}
-      >
-        <Text style={[styles.socialButtonText, { color: theme.text }]}>Googleでログイン</Text>
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.socialButton, 
+              styles.googleButton,
+              { 
+                backgroundColor: theme.card,
+                borderColor: theme.border
+              }
+            ]}
+            onPress={handleGoogleLogin}
+            disabled={isLoading}
+          >
+            <Text style={[styles.socialButtonText, { color: theme.text }]}>Googleでログイン</Text>
+          </TouchableOpacity>
 
-      {Platform.OS === 'ios' && (
-        <AppleAuthentication.AppleAuthenticationButton
-          buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-          cornerRadius={5}
-          style={styles.appleButton}
-          onPress={handleAppleLogin}
-        />
+          {Platform.OS === 'ios' && (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={5}
+              style={styles.appleButton}
+              onPress={handleAppleLogin}
+            />
+          )}
+
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+              アカウントをお持ちでない場合は
+            </Text>
+            <TouchableOpacity onPress={handleSignUp}>
+              <Text style={[styles.footerLink, { color: theme.primary }]}>
+                新規登録
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.onboardingLink}>
+            <TouchableOpacity onPress={handleOpenOnboarding}>
+              <Text style={[styles.onboardingLinkText, { color: theme.primary }]}>
+                アプリの使い方を見る
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </>
       )}
-
-      <View style={styles.footer}>
-        <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-          アカウントをお持ちでない場合は
-        </Text>
-        <TouchableOpacity onPress={handleSignUp}>
-          <Text style={[styles.footerLink, { color: theme.primary }]}>
-            新規登録
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.onboardingLink}>
-        <TouchableOpacity onPress={handleOpenOnboarding}>
-          <Text style={[styles.onboardingLinkText, { color: theme.primary }]}>
-            アプリの使い方を見る
-          </Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -261,13 +337,17 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   buttonText: {
-    color: 'white', // Will be overridden for dark mode
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },
   forgotPassword: {
     textAlign: 'center',
-    marginTop: 15,
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  linkContainer: {
+    alignItems: 'center',
     marginBottom: 15,
   },
   resetForm: {
@@ -277,6 +357,11 @@ const styles = StyleSheet.create({
   resetTitle: {
     fontSize: 18,
     fontWeight: '600',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  resendDescription: {
+    fontSize: 14,
     marginBottom: 15,
     textAlign: 'center',
   },
@@ -305,14 +390,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   googleButton: {
-    backgroundColor: 'white', // Will be overridden with theme color
+    backgroundColor: 'white',
     borderWidth: 1,
-    borderColor: '#ddd', // Will be overridden with theme color
+    borderColor: '#ddd',
   },
   socialButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333', // Will be overridden with theme color
+    color: '#333',
   },
   appleButton: {
     height: 50,

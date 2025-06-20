@@ -41,12 +41,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [recoveryRefreshToken, setRecoveryRefreshToken] = useState<string | null>(null);
   const [isPasswordResetting, setIsPasswordResetting] = useState<boolean>(false);
 
-  // Google認証の設定
+  // Google認証の設定（iOS用、Supabase連携でwebClientIdも必要）
   const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    // iOSでは実際にiOSクライアントIDが使用されるため、設定を統一
+    clientId: Platform.OS === 'ios' 
+      ? process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID 
+      : process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
   });
 
   // 認証エラー処理関数
@@ -139,6 +141,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setSession(session);
             setUser(session?.user ?? null);
             
+            // Google認証成功時の特別処理
+            if (event === 'SIGNED_IN' && session?.user?.app_metadata?.provider === 'google') {
+              console.log('Google authentication completed successfully');
+            }
+            
             // トークンリフレッシュに失敗した場合やサインアウトイベント
             if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
               console.log('Auth session lost, clearing state');
@@ -173,20 +180,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (response?.type === 'success') {
       const { id_token } = response.params;
       handleGoogleToken(id_token);
+    } else if (response?.type === 'error') {
+      console.error('Google auth error:', response.error);
     }
   }, [response]);
 
   // Google認証トークンの処理
   const handleGoogleToken = async (idToken: string) => {
     try {
+      console.log('Attempting to sign in with Google ID token');
+      
       const { error } = await auth.signInWithIdToken({
         provider: 'google',
         token: idToken,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase Google auth error:', error);
+        throw error;
+      }
+      
+      console.log('Google authentication successful');
     } catch (error) {
       console.error('Error signing in with Google:', error);
+      throw error; // エラーを再投げして上位で処理できるようにする
     }
   };
 
@@ -274,6 +291,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Googleでサインイン
   const signInWithGoogle = async () => {
     try {
+      // 環境変数の確認
+      if (!process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID && !process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID) {
+        throw new Error('Google認証の設定が不完全です。環境変数を確認してください。');
+      }
+      
+      console.log('Initiating Google OAuth flow');
       await promptAsync();
     } catch (error) {
       console.error('Error signing in with Google:', error);

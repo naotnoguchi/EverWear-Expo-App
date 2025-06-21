@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     Modal,
     StyleSheet,
@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { usePurchase } from '../contexts/PurchaseContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface PremiumUpgradeModalProps {
@@ -25,6 +26,14 @@ export function PremiumUpgradeModal({
 }: PremiumUpgradeModalProps) {
   const router = useRouter();
   const theme = useTheme();
+  const { clearError } = usePurchase();
+
+  // モーダルが表示される時にエラー状態をクリア
+  useEffect(() => {
+    if (visible) {
+      clearError();
+    }
+  }, [visible, clearError]);
 
   const handleUpgrade = () => {
     onClose();

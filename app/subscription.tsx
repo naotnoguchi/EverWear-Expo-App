@@ -1,14 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { PurchasesPackage } from "react-native-purchases";
 import { usePremiumFeatures, usePurchase } from "../contexts/PurchaseContext";
@@ -17,9 +17,14 @@ import { useTheme } from "../contexts/ThemeContext";
 export default function SubscriptionScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const { subscription, offerings, loading, error, purchasePackage, restorePurchases } = usePurchase();
+  const { subscription, offerings, loading, error, purchasePackage, restorePurchases, clearError } = usePurchase();
   const { isPremium } = usePremiumFeatures();
   const [purchasing, setPurchasing] = useState(false);
+
+  // 画面が表示される時にエラー状態をクリア
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
 
   const monthlyPackage = offerings
     .flatMap(offering => offering.availablePackages)
@@ -44,12 +49,19 @@ export default function SubscriptionScreen() {
           },
         ]
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Purchase error:', error);
-      Alert.alert(
-        "購入エラー",
-        "購入処理中にエラーが発生しました。もう一度お試しください。"
-      );
+      
+      // キャンセルエラーの場合は何もしない（ユーザーが意図的にキャンセルしたため）
+      const isCancelledError = error?.userCancelled === true || 
+                              (error instanceof Error && error.message === 'Purchase was cancelled.');
+      
+      if (!isCancelledError) {
+        Alert.alert(
+          "購入エラー",
+          "購入処理中にエラーが発生しました。もう一度お試しください。"
+        );
+      }
     } finally {
       setPurchasing(false);
     }
@@ -64,12 +76,19 @@ export default function SubscriptionScreen() {
         "購入履歴の復元",
         "購入履歴を確認しました。"
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Restore error:', error);
-      Alert.alert(
-        "復元エラー",
-        "購入履歴の復元中にエラーが発生しました。"
-      );
+      
+      // キャンセルエラーの場合は何もしない
+      const isCancelledError = error?.userCancelled === true || 
+                              (error instanceof Error && error.message === 'Purchase was cancelled.');
+      
+      if (!isCancelledError) {
+        Alert.alert(
+          "復元エラー",
+          "購入履歴の復元中にエラーが発生しました。"
+        );
+      }
     } finally {
       setPurchasing(false);
     }

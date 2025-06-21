@@ -12,6 +12,7 @@ interface PurchaseContextType {
   purchasePackage: (packageToPurchase: PurchasesPackage) => Promise<void>;
   restorePurchases: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
+  clearError: () => void;
 }
 
 const PurchaseContext = createContext<PurchaseContextType | undefined>(undefined);
@@ -131,9 +132,17 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
       // 購入後にサブスクリプション状態を更新
       await refreshSubscription();
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error purchasing package:', err);
-      setError(err instanceof Error ? err.message : 'Purchase failed');
+      
+      // キャンセルエラーの場合は error 状態を設定しない（通常UIを維持）
+      const isCancelledError = err?.userCancelled === true || 
+                              (err instanceof Error && err.message === 'Purchase was cancelled.');
+      
+      if (!isCancelledError) {
+        setError(err instanceof Error ? err.message : 'Purchase failed');
+      }
+      
       throw err; // 呼び出し元でエラーハンドリングできるように再スロー
     } finally {
       setLoading(false);
@@ -150,13 +159,25 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
       // リストア後にサブスクリプション状態を更新
       await refreshSubscription();
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error restoring purchases:', err);
-      setError(err instanceof Error ? err.message : 'Restore failed');
+      
+      // キャンセルエラーの場合は error 状態を設定しない（通常UIを維持）
+      const isCancelledError = err?.userCancelled === true || 
+                              (err instanceof Error && err.message === 'Purchase was cancelled.');
+      
+      if (!isCancelledError) {
+        setError(err instanceof Error ? err.message : 'Restore failed');
+      }
+      
       throw err;
     } finally {
       setLoading(false);
     }
+  };
+
+  const clearError = () => {
+    setError(null);
   };
 
   const contextValue: PurchaseContextType = {
@@ -168,6 +189,7 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
     purchasePackage: handlePurchasePackage,
     restorePurchases: handleRestorePurchases,
     refreshSubscription,
+    clearError,
   };
 
   return (

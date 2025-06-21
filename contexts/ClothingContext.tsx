@@ -9,7 +9,7 @@ import { usePurchase } from './PurchaseContext';
 type ClothingItem = AppClothingItem;
 
 interface ClothingContextType {
-  clothingItems: ClothingItem[]; // 表示制限適用済みのアイテム（プレミアム状態に応じて15件制限）
+  clothingItems: ClothingItem[]; // 表示制限適用済みのアイテム（プレミアム状態に応じて5件制限）
   allClothingItems: ClothingItem[]; // 全てのアイテム（制限なし、内部使用）
   loading: boolean;
   error: string | null;
@@ -64,13 +64,13 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       return allClothingItems;
     }
     
-    // 無課金ユーザーは15件まで表示（登録が古い順）
+    // 無課金ユーザーは5件まで表示（登録が古い順）
     const sortedItems = [...allClothingItems].sort((a, b) => {
       // created_atで登録が古い順にソート
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
     
-    return sortedItems.slice(0, 15);
+    return sortedItems.slice(0, 5);
   }, [allClothingItems, isPremium]);
 
   // 非表示になっているアイテム数を計算
@@ -79,7 +79,7 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     if (isPremium || purchaseLoading) {
       return 0;
     }
-    return Math.max(0, allClothingItems.length - 15);
+    return Math.max(0, allClothingItems.length - 5);
   }, [allClothingItems.length, isPremium, purchaseLoading]);
 
   // データを読み込む関数

@@ -174,11 +174,11 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
       return;
     }
     
-    // 無課金ユーザーは15件制限
-    if (currentItemCount >= 15) {
+    // 無課金ユーザーは5件制限
+    if (currentItemCount >= 5) {
       Alert.alert(
         "アイテム登録制限",
-        `現在${currentItemCount}件のアイテムが登録されています。\n\n無料プランでは最大15件まで登録可能です。\n\nプレミアムプランにアップグレードすると、無制限にアイテムを登録できます。`,
+        `現在${currentItemCount}件のアイテムが登録されています。\n\n無料プランでは最大5件まで登録可能です。\n\nプレミアムプランにアップグレードすると、無制限にアイテムを登録できます。`,
         [
           {
             text: "キャンセル",

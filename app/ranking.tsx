@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, Stack } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { usePremiumFeatures } from "../contexts/PurchaseContext";
 import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useImageUrls } from '../hooks/useImageUrls';
@@ -13,8 +12,6 @@ import { CategoryValue } from "../types/categories";
 
 export default function RankingScreen() {
   const theme = useTheme();
-  const { isPremium } = usePremiumFeatures();
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // 統計コンテキストを使用（新しいAPI）
   const {
@@ -167,7 +164,7 @@ export default function RankingScreen() {
     container: {
       flex: 1,
       padding: 16,
-      backgroundColor: theme.background, // 固定の白色から変更
+      backgroundColor: theme.background,
     },
     centerContent: {
       justifyContent: 'center',
@@ -309,72 +306,6 @@ export default function RankingScreen() {
       color: 'white',
       fontWeight: 'bold',
     },
-    // プレミアム制限のスタイル
-    restrictedOverlay: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: theme.background,
-      padding: 20,
-    },
-    restrictedContent: {
-      alignItems: 'center',
-      backgroundColor: theme.card,
-      borderRadius: 16,
-      padding: 32,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-      width: '100%',
-      maxWidth: 400,
-    },
-    restrictedIcon: {
-      marginBottom: 24,
-    },
-    restrictedTitle: {
-      fontSize: 22,
-      fontWeight: 'bold',
-      color: theme.text,
-      marginBottom: 16,
-      textAlign: 'center',
-    },
-    restrictedDescription: {
-      fontSize: 16,
-      color: theme.text + "CC",
-      marginBottom: 32,
-      textAlign: 'center',
-      lineHeight: 24,
-    },
-    upgradeButton: {
-      backgroundColor: '#FFD700',
-      paddingVertical: 16,
-      paddingHorizontal: 32,
-      borderRadius: 12,
-      marginBottom: 16,
-      width: '100%',
-    },
-    upgradeButtonText: {
-      color: '#000',
-      fontSize: 16,
-      fontWeight: 'bold',
-      textAlign: 'center',
-    },
-    backButton: {
-      backgroundColor: 'transparent',
-      paddingVertical: 12,
-      paddingHorizontal: 24,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: theme.border,
-      width: '100%',
-    },
-    backButtonText: {
-      color: theme.text,
-      fontSize: 14,
-      textAlign: 'center',
-    },
   });
 
   // Render loading state
@@ -393,7 +324,7 @@ export default function RankingScreen() {
       <View style={[styles.container, styles.centerContent]}>
         <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
         <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
-                    <TouchableOpacity style={styles.retryButton} onPress={recalculateStatistics}>
+        <TouchableOpacity style={styles.retryButton} onPress={recalculateStatistics}>
           <Text style={styles.retryButtonText}>再試行</Text>
         </TouchableOpacity>
       </View>
@@ -409,140 +340,110 @@ export default function RankingScreen() {
         }} 
       />
       
-      {!isPremium ? (
-        <View style={styles.restrictedOverlay}>
-          <View style={styles.restrictedContent}>
-            <View style={styles.restrictedIcon}>
-              <Ionicons name="lock-closed" size={48} color="#FFD700" />
+      <View style={styles.container}>
+        {/* Filters */}
+        <View style={styles.filtersContainer}>
+          {/* Period selector */}
+          <View style={styles.filterSection}>
+            <Text style={[styles.filterLabel, { color: theme.text }]}>期間</Text>
+            <View style={styles.optionsRow}>
+              {periodOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.filterOption,
+                    period === option.value && styles.filterOptionSelected,
+                    { borderColor: theme.border }
+                  ]}
+                  onPress={() => handlePeriodChange(option.value)}
+                >
+                  <Text
+                    style={[
+                      styles.filterOptionText,
+                      { color: theme.text },
+                      period === option.value && styles.filterOptionTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-            
-            <Text style={styles.restrictedTitle}>プレミアム限定機能</Text>
-            <Text style={styles.restrictedDescription}>
-              着用回数ランキングはプレミアムプラン限定の機能です。{'\n'}
-              アップグレードして詳細な統計情報を確認しませんか？
-            </Text>
-            
-            <TouchableOpacity 
-              style={styles.upgradeButton} 
-              onPress={() => router.push('/subscription')}
+          </View>
+
+          {/* Sort order toggle */}
+          <View style={styles.filterSection}>
+            <Text style={[styles.filterLabel, { color: theme.text }]}>並び順</Text>
+            <TouchableOpacity
+              style={[styles.sortToggle, { backgroundColor: theme.card }]}
+              onPress={handleSortOrderChange}
             >
-              <Text style={styles.upgradeButtonText}>プレミアムプランを見る</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.backButton} 
-              onPress={() => router.back()}
-            >
-              <Text style={styles.backButtonText}>戻る</Text>
+              <Ionicons 
+                name={sortOrder === 'most' ? "arrow-down" : "arrow-up"} 
+                size={16} 
+                color={theme.text} 
+              />
+              <Text style={[styles.sortToggleText, { color: theme.text }]}>
+                {sortOrder === 'most' ? '着用回数 多い順' : '着用回数 少ない順'}
+              </Text>
             </TouchableOpacity>
           </View>
-        </View>
-      ) : (
-        <View style={styles.container}>
-          {/* Filters */}
-          <View style={styles.filtersContainer}>
-            {/* Period selector */}
-            <View style={styles.filterSection}>
-              <Text style={[styles.filterLabel, { color: theme.text }]}>期間</Text>
-              <View style={styles.optionsRow}>
-                {periodOptions.map((option) => (
+
+          {/* Category selector */}
+          <View style={styles.filterSection}>
+            <Text style={[styles.filterLabel, { color: theme.text }]}>カテゴリ</Text>
+            <View style={styles.optionsRow}>
+              <FlatList
+                data={categoryOptions}
+                renderItem={({ item }) => (
                   <TouchableOpacity
-                    key={option.value}
                     style={[
                       styles.filterOption,
-                      period === option.value && styles.filterOptionSelected,
+                      selectedCategory === item.value && styles.filterOptionSelected,
                       { borderColor: theme.border }
                     ]}
-                    onPress={() => handlePeriodChange(option.value)}
+                    onPress={() => handleCategoryChange(item.value)}
                   >
                     <Text
                       style={[
                         styles.filterOptionText,
                         { color: theme.text },
-                        period === option.value && styles.filterOptionTextSelected,
+                        selectedCategory === item.value && styles.filterOptionTextSelected,
                       ]}
                     >
-                      {option.label}
+                      {item.label}
                     </Text>
                   </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Sort order toggle */}
-            <View style={styles.filterSection}>
-              <Text style={[styles.filterLabel, { color: theme.text }]}>並び順</Text>
-              <TouchableOpacity
-                style={[styles.sortToggle, { backgroundColor: theme.card }]}
-                onPress={handleSortOrderChange}
-              >
-                <Ionicons 
-                  name={sortOrder === 'most' ? "arrow-down" : "arrow-up"} 
-                  size={16} 
-                  color={theme.text} 
-                />
-                <Text style={[styles.sortToggleText, { color: theme.text }]}>
-                  {sortOrder === 'most' ? '着用回数 多い順' : '着用回数 少ない順'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Category selector */}
-            <View style={styles.filterSection}>
-              <Text style={[styles.filterLabel, { color: theme.text }]}>カテゴリ</Text>
-              <View style={styles.optionsRow}>
-                <FlatList
-                  data={categoryOptions}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={[
-                        styles.filterOption,
-                        selectedCategory === item.value && styles.filterOptionSelected,
-                        { borderColor: theme.border }
-                      ]}
-                      onPress={() => handleCategoryChange(item.value)}
-                    >
-                      <Text
-                        style={[
-                          styles.filterOptionText,
-                          { color: theme.text },
-                          selectedCategory === item.value && styles.filterOptionTextSelected,
-                        ]}
-                      >
-                        {item.label}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  keyExtractor={(item) => item.label}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                />
-              </View>
+                )}
+                keyExtractor={(item) => item.label}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+              />
             </View>
           </View>
-
-          {/* Results */}
-          {items.length > 0 ? (
-            <FlatList
-              data={items}
-              renderItem={renderItem}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.listContent}
-              showsVerticalScrollIndicator={false}
-            />
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="shirt-outline" size={64} color={theme.text + "66"} />
-              <Text style={[styles.emptyText, { color: theme.text }]}>
-                該当するアイテムがありません
-              </Text>
-              <Text style={[styles.emptySubtext, { color: theme.text + "99" }]}>
-                フィルター条件を変更してお試しください
-              </Text>
-            </View>
-          )}
         </View>
-      )}
+
+        {/* Results */}
+        {items.length > 0 ? (
+          <FlatList
+            data={items}
+            renderItem={renderItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="shirt-outline" size={64} color={theme.text + "66"} />
+            <Text style={[styles.emptyText, { color: theme.text }]}>
+              該当するアイテムがありません
+            </Text>
+            <Text style={[styles.emptySubtext, { color: theme.text + "99" }]}>
+              フィルター条件を変更してお試しください
+            </Text>
+          </View>
+        )}
+      </View>
     </>
   );
 }

@@ -2,12 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePremiumFeatures, usePurchase } from "../../contexts/PurchaseContext";
@@ -271,7 +271,7 @@ export default function Settings() {
               <Text style={styles.actionButtonText}>プレミアムプランを見る</Text>
             </TouchableOpacity>
             <Text style={styles.premiumDescription}>
-              プレミアムプランでは、アイテム登録数の制限解除、高度な分析機能、広告非表示などの特典があります。
+              プレミアムプランでは、アイテム登録数の制限解除（無料プランは5件まで）などの特典があります。
             </Text>
           </>
         )}

@@ -215,8 +215,8 @@ export function usePremiumFeatures() {
     isPremium,
     loading, // ローディング状態も提供
     canAccessPremiumFeatures: () => isPremium,
-    canAddMoreItems: (currentCount: number) => isPremium || currentCount < 15,
-    canAccessStatistics: () => isPremium,
+    canAddMoreItems: (currentCount: number) => isPremium || currentCount < 5,
+    canAccessStatistics: () => true, // 統計機能は無料で利用可能
     shouldShowAds: () => !isPremium && !loading, // 初期化中は広告も表示しない
   };
 } 

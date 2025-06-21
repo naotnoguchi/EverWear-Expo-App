@@ -427,9 +427,9 @@ export default function SubscriptionScreen() {
       >
         <View style={styles.header}>
           <Ionicons name="star" size={60} color="#FFD700" />
-          <Text style={styles.headerTitle}>プレミアムプランで全機能を解放</Text>
+          <Text style={styles.headerTitle}>プレミアムプランで無制限に管理</Text>
           <Text style={styles.headerSubtitle}>
-            あなたの洋服管理をさらに便利に
+            大切な洋服をすべて登録して、より充実したワードローブ管理を
           </Text>
           {isPremium && (
             <View style={styles.premiumBadge}>
@@ -499,7 +499,7 @@ export default function SubscriptionScreen() {
             <View style={styles.planFeatures}>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle" size={20} color="#3498db" />
-                <Text style={styles.featureText}>大切な洋服15件まで登録可能</Text>
+                <Text style={styles.featureText}>大切な洋服5件まで登録可能</Text>
               </View>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle" size={20} color="#3498db" />
@@ -511,7 +511,11 @@ export default function SubscriptionScreen() {
               </View>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle" size={20} color="#3498db" />
-                <Text style={styles.featureText}>基本統計でワードローブの全体像を把握</Text>
+                <Text style={styles.featureText}>詳細統計でワードローブの全体像を把握</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <Ionicons name="checkmark-circle" size={20} color="#3498db" />
+                <Text style={styles.featureText}>洗濯効率分析・環境影響・節約効果の可視化</Text>
               </View>
             </View>
           </View>
@@ -533,10 +537,6 @@ export default function SubscriptionScreen() {
                 <View style={styles.featureItem}>
                   <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
                   <Text style={styles.featureText}>お気に入りアイテムを無制限登録</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>洗濯効率の最適化と環境・節約効果を可視化</Text>
                 </View>
               </View>
               {!isPremium && (
@@ -575,10 +575,6 @@ export default function SubscriptionScreen() {
                 <View style={styles.featureItem}>
                   <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
                   <Text style={styles.featureText}>お気に入りアイテムを無制限登録</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>洗濯効率の最適化と環境・節約効果を可視化</Text>
                 </View>
               </View>
               {!isPremium && (
@@ -619,7 +615,7 @@ export default function SubscriptionScreen() {
           <View style={styles.infoItem}>
             <Ionicons name="eye" size={20} color={theme.primary} />
             <Text style={styles.infoText}>
-              無料プランでは最新の15件のアイテムのみ表示されますが、16件目以降のデータは削除されません。
+              無料プランでは最新の5件のアイテムのみ表示されますが、6件目以降のデータは削除されません。
             </Text>
           </View>
           <View style={styles.infoItem}>

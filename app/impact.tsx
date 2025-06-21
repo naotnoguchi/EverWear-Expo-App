@@ -2,8 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ActivityIndicator, Modal, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { PremiumUpgradeModal } from "../components/PremiumUpgradeModal";
-import { usePremiumFeatures } from "../contexts/PurchaseContext";
 import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { Period } from "../services/statisticsServiceFactory";
@@ -11,8 +9,6 @@ import { Period } from "../services/statisticsServiceFactory";
 export default function ImpactScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const { isPremium } = usePremiumFeatures();
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // 統計コンテキストを使用（新しいAPI）
   const {
@@ -82,67 +78,7 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
     container: {
       flex: 1,
       padding: 16,
-      backgroundColor: theme.background, // 固定の白色から変更
-    },
-    restrictedOverlay: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: theme.background + 'CC',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 10,
-    },
-    restrictedContent: {
-      backgroundColor: theme.card,
-      borderRadius: 16,
-      padding: 24,
-      margin: 20,
-      alignItems: 'center',
-      shadowColor: theme.text,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 3,
-    },
-    restrictedIcon: {
-      marginBottom: 16,
-    },
-    restrictedTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      color: theme.text,
-      textAlign: 'center',
-      marginBottom: 12,
-    },
-    restrictedDescription: {
-      fontSize: 16,
-      color: theme.text + '99',
-      textAlign: 'center',
-      marginBottom: 24,
-      lineHeight: 22,
-    },
-    upgradeButton: {
-      backgroundColor: '#FFD700',
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: 8,
-      marginBottom: 12,
-    },
-    upgradeButtonText: {
-      color: '#000',
-      fontSize: 16,
-      fontWeight: 'bold',
-    },
-    backButton: {
-      backgroundColor: 'transparent',
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: theme.border,
-    },
-    backButtonText: {
-      color: theme.text,
-      fontSize: 16,
+      backgroundColor: theme.background,
     },
     centerContent: {
       justifyContent: 'center',
@@ -447,7 +383,7 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
       <View style={[styles.container, styles.centerContent]}>
         <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
         <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
-                    <TouchableOpacity style={styles.retryButton} onPress={recalculateStatistics}>
+        <TouchableOpacity style={styles.retryButton} onPress={recalculateStatistics}>
           <Text style={styles.retryButtonText}>再試行</Text>
         </TouchableOpacity>
       </View>
@@ -463,36 +399,6 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
         }} 
       />
       <View style={styles.container}>
-        {!isPremium ? (
-          <View style={styles.restrictedOverlay}>
-            <View style={styles.restrictedContent}>
-              <View style={styles.restrictedIcon}>
-                <Ionicons name="lock-closed" size={48} color="#FFD700" />
-              </View>
-              
-              <Text style={styles.restrictedTitle}>プレミアム限定機能</Text>
-              <Text style={styles.restrictedDescription}>
-                環境影響・節約効果分析はプレミアムプラン限定の機能です。{'\n'}
-                アップグレードして詳細な統計情報を確認しませんか？
-              </Text>
-              
-              <TouchableOpacity 
-                style={styles.upgradeButton} 
-                onPress={() => router.push('/subscription')}
-              >
-                <Text style={styles.upgradeButtonText}>プレミアムプランを見る</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.backButton} 
-                onPress={() => router.back()}
-              >
-                <Text style={styles.backButtonText}>戻る</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-        
         <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
           {/* Period selector */}
           <View style={styles.filterSection}>
@@ -817,7 +723,6 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
             </TouchableOpacity>
           </View>
         </ScrollView>
-        )}
       </View>
 
       {/* Wash Info Modal */}
@@ -1050,13 +955,6 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
           </View>
         </View>
       </Modal>
-      
-      <PremiumUpgradeModal
-        visible={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        feature="環境影響・節約効果"
-        description="環境貢献度の詳細分析や節約効果の可視化はプレミアムプラン限定の機能です。"
-      />
     </>
   );
 }

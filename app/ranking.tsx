@@ -154,9 +154,13 @@ export default function RankingScreen() {
     { label: 'すべて', value: null },
     { label: 'トップス', value: 'トップス' },
     { label: 'ボトムス', value: 'ボトムス' },
+    { label: 'ジャケット', value: 'ジャケット' },
     { label: 'アウター', value: 'アウター' },
-    { label: '小物', value: '小物' },
+    { label: 'セットアップ', value: 'セットアップ' },
+    { label: 'ワンピース', value: 'ワンピース' },
     { label: 'シューズ', value: 'シューズ' },
+    { label: 'バッグ', value: 'バッグ' },
+    { label: '小物', value: '小物' },
     { label: 'その他', value: 'その他' },
   ];
 

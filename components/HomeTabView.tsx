@@ -12,9 +12,13 @@ import SortModal from "./SortModal";
 import { useTheme } from "@/contexts/ThemeContext";
 import AccessoriesItems from "./categories/AccessoriesItems";
 import AllItems from "./categories/AllItems";
+import BagItems from "./categories/BagItems";
 import BottomsItems from "./categories/BottomsItems";
+import DressItems from "./categories/DressItems";
+import JacketItems from "./categories/JacketItems";
 import OthersItems from "./categories/OthersItems";
 import OuterwearItems from "./categories/OuterwearItems";
+import SetupItems from "./categories/SetupItems";
 import ShoesItems from "./categories/ShoesItems";
 import TopsItems from "./categories/TopsItems";
 
@@ -30,9 +34,13 @@ const categoryComponents: Record<CategoryId, React.ComponentType<{
   [CategoryId.ALL]: AllItems,
   [CategoryId.TOPS]: TopsItems,
   [CategoryId.BOTTOMS]: BottomsItems,
+  [CategoryId.JACKET]: JacketItems,
   [CategoryId.OUTERWEAR]: OuterwearItems,
-  [CategoryId.ACCESSORIES]: AccessoriesItems,
+  [CategoryId.SETUP]: SetupItems,
+  [CategoryId.DRESS]: DressItems,
   [CategoryId.SHOES]: ShoesItems,
+  [CategoryId.BAG]: BagItems,
+  [CategoryId.ACCESSORIES]: AccessoriesItems,
   [CategoryId.OTHERS]: OthersItems,
 };
 

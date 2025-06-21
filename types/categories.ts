@@ -5,17 +5,21 @@ export enum CategoryId {
   ALL = "all",
   TOPS = "tops",
   BOTTOMS = "bottoms",
+  JACKET = "jacket",
   OUTERWEAR = "outerwear",
-  ACCESSORIES = "accessories",
+  SETUP = "setup",
+  DRESS = "dress",
   SHOES = "shoes",
+  BAG = "bag",
+  ACCESSORIES = "accessories",
   OTHERS = "others"
 }
 
 // カテゴリの表示名の型（型安全性の強化）
-export type CategoryDisplayName = "すべて" | "トップス" | "ボトムス" | "アウター" | "小物" | "シューズ" | "その他";
+export type CategoryDisplayName = "すべて" | "トップス" | "ボトムス" | "ジャケット" | "アウター" | "セットアップ" | "ワンピース" | "シューズ" | "バッグ" | "小物" | "その他";
 
 // カテゴリの値の型（データベースで使用される値）
-export type CategoryValue = "トップス" | "ボトムス" | "アウター" | "小物" | "シューズ" | "その他" | null;
+export type CategoryValue = "トップス" | "ボトムス" | "ジャケット" | "アウター" | "セットアップ" | "ワンピース" | "シューズ" | "バッグ" | "小物" | "その他" | null;
 
 // カテゴリ定義のインターフェース
 export interface Category {
@@ -29,9 +33,13 @@ export const CATEGORIES: Category[] = [
   { id: CategoryId.ALL, name: "すべて", value: null },
   { id: CategoryId.TOPS, name: "トップス", value: "トップス" },
   { id: CategoryId.BOTTOMS, name: "ボトムス", value: "ボトムス" },
+  { id: CategoryId.JACKET, name: "ジャケット", value: "ジャケット" },
   { id: CategoryId.OUTERWEAR, name: "アウター", value: "アウター" },
-  { id: CategoryId.ACCESSORIES, name: "小物", value: "小物" },
+  { id: CategoryId.SETUP, name: "セットアップ", value: "セットアップ" },
+  { id: CategoryId.DRESS, name: "ワンピース", value: "ワンピース" },
   { id: CategoryId.SHOES, name: "シューズ", value: "シューズ" },
+  { id: CategoryId.BAG, name: "バッグ", value: "バッグ" },
+  { id: CategoryId.ACCESSORIES, name: "小物", value: "小物" },
   { id: CategoryId.OTHERS, name: "その他", value: "その他" }
 ];
 

@@ -355,7 +355,7 @@ VALUES
   ('wash-reduced-10', 'washes_reduced', '{"min": 10}'),
   ('wash-reduced-50', 'washes_reduced', '{"min": 50}'),
   ('wash-reduced-100', 'washes_reduced', '{"min": 100}'),
-  ('category-complete', 'all_categories', '{"categories": ["トップス", "ボトムス", "アウター", "シューズ", "その他", "小物"]}'),
+  ('category-complete', 'all_categories', '{"categories": ["トップス", "ボトムス", "ジャケット", "アウター", "セットアップ", "ワンピース", "シューズ", "バッグ", "小物", "その他"]}'),
   ('eco-warrior', 'washes_reduced', '{"min": 30}')
 ON CONFLICT DO NOTHING;
 

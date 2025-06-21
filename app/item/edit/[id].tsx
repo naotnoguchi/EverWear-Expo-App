@@ -25,8 +25,12 @@ import {
 const categories = [
   { id: "tops", name: "トップス", icon: "shirt-outline" },
   { id: "bottoms", name: "ボトムス", icon: "file-tray-outline" },
+  { id: "jacket", name: "ジャケット", icon: "library-outline" },
   { id: "outerwear", name: "アウター", icon: "hand-left-outline" },
+  { id: "setup", name: "セットアップ", icon: "layers-outline" },
+  { id: "dress", name: "ワンピース", icon: "woman-outline" },
   { id: "shoes", name: "シューズ", icon: "footsteps-outline" },
+  { id: "bag", name: "バッグ", icon: "bag-outline" },
   { id: "accessories", name: "小物", icon: "glasses-outline" },
   { id: "others", name: "その他", icon: "ellipsis-horizontal-circle-outline" },
 ];

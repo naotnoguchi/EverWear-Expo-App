@@ -130,7 +130,7 @@ export async function getBadges(items: AppClothingItem[]): Promise<Badge[]> {
     const washesReduced = totalWears - totalWashes;
     const maxWears = items.length > 0 ? Math.max(...items.map(item => item.wearHistory.length)) : 0;
     const categories = new Set(items.map(item => item.category));
-    const allCategories = ['トップス', 'ボトムス', 'アウター', 'シューズ', 'その他', '小物'];
+    const allCategories = ['トップス', 'ボトムス', 'ジャケット', 'アウター', 'セットアップ', 'ワンピース', 'シューズ', 'バッグ', '小物', 'その他'];
 
     // Prepare stats object for badge evaluation
     const stats = {
@@ -303,7 +303,7 @@ function createDefaultBadges(items?: AppClothingItem[], stats?: any): Badge[] {
   if (items && stats) {
     // If we have items and stats, calculate badge achievements
     const { totalItems, totalWears, totalWashes, washesReduced, maxWears, categories } = stats;
-    const allCategories = ['トップス', 'ボトムス', 'アウター', 'シューズ', 'その他', '小物'];
+    const allCategories = ['トップス', 'ボトムス', 'ジャケット', 'アウター', 'セットアップ', 'ワンピース', 'シューズ', 'バッグ', '小物', 'その他'];
     const hasAllCategories = allCategories.every(cat => categories.has(cat as CategoryValue));
 
     const badges: Badge[] = [

@@ -52,17 +52,23 @@ export function calculateBasicStats(items: AppClothingItem[], period: Period): B
   const averageWearsBetweenWashes = totalWashes > 0 ? parseFloat((totalWears / totalWashes).toFixed(1)) : 0;
 
   // 最も着用されたカテゴリを見つける
-  const categoryWears: Record<CategoryValue, number> = {
+  const categoryWears: Record<string, number> = {
     'トップス': 0,
     'ボトムス': 0,
+    'ジャケット': 0,
     'アウター': 0,
-    '小物': 0,
+    'セットアップ': 0,
+    'ワンピース': 0,
     'シューズ': 0,
+    'バッグ': 0,
+    '小物': 0,
     'その他': 0
   };
   filteredItems.forEach(item => {
     const category = item.category;
-    categoryWears[category] += item.filteredWearHistory.length;
+    if (category) {
+      categoryWears[category] += item.filteredWearHistory.length;
+    }
   });
 
   const mostWornCategory = Object.entries(categoryWears).length > 0 
@@ -89,12 +95,16 @@ export function calculateBasicStats(items: AppClothingItem[], period: Period): B
   } : { id: '', name: '', wears: 0 };
 
   // カテゴリ別の内訳を計算
-  const categories: Record<CategoryValue, number> = {
+  const categories: Record<string, number> = {
     'トップス': 0,
     'ボトムス': 0,
+    'ジャケット': 0,
     'アウター': 0,
-    '小物': 0,
+    'セットアップ': 0,
+    'ワンピース': 0,
     'シューズ': 0,
+    'バッグ': 0,
+    '小物': 0,
     'その他': 0
   };
   items.forEach(item => {

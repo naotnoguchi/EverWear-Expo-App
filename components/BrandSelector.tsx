@@ -1,17 +1,16 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  ScrollView, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Animated, 
-  Keyboard,
-  TouchableWithoutFeedback,
-  Platform
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Keyboard,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
+} from "react-native";
 import { useClothing } from "../contexts/ClothingContext";
 import { useTheme } from "../contexts/ThemeContext";
 
@@ -30,7 +29,6 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<TextInput>(null);
   const listOpacity = useRef(new Animated.Value(0)).current;
-  const selectorRef = useRef<View>(null);
 
   // 検索テキストが変更されたときに候補を更新
   useEffect(() => {
@@ -55,37 +53,6 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
       useNativeDriver: true
     }).start();
   }, [showSuggestions, listOpacity]);
-
-  // キーボードが閉じられたときに候補リストを閉じる
-  useEffect(() => {
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        setShowSuggestions(false);
-      }
-    );
-
-    return () => {
-      keyboardDidHideListener.remove();
-    };
-  }, []);
-
-  // 外部タッチを検出するためのハンドラー
-  const handleOutsideTouch = useCallback((event) => {
-    if (selectorRef.current && !selectorRef.current.contains(event.target)) {
-      setShowSuggestions(false);
-    }
-  }, []);
-
-  // Web環境でのみ外部タッチイベントを設定
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      document.addEventListener('mousedown', handleOutsideTouch);
-      return () => {
-        document.removeEventListener('mousedown', handleOutsideTouch);
-      };
-    }
-  }, [handleOutsideTouch]);
 
   // ブランド名が有効かどうかをチェック
   const isValidBrand = (brand: string): boolean => {
@@ -247,7 +214,7 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container} ref={selectorRef}>
+      <View style={styles.container}>
         {/* 選択されたブランドを表示 */}
         <TouchableOpacity 
           style={styles.selectedBrandContainer}

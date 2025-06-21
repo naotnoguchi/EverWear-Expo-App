@@ -2,13 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { PurchasesPackage } from "react-native-purchases";
 import { usePremiumFeatures, usePurchase } from "../contexts/PurchaseContext";
@@ -626,11 +626,7 @@ export default function SubscriptionScreen() {
           </View>
         </View>
 
-        {!isPremium && (
-          <Text style={styles.ctaNote}>
-            ※ 実際の課金が発生します。購入前にご確認ください。
-          </Text>
-        )}
+
       </ScrollView>
     </>
   );

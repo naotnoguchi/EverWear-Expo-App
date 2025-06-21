@@ -1,13 +1,14 @@
 import BrandSelector from "@/components/BrandSelector";
 import { useClothing } from "@/contexts/ClothingContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { clearSpecificImageCache } from "@/lib/cacheManager";
 import { showImagePickerOptions } from "@/lib/imageUtils";
 import { getImageUrl } from "@/lib/storageClient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -272,6 +273,11 @@ export default function EditItem() {
     try {
       const uri = await showImagePickerOptions();
       if (uri) {
+        // 古い画像のキャッシュをクリア
+        if (imageUrl) {
+          await clearSpecificImageCache(imageUrl);
+        }
+        
         setSelectedImageUri(uri);
         setImageUrl(uri); // 新しい画像のURIをimageUrlに設定
         setSignedImageUrl(uri); // プレビュー用にsignedImageUrlも設定

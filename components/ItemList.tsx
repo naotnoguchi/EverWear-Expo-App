@@ -59,11 +59,10 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
     const loadAllImageUrls = async () => {
       if (!clothingItems || clothingItems.length === 0) return;
 
-      // 画像パスの配列を作成（既にURLがあるものは除外）
+      // 画像パスの配列を作成（既にURLがあるものでも、画像パスが変わった場合は再取得）
       const itemsNeedingUrls = clothingItems.filter(
         item => item.image && 
-               !item.image.startsWith('http') && 
-               !imageUrls[item.id]
+               !item.image.startsWith('http')
       );
 
       if (itemsNeedingUrls.length === 0) return;
@@ -81,17 +80,31 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
           }
         });
 
-        setImageUrls(prev => ({
-          ...prev,
-          ...newImageUrls
-        }));
+        // 既存のキャッシュと新しいURLをマージ（変更された画像は上書き）
+        setImageUrls(prev => {
+          const updated = { ...prev };
+          
+          // 現在のアイテムリストにないアイテムのキャッシュを削除
+          const currentItemIds = new Set(clothingItems.map(item => item.id));
+          Object.keys(updated).forEach(itemId => {
+            if (!currentItemIds.has(itemId)) {
+              delete updated[itemId];
+            }
+          });
+          
+          // 新しいURLを追加/更新
+          return {
+            ...updated,
+            ...newImageUrls
+          };
+        });
       } catch (error) {
         console.error('Error loading image URLs:', error);
       }
     };
 
     loadAllImageUrls();
-  }, [clothingItems]);
+  }, [clothingItems]); // clothingItemsの変更を監視し、画像変更も検出
 
   // カテゴリでフィルタリングおよび着用メーターの長さが長い順にソートを適用 - メモ化して再計算を防止
   const filteredAndSortedItems = useMemo(() => {

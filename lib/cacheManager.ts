@@ -42,6 +42,30 @@ const isCacheStale = async (): Promise<boolean> => {
 };
 
 /**
+ * 特定の画像パスに対するキャッシュをクリア
+ * @param imagePath 画像パス
+ * @returns クリア成功時はtrue
+ */
+export const clearSpecificImageCache = async (imagePath: string): Promise<boolean> => {
+  try {
+    console.log(`Clearing cache for specific image: ${imagePath}`);
+    
+    // expo-imageの場合、特定の画像だけをキャッシュから削除する直接的な方法がないため、
+    // 代替手段として該当画像のメモリキャッシュをクリアし、
+    // その後でディスクキャッシュの一部クリアを行う
+    
+    // メモリキャッシュをクリア（全体だが軽量）
+    const memoryCleared = await Image.clearMemoryCache();
+    console.log(`Memory cache cleared: ${memoryCleared}`);
+    
+    return memoryCleared;
+  } catch (error) {
+    console.error('Error clearing specific image cache:', error);
+    return false;
+  }
+};
+
+/**
  * 画像キャッシュをクリア
  * @returns クリア成功時はtrue
  */

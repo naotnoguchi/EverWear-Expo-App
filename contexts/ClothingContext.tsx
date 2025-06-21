@@ -1,5 +1,6 @@
 // contexts/ClothingContext.tsx
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { clearSpecificImageCache } from '../lib/cacheManager';
 import { formatDateToLocalISOString } from '../lib/dateUtils';
 import { AppClothingItem, clothingService } from '../services/clothingServiceFactory';
 import { ExtendedBrand } from '../types/database';
@@ -245,8 +246,25 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
 
   const updateItem = async (updatedItem: ClothingItem, imageUri?: string): Promise<void> => {
     try {
+      // 更新前のアイテムを取得して画像変更をチェック
+      const currentItem = allClothingItems.find(item => item.id === updatedItem.id);
+      const imageChanged = currentItem && currentItem.image !== updatedItem.image;
+      
       // APIを呼び出してアイテムを更新し、更新されたアイテムデータを取得
       const updatedItemData = await clothingService.updateClothingItem(updatedItem.id, updatedItem, imageUri);
+
+      // 画像が変更された場合、キャッシュをクリア
+      if (imageChanged) {
+        console.log('Image changed, clearing cache for updated item');
+        
+        // 新旧両方の画像のキャッシュをクリア
+        if (currentItem?.image) {
+          await clearSpecificImageCache(currentItem.image);
+        }
+        if (updatedItemData.image) {
+          await clearSpecificImageCache(updatedItemData.image);
+        }
+      }
 
       // 差分更新：該当アイテムのみ配列内で更新
       setAllClothingItems((items: ClothingItem[]) => 

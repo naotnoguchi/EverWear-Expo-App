@@ -35,13 +35,17 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
   const [error, setError] = useState<string | null>(null);
   const [initializing, setInitializing] = useState(true); // 初期化中フラグを追加
 
-  // 初期化が完了するまではプレミアム制限を適用しない（フラッシュを防ぐため）
-  const isPremium = initializing ? true : subscription.isActive;
+  // 初期化が完了するまでは安全側に倒してプレミアム制限を適用（フラッシュを防ぐため）
+  const isPremium = initializing ? false : subscription.isActive;
 
   // Revenue Cat初期化
   useEffect(() => {
     if (user?.id) {
       initializePurchases();
+    } else {
+      // ユーザーがいない場合は初期化完了状態にする
+      setInitializing(false);
+      setLoading(false);
     }
   }, [user?.id]);
 

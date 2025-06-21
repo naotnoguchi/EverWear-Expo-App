@@ -2,7 +2,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { Alert, Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useClothing } from "../contexts/ClothingContext";
 import { usePremiumFeatures } from "../contexts/PurchaseContext";
@@ -53,7 +53,7 @@ export type HomeTabViewRefType = {
 
 export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
   const router = useRouter();
-  const { isPremium } = usePremiumFeatures();
+  const { isPremium, loading: purchaseLoading } = usePremiumFeatures();
   const tabScrollViewRef = useRef<ScrollView>(null);
   const contentScrollViewRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -65,7 +65,10 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
 
   // ソートモーダルの表示状態（他の場所でも使用される可能性があるため維持）
   const [sortModalVisible, setSortModalVisible] = useState(false);
-  const { sortConfig, clothingItems, hiddenItemsCount } = useClothing();
+  const { sortConfig, clothingItems, hiddenItemsCount, loading: clothingLoading } = useClothing();
+
+  // 統合ローディング状態
+  const isInitializing = purchaseLoading || clothingLoading;
 
   // カテゴリごとのアイテム数を計算する関数 - メモ化して再計算を防止
   const categoryItemCounts = useMemo(() => {
@@ -314,7 +317,28 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
       textAlign: 'center',
       fontWeight: '500',
     },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.background,
+    },
+    loadingText: {
+      fontSize: 16,
+      color: theme.text + "99", // with transparency
+      marginTop: 16,
+    },
   });
+
+  // 初期化中はローディング画面を表示
+  if (isInitializing) {
+    return (
+      <GestureHandlerRootView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3498db" />
+        <Text style={styles.loadingText}>データを読み込み中...</Text>
+      </GestureHandlerRootView>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={styles.container}>

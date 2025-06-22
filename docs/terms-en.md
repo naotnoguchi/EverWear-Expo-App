@@ -1,12 +1,12 @@
 ---
-title: EverWear Terms of Service
+title: Terms of Service
 ---
 
-# EverWear Terms of Service
+# Terms of Service
 
 Last updated: June 22, 2025
 
-These Terms of Service ("Terms") set forth the conditions for using the mobile application "EverWear" (the "App") provided by Naoto Noguchi ("we", "us", or "our"). All users of the App ("Users") agree to be bound by these Terms.
+These Terms of Service ("Terms") set forth the conditions for using the mobile application "EverWear" (the "App") provided by EverWear Office ("we", "us", or "our"). All users of the App ("Users") agree to be bound by these Terms.
 
 ## 1. Scope
 These Terms apply to all relationships related to the App between Users and us and govern the rights and obligations arising from the use of the App.
@@ -59,6 +59,6 @@ These Terms shall be governed by and construed in accordance with the laws of Ja
 For inquiries regarding the Service, please contact us at:
 
 ```
-Naoto Noguchi
+EverWear Office
 E-mail: naotnoguchi@gmail.com
 ``` 

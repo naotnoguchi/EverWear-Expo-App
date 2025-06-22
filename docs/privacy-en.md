@@ -1,12 +1,12 @@
 ---
-title: EverWear Privacy Policy
+title: Privacy Policy
 ---
 
-# EverWear Privacy Policy
+# Privacy Policy
 
 Last updated: June 22, 2025
 
-Naoto Noguchi ("we", "us", or "our") respects the privacy of users ("Users") of the mobile application "EverWear" (the "App"). This Privacy Policy ("Policy") explains how we collect, use, disclose, and safeguard your information when you use the App.
+EverWear Office ("we", "us", or "our") respects the privacy of users ("Users") of the mobile application "EverWear" (the "App"). This Privacy Policy ("Policy") explains how we collect, use, disclose, and safeguard your information when you use the App.
 
 ## 1. Information We Collect
 We may collect the following information necessary to provide and improve the App:
@@ -43,6 +43,6 @@ We may revise this Policy in response to changes in laws or service content. The
 If you have any questions about this Policy, please contact us at:
 
 ```
-Naoto Noguchi
+EverWear Office
 E-mail: naotnoguchi@gmail.com
 ``` 

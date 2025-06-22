@@ -1,71 +1,34 @@
-import { db, getAuthenticatedClient } from '../lib/dbClient';
-import { CategoryValue } from '../types/categories';
+import { auth } from '../lib/authClient';
+import { getAuthenticatedClient } from '../lib/dbClient';
 import { AppClothingItem } from '../types/database';
 import { Badge } from '../types/statistics';
+import { BADGE_DEFINITIONS, BadgeDefinition } from './badgeDefinitions';
 
-// Fetch badge definitions and conditions from the database in a single query
-export async function fetchBadgeData(): Promise<{ definitions: any[], conditions: any[] }> {
+// ユーザーIDを取得するヘルパー関数
+async function getCurrentUserId(): Promise<string | null> {
   try {
-    // Fetch badge definitions with their conditions using a JOIN query
-    const { data: definitionsWithConditions, error: definitionsError } = await db
-      .from('badge_definitions')
-      .select(`
-        *,
-        badge_conditions(*)
-      `)
-      .eq('is_active', true)
-      .order('display_order');
-
-    if (definitionsError) {
-      console.error('Error fetching badge definitions with conditions:', definitionsError);
-      throw definitionsError;
-    }
-
-    // Extract definitions and conditions from the joined result
-    const definitions = definitionsWithConditions || [];
-    const conditions: any[] = [];
-
-    // Extract conditions from each definition
-    definitions.forEach(def => {
-      if (def.badge_conditions && Array.isArray(def.badge_conditions)) {
-        conditions.push(...def.badge_conditions);
-        // Remove the conditions from the definition to keep the structure clean
-        delete def.badge_conditions;
+    const { data: session, error: sessionError } = await auth.getSession();
+    
+    if (sessionError) {
+      if (sessionError.message?.includes('Invalid Refresh Token') || 
+          sessionError.message?.includes('Refresh Token Not Found') ||
+          sessionError.message?.includes('AuthApiError')) {
+        console.log('認証エラーが発生しました');
+        return null;
       }
-    });
-
-    return { definitions, conditions };
-  } catch (e) {
-    console.error('Exception in fetchBadgeData:', e);
-    return { definitions: [], conditions: [] };
+      throw sessionError;
+    }
+    
+    return session?.session?.user?.id || null;
+  } catch (error) {
+    console.error('Error getting current user ID:', error);
+    return null;
   }
 }
 
-// Legacy functions for backward compatibility
-export async function fetchBadgeDefinitions(): Promise<any[]> {
-  try {
-    const { definitions } = await fetchBadgeData();
-    return definitions;
-  } catch (e) {
-    console.error('Exception in fetchBadgeDefinitions:', e);
-    return [];
-  }
-}
-
-export async function fetchBadgeConditions(): Promise<any[]> {
-  try {
-    const { conditions } = await fetchBadgeData();
-    return conditions;
-  } catch (e) {
-    console.error('Exception in fetchBadgeConditions:', e);
-    return [];
-  }
-}
-
-// Fetch user's earned badges from the database
+// ユーザーの獲得済みバッジを取得
 export async function fetchUserBadges(userId: string): Promise<Map<string, string>> {
   try {
-    // Get authenticated client
     const authClient = await getAuthenticatedClient();
 
     const { data, error } = await authClient
@@ -78,7 +41,7 @@ export async function fetchUserBadges(userId: string): Promise<Map<string, strin
       throw error;
     }
 
-    // Create a map of badge IDs to earned dates
+    // バッジIDと獲得日のマップを作成
     const badgeMap = new Map<string, string>();
     data.forEach(badge => {
       badgeMap.set(badge.badge_id, badge.earned_date);
@@ -91,25 +54,24 @@ export async function fetchUserBadges(userId: string): Promise<Map<string, strin
   }
 }
 
-// Save newly earned badges to the database
-export async function saveNewlyEarnedBadges(userId: string, earnedBadges: Badge[]): Promise<void> {
+// 新規獲得バッジをデータベースに保存
+export async function saveNewlyEarnedBadges(userId: string, badges: Badge[]): Promise<void> {
   try {
-    if (!userId || earnedBadges.length === 0) {
+    if (!userId || badges.length === 0) {
       return;
     }
 
-    // 認証状態を確認してからバッジを保存
-    const { auth } = await import('../lib/authClient');
+    // 認証状態を確認
     const { data: { user } } = await auth.getUser();
     if (!user) {
       return;
     }
 
-    // Get existing badges
+    // 既存バッジを取得
     const existingBadges = await fetchUserBadges(userId);
 
-    // Filter out badges that are already earned
-    const newlyEarnedBadges = earnedBadges.filter(
+    // 新規獲得バッジをフィルタリング
+    const newlyEarnedBadges = badges.filter(
       badge => badge.isEarned && !existingBadges.has(badge.id)
     );
 
@@ -117,17 +79,16 @@ export async function saveNewlyEarnedBadges(userId: string, earnedBadges: Badge[
       return;
     }
 
-    // Prepare badges for insertion
+    // 挿入用データを準備
     const badgesToInsert = newlyEarnedBadges.map(badge => ({
       user_id: userId,
       badge_id: badge.id,
       earned_date: badge.earnedDate || new Date().toISOString()
     }));
 
-    // Get authenticated client
     const authClient = await getAuthenticatedClient();
 
-    // Insert badges into the database
+    // データベースにバッジを保存
     const { error } = await authClient
       .from('user_badges')
       .upsert(badgesToInsert, { onConflict: 'user_id,badge_id' });
@@ -142,110 +103,82 @@ export async function saveNewlyEarnedBadges(userId: string, earnedBadges: Badge[
   }
 }
 
-// Evaluate badge conditions
-export function evaluateBadgeCondition(
-  condition: any, 
-  items: AppClothingItem[],
-  stats: {
-    totalItems: number;
-    totalWears: number;
-    totalWashes: number;
-    washesReduced: number;
-    maxWears: number;
-    categories: Set<CategoryValue>;
-  }
-): boolean {
-  const { condition_type, condition_value } = condition;
-  const value = typeof condition_value === 'string' ? JSON.parse(condition_value) : condition_value;
+// メインのバッジ評価・取得関数
+export async function getBadges(items: AppClothingItem[]): Promise<Badge[]> {
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      console.log('ユーザーが認証されていません - 空のバッジ配列を返します');
+      return [];
+    }
 
-  switch (condition_type) {
-    case 'total_items':
-      return stats.totalItems >= value.min;
+    // 既獲得バッジを取得
+    const earnedBadgeMap = await fetchUserBadges(userId);
 
-    case 'total_wears':
-      return stats.totalWears >= value.min;
+    // 各バッジ定義を評価してBadgeオブジェクトを作成
+    const badges: Badge[] = BADGE_DEFINITIONS.map(definition => {
+      const isAlreadyEarned = earnedBadgeMap.has(definition.id);
+      
+      if (isAlreadyEarned) {
+        // 既に獲得済みの場合
+        return {
+          id: definition.id,
+          name: definition.name,
+          description: definition.description,
+          imageUrl: definition.imageUrl,
+          category: definition.category,
+          isEarned: true,
+          earnedDate: earnedBadgeMap.get(definition.id),
+          progress: 100
+        };
+      } else {
+        // 新規評価
+        const evaluation = definition.evaluate(items);
+        return {
+          id: definition.id,
+          name: definition.name,
+          description: definition.description,
+          imageUrl: definition.imageUrl,
+          category: definition.category,
+          isEarned: evaluation.isEarned,
+          earnedDate: evaluation.isEarned ? new Date().toISOString() : undefined,
+          progress: evaluation.progress
+        };
+      }
+    });
 
-    case 'total_washes':
-      return stats.totalWashes >= value.min;
+    // 新規獲得バッジを保存
+    await saveNewlyEarnedBadges(userId, badges);
 
-    case 'max_item_wears':
-      return stats.maxWears >= value.min;
+    return badges;
 
-    case 'washes_reduced':
-      return stats.washesReduced >= value.min;
-
-    case 'all_categories':
-      return value.categories.every((cat: string) => stats.categories.has(cat as CategoryValue));
-
-    case 'efficient_washer':
-      // Complex condition for efficient washer badge
-      return items.some(item => {
-        let currentCount = 0;
-        let efficientWashes = 0;
-
-        // Sort wear and wash history by date
-        const sortedWears = [...item.wearHistory].sort();
-        const sortedWashes = [...item.washHistory].sort();
-
-        // Count wears between washes
-        for (const wearDate of sortedWears) {
-          currentCount++;
-          // Check if there's a wash after this wear
-          const nextWash = sortedWashes.find(washDate => washDate >= wearDate);
-          if (nextWash) {
-            // If the wear count is at least 90% of the threshold, count it as efficient
-            if (currentCount >= item.washThreshold * 0.9) {
-              efficientWashes++;
-            }
-            currentCount = 0;
-            // Remove this wash from consideration for future wears
-            sortedWashes.splice(sortedWashes.indexOf(nextWash), 1);
-          }
-        }
-
-        return efficientWashes >= 5;
-      });
-
-    default:
-      return false;
+  } catch (error) {
+    console.error('Error fetching badges:', error);
+    
+    // 認証エラーの場合は空の配列を返す
+    if (error instanceof Error && (
+        error.message?.includes('Invalid Refresh Token') || 
+        error.message?.includes('Refresh Token Not Found') ||
+        error.message?.includes('AuthApiError'))) {
+      console.log('認証エラーが発生しました - 空のバッジ配列を返します');
+      return [];
+    }
+    
+    // その他のエラーの場合もエラーをスローせず、空の配列を返す
+    console.warn('バッジ取得でエラーが発生しましたが、空の配列を返します');
+    return [];
   }
 }
 
-// Calculate badge progress
-export function calculateBadgeProgress(
-  condition: any,
-  stats: {
-    totalItems: number;
-    totalWears: number;
-    totalWashes: number;
-    washesReduced: number;
-    maxWears: number;
-    categories: Set<CategoryValue>;
-  }
-): number {
-  const { condition_type, condition_value } = condition;
-  const value = typeof condition_value === 'string' ? JSON.parse(condition_value) : condition_value;
+// バッジ定義を取得する関数群（クライアント側の定義を返す）
+export function getAllBadgeDefinitions(): BadgeDefinition[] {
+  return BADGE_DEFINITIONS;
+}
 
-  switch (condition_type) {
-    case 'total_items':
-      return Math.min(100, Math.round((stats.totalItems / value.min) * 100));
+export function getBadgeDefinitionById(id: string): BadgeDefinition | undefined {
+  return BADGE_DEFINITIONS.find(badge => badge.id === id);
+}
 
-    case 'total_wears':
-      return Math.min(100, Math.round((stats.totalWears / value.min) * 100));
-
-    case 'total_washes':
-      return Math.min(100, Math.round((stats.totalWashes / value.min) * 100));
-
-    case 'max_item_wears':
-      return Math.min(100, Math.round((stats.maxWears / value.min) * 100));
-
-    case 'washes_reduced':
-      return Math.min(100, Math.round((stats.washesReduced / value.min) * 100));
-
-    case 'all_categories':
-      return Math.min(100, Math.round((stats.categories.size / value.categories.length) * 100));
-
-    default:
-      return 0;
-  }
+export function getBadgeDefinitionsByCategory(category: 'usage' | 'efficiency' | 'milestone' | 'special'): BadgeDefinition[] {
+  return BADGE_DEFINITIONS.filter(badge => badge.category === category);
 }

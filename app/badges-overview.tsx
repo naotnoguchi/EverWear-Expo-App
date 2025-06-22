@@ -5,7 +5,8 @@ import { ActivityIndicator, ScrollView, Share, StyleSheet, Text, TouchableOpacit
 import ViewShot from "react-native-view-shot";
 import { useClothing } from "../contexts/ClothingContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { Badge, statisticsService } from "../services/statisticsServiceFactory";
+import * as badgeService from "../services/badgeService";
+import { Badge } from "../services/statisticsServiceFactory";
 
 export default function BadgesOverviewScreen() {
   const theme = useTheme();
@@ -23,7 +24,7 @@ export default function BadgesOverviewScreen() {
     try {
       setLoading(true);
       setError(null);
-      const data = await statisticsService.getBadges(clothingItems);
+      const data = await badgeService.getBadges(clothingItems);
       // Ensure data is an array before using array methods
       const badgesArray = Array.isArray(data) ? data : [];
       console.log('Badges Overview screen - getBadges result:', 

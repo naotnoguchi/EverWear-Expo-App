@@ -2,6 +2,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { auth } from '../lib/authClient';
+import * as badgeService from '../services/badgeService';
 import {
   Badge,
   BasicStats,
@@ -149,7 +150,7 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
         statisticsService.getRankingData(clothingItems, period, sortOrder, categoryFilter),
         statisticsService.getEfficiencyData(clothingItems, period),
         statisticsService.getImpactData(clothingItems, period),
-        statisticsService.getBadges(clothingItems)
+        badgeService.getBadges(clothingItems)
       ]);
 
       // 新しいバッジの検出（表示済み通知を考慮）
@@ -249,7 +250,7 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
           return;
         }
         
-        const initialBadges = await statisticsService.getBadges(clothingItems);
+        const initialBadges = await badgeService.getBadges(clothingItems);
         setBadges(initialBadges);
         // 初期化時は既に獲得済みのバッジとして設定
         previousBadgesRef.current = initialBadges;
@@ -268,7 +269,7 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
       
         // その他のエラーの場合はデフォルトバッジを試行
         try {
-          const defaultBadges = await statisticsService.getBadges(clothingItems).catch(() => []);
+          const defaultBadges = await badgeService.getBadges(clothingItems).catch(() => []);
           setBadges(defaultBadges);
           previousBadgesRef.current = defaultBadges;
         } catch (fallbackError) {

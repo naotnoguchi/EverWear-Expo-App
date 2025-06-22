@@ -156,3 +156,30 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## ブランドマスタの更新方法
+
+本リポジトリではブランドマスタを **CSV で管理** します。ファイルは `data/brands.csv` に配置されており、カラムは以下の順序です。
+
+```csv
+name,name_hiragana,name_english,search_terms
+```
+
+`search_terms` は PostgreSQL の `text[]` 型に合わせて `"{term1,term2,...}"` 形式で記述してください。
+
+### Supabase ダッシュボードでの投入手順
+1. Supabase プロジェクトを開き **Table Editor → brands** を選択。
+2. 右上の **Insert from CSV** をクリック。
+3. `data/brands.csv` をアップロードし、マッピングを確認して実行します。
+4. UUID の `id` 列は **自動生成** されるので CSV には含めません。
+
+### psql / CLI での投入（オプション）
+ローカルや CI から投入する場合は以下のコマンドを利用できます。
+
+```bash
+psql "$SUPABASE_DB_URL" -c "\copy public.brands (name, name_hiragana, name_english, search_terms) FROM 'data/brands.csv' DELIMITER ',' CSV HEADER;"
+```
+
+### 追加・修正方法
+- 既存ブランドを変更する場合は **同じ name** をキーとして行を更新してください。
+- 新規ブランドを追加したら CSV をコミットし、再度上記手順でインポートします（`name` が `UNIQUE` 制約により重複しない限り差分でINSERTされます）。

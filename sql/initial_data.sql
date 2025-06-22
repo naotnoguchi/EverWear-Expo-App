@@ -44,55 +44,14 @@ ON CONFLICT DO NOTHING;
 
 -- Note: No conditions for efficient-washer as it has special logic in the code
 
--- Brands
-INSERT INTO public.brands (name, name_hiragana, name_english, search_terms) VALUES
-  -- ハイブランド
-  ('Gucci', NULL, 'Gucci', ARRAY['gucci', 'グッチ']),
-  ('Prada', NULL, 'Prada', ARRAY['prada', 'プラダ']),
-  ('Louis Vuitton', NULL, 'Louis Vuitton', ARRAY['louis vuitton', 'ルイヴィトン', 'ルイビトン']),
-  ('Dior', NULL, 'Dior', ARRAY['dior', 'ディオール']),
-  ('Chanel', NULL, 'Chanel', ARRAY['chanel', 'シャネル']),
-  ('Hermès', NULL, 'Hermes', ARRAY['hermes', 'エルメス']),
-  ('Burberry', NULL, 'Burberry', ARRAY['burberry', 'バーバリー']),
-  ('Balenciaga', NULL, 'Balenciaga', ARRAY['balenciaga', 'バレンシアガ']),
-  ('Saint Laurent', NULL, 'Saint Laurent', ARRAY['saint laurent', 'サンローラン', 'イヴサンローラン']),
-  ('Versace', NULL, 'Versace', ARRAY['versace', 'ヴェルサーチ']),
-  ('Fendi', NULL, 'Fendi', ARRAY['fendi', 'フェンディ']),
-  ('Givenchy', NULL, 'Givenchy', ARRAY['givenchy', 'ジバンシィ', 'ジバンシー']),
-  ('Valentino', NULL, 'Valentino', ARRAY['valentino', 'ヴァレンティノ']),
-  ('Bottega Veneta', NULL, 'Bottega Veneta', ARRAY['bottega veneta', 'ボッテガヴェネタ']),
-  ('Celine', NULL, 'Celine', ARRAY['celine', 'セリーヌ']),
-  ('Alexander McQueen', NULL, 'Alexander McQueen', ARRAY['alexander mcqueen', 'アレキサンダーマックイーン']),
-  ('Loewe', NULL, 'Loewe', ARRAY['loewe', 'ロエベ']),
-  ('Miu Miu', NULL, 'Miu Miu', ARRAY['miu miu', 'ミュウミュウ']),
-  ('Tom Ford', NULL, 'Tom Ford', ARRAY['tom ford', 'トムフォード']),
-  ('Balmain', NULL, 'Balmain', ARRAY['balmain', 'バルマン']),
-  ('Dolce & Gabbana', NULL, 'Dolce & Gabbana', ARRAY['dolce & gabbana', 'dolce and gabbana', 'ドルチェ&ガッバーナ', 'ドルガバ']),
-  ('Armani', NULL, 'Armani', ARRAY['armani', 'アルマーニ']),
-  ('Salvatore Ferragamo', NULL, 'Salvatore Ferragamo', ARRAY['salvatore ferragamo', 'フェラガモ']),
-  ('Cartier', NULL, 'Cartier', ARRAY['cartier', 'カルティエ']),
-  ('Rolex', NULL, 'Rolex', ARRAY['rolex', 'ロレックス']),
-  ('Tiffany & Co.', NULL, 'Tiffany & Co.', ARRAY['tiffany', 'ティファニー']),
-  ('Bulgari', NULL, 'Bulgari', ARRAY['bulgari', 'bvlgari', 'ブルガリ']),
-  ('Montblanc', NULL, 'Montblanc', ARRAY['montblanc', 'モンブラン']),
-  ('Brunello Cucinelli', NULL, 'Brunello Cucinelli', ARRAY['brunello cucinelli', 'ブルネロクチネリ']),
-  ('Max Mara', NULL, 'Max Mara', ARRAY['max mara', 'マックスマーラ']),
-
-  -- 一般ブランド
-  ('ユニクロ', 'ゆにくろ', 'UNIQLO', ARRAY['uniqlo', 'ユニクロ', 'ゆにくろ']),
-  ('GU', 'じーゆー', 'GU', ARRAY['gu', 'ジーユー']),
-  ('無印良品', 'むじるしりょうひん', 'MUJI', ARRAY['muji', '無印', 'むじ']),
-  ('H&M', 'えいちあんどえむ', 'H&M', ARRAY['h&m', 'エイチアンドエム']),
-  ('ZARA', 'ざら', 'ZARA', ARRAY['zara', 'ザラ']),
-  ('GAP', 'ぎゃっぷ', 'GAP', ARRAY['gap', 'ギャップ']),
-  ('BEAMS', 'びーむす', 'BEAMS', ARRAY['beams', 'ビームス']),
-  ('ナイキ', 'ないき', 'NIKE', ARRAY['nike', 'ナイキ']),
-  ('アディダス', 'あでぃだす', 'Adidas', ARRAY['adidas', 'アディダス']),
-  ('プーマ', 'ぷーま', 'PUMA', ARRAY['puma', 'プーマ']),
-  ('リーバイス', 'りーばいす', 'Levi''s', ARRAY['levis', 'levi''s', 'リーバイス']),
-  ('ラコステ', 'らこすて', 'Lacoste', ARRAY['lacoste', 'ラコステ']),
-  ('ポロ・ラルフローレン', 'ぽろらるふろーれん', 'Polo Ralph Lauren', ARRAY['polo ralph lauren', 'ポロラルフローレン', 'ラルフローレン'])
-ON CONFLICT (name) DO UPDATE SET
-  name_hiragana = EXCLUDED.name_hiragana,
-  name_english = EXCLUDED.name_english,
-  search_terms = EXCLUDED.search_terms;
+-- ブランドデータはCSV（data/brands.csv）からロードする方式に変更しました。
+-- 以下の例を参考に Supabase ダッシュボードの "Insert from CSV" 機能、あるいは psql の \copy コマンドで投入してください。
+--
+--   -- psql 例（ローカルファイル）
+--   \copy public.brands (name, name_hiragana, name_english, search_terms)
+--     FROM 'data/brands.csv' DELIMITER ',' CSV HEADER;
+--
+-- CSV ファイルのカラム順：name,name_hiragana,name_english,search_terms
+-- search_terms カラムは text[] 型に合わせて "{term1,term2,...}" 形式で記述します。
+--
+-- ※以前ここに記載していた INSERT 文は削除しました。

@@ -602,7 +602,12 @@ export default function EditItem() {
 
             {/* ブランド選択（任意） */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>ブランド <Text style={styles.optionalText}>（任意）</Text></Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                <Text style={styles.label}>ブランド <Text style={styles.optionalText}>（任意）</Text></Text>
+                <TouchableOpacity onPress={() => Alert.alert('ブランドが見つからない場合', '設定タブの「お問い合わせ」からブランド追加のご要望をお送りください')} hitSlop={{top:4,bottom:4,left:4,right:4}} style={{marginLeft:4, marginTop:-6}}>
+                  <Ionicons name="help-circle-outline" size={18} color={theme.text + '99'} />
+                </TouchableOpacity>
+              </View>
               <BrandSelector
                 value={brand}
                 onValueChange={setBrand}

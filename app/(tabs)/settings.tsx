@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import {
     Alert,
+    Linking,
     ScrollView,
     StyleSheet,
     Text,
@@ -50,6 +51,16 @@ export default function Settings() {
   // Handle privacy policy
   const handlePrivacyPolicy = () => {
     Alert.alert("プライバシーポリシー", "プライバシーポリシーページを準備中です");
+  };
+
+  // Handle feedback
+  const FEEDBACK_URL = process.env.EXPO_PUBLIC_FEEDBACK_URL;
+  const handleFeedback = () => {
+    if (FEEDBACK_URL) {
+      Linking.openURL(FEEDBACK_URL);
+    } else {
+      Alert.alert("準備中", "お問い合わせフォームは現在準備中です");
+    }
   };
 
   // Handle logout
@@ -295,16 +306,33 @@ export default function Settings() {
         </TouchableOpacity>
       </View>
 
+      {/* サポート セクション */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>アカウント</Text>
-        <TouchableOpacity 
-          style={styles.actionButton} 
-          onPress={handleLogout}
-        >
-          <Ionicons name="log-out" size={24} color="#3498db" />
-          <Text style={styles.actionButtonText}>ログアウト</Text>
+        <Text style={styles.sectionTitle}>サポート</Text>
+        <TouchableOpacity style={styles.actionButton} onPress={handleFeedback}>
+          <Ionicons name="mail-outline" size={24} color="#3498db" />
+          <Text style={styles.actionButtonText}>お問い合わせ</Text>
         </TouchableOpacity>
       </View>
+
+      {/* 独立したログアウトボタン */}
+      <TouchableOpacity
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          marginHorizontal: 32,
+          marginTop: 8,
+          paddingVertical: 12,
+          borderWidth: 1,
+          borderColor: "#d9534f",
+          borderRadius: 8,
+        }}
+        onPress={handleLogout}
+      >
+        <Ionicons name="log-out" size={20} color="#d9534f" />
+        <Text style={{ color: "#d9534f", fontSize: 16, marginLeft: 8 }}>ログアウト</Text>
+      </TouchableOpacity>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>

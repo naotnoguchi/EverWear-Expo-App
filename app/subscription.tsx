@@ -38,7 +38,7 @@ export default function SubscriptionScreen() {
     try {
       setPurchasing(true);
       await purchasePackage(packageToPurchase);
-      
+
       Alert.alert(
         "購入完了",
         "プレミアムプランにアップグレードしました！",
@@ -51,11 +51,11 @@ export default function SubscriptionScreen() {
       );
     } catch (error: any) {
       console.error('Purchase error:', error);
-      
+
       // キャンセルエラーの場合は何もしない（ユーザーが意図的にキャンセルしたため）
       const isCancelledError = error?.userCancelled === true || 
                               (error instanceof Error && error.message === 'Purchase was cancelled.');
-      
+
       if (!isCancelledError) {
         Alert.alert(
           "購入エラー",
@@ -71,18 +71,18 @@ export default function SubscriptionScreen() {
     try {
       setPurchasing(true);
       await restorePurchases();
-      
+
       Alert.alert(
         "購入履歴の復元",
         "購入履歴を確認しました。"
       );
     } catch (error: any) {
       console.error('Restore error:', error);
-      
+
       // キャンセルエラーの場合は何もしない
       const isCancelledError = error?.userCancelled === true || 
                               (error instanceof Error && error.message === 'Purchase was cancelled.');
-      
+
       if (!isCancelledError) {
         Alert.alert(
           "復元エラー",
@@ -356,11 +356,6 @@ export default function SubscriptionScreen() {
             headerStyle: {
               backgroundColor: theme.background,
             },
-            headerLeft: () => (
-              <TouchableOpacity onPress={() => router.back()}>
-                <Ionicons name="arrow-back" size={24} color={theme.text} />
-              </TouchableOpacity>
-            ),
           }}
         />
         <View style={styles.loadingContainer}>
@@ -385,11 +380,6 @@ export default function SubscriptionScreen() {
             headerStyle: {
               backgroundColor: theme.background,
             },
-            headerLeft: () => (
-              <TouchableOpacity onPress={() => router.back()}>
-                <Ionicons name="arrow-back" size={24} color={theme.text} />
-              </TouchableOpacity>
-            ),
           }}
         />
         <View style={styles.errorContainer}>
@@ -414,11 +404,6 @@ export default function SubscriptionScreen() {
           headerStyle: {
             backgroundColor: theme.background,
           },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color={theme.text} />
-            </TouchableOpacity>
-          ),
         }}
       />
       <ScrollView 
@@ -442,7 +427,7 @@ export default function SubscriptionScreen() {
         {isPremium && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>契約詳細</Text>
-            
+
             <View style={styles.subscriptionDetailCard}>
               <View style={styles.subscriptionHeader}>
                 <Ionicons name="star" size={24} color="#FFD700" />
@@ -451,7 +436,7 @@ export default function SubscriptionScreen() {
                   <Text style={styles.activeBadgeText}>有効</Text>
                 </View>
               </View>
-              
+
               <View style={styles.subscriptionInfo}>
                 <View style={styles.subscriptionInfoItem}>
                   <Text style={styles.subscriptionInfoLabel}>契約プラン</Text>
@@ -459,7 +444,7 @@ export default function SubscriptionScreen() {
                     {subscription.productId === process.env.EXPO_PUBLIC_PREMIUM_YEARLY_PRODUCT_ID ? '年額プラン' : '月額プラン'}
                   </Text>
                 </View>
-                
+
                 {subscription.purchaseDate && (
                   <View style={styles.subscriptionInfoItem}>
                     <Text style={styles.subscriptionInfoLabel}>契約開始日</Text>
@@ -468,7 +453,7 @@ export default function SubscriptionScreen() {
                     </Text>
                   </View>
                 )}
-                
+
                 {subscription.expirationDate && (
                   <View style={styles.subscriptionInfoItem}>
                     <Text style={styles.subscriptionInfoLabel}>次回更新日</Text>
@@ -478,7 +463,7 @@ export default function SubscriptionScreen() {
                   </View>
                 )}
               </View>
-              
+
               <View style={styles.subscriptionActions}>
                 <Text style={styles.subscriptionNote}>
                   サブスクリプションの解約や変更は、App Store（iOS）またはGoogle Play（Android）から行ってください。

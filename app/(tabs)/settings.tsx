@@ -45,22 +45,36 @@ export default function Settings() {
 
   // Handle terms of service
   const handleTermsOfService = () => {
-    Alert.alert("利用規約", "利用規約ページを準備中です");
+    router.push({
+      pathname: "/webview",
+      params: {
+        url: "https://naotnoguchi.github.io/everwear/terms-ja.html",
+        title: "利用規約"
+      }
+    });
   };
 
   // Handle privacy policy
   const handlePrivacyPolicy = () => {
-    Alert.alert("プライバシーポリシー", "プライバシーポリシーページを準備中です");
+    router.push({
+      pathname: "/webview",
+      params: {
+        url: "https://naotnoguchi.github.io/everwear/privacy-ja.html",
+        title: "プライバシーポリシー"
+      }
+    });
   };
 
   // Handle feedback
-  const FEEDBACK_URL = process.env.EXPO_PUBLIC_FEEDBACK_URL;
+  const FEEDBACK_URL = "https://forms.gle/wUCJnuHMkazHNF7B7";
   const handleFeedback = () => {
-    if (FEEDBACK_URL) {
-      Linking.openURL(FEEDBACK_URL);
-    } else {
-      Alert.alert("準備中", "お問い合わせフォームは現在準備中です");
-    }
+    router.push({
+      pathname: "/webview",
+      params: {
+        url: FEEDBACK_URL,
+        title: "お問い合わせ"
+      }
+    });
   };
 
   // Handle logout
@@ -226,7 +240,7 @@ export default function Settings() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>プレミアムプラン</Text>
-        
+
         {isPremium ? (
           // プレミアム契約済みの場合
           <View style={styles.premiumActiveContainer}>
@@ -237,14 +251,14 @@ export default function Settings() {
                 <Text style={styles.premiumBadgeText}>有効</Text>
               </View>
             </View>
-            
+
             <View style={styles.premiumInfoItem}>
               <Text style={styles.premiumInfoLabel}>契約プラン</Text>
               <Text style={styles.premiumInfoValue}>
                 {subscription.productId === process.env.EXPO_PUBLIC_PREMIUM_YEARLY_PRODUCT_ID ? '年額プラン' : '月額プラン'}
               </Text>
             </View>
-            
+
             {subscription.expirationDate && (
               <View style={styles.premiumInfoItem}>
                 <Text style={styles.premiumInfoLabel}>有効期限</Text>
@@ -253,7 +267,7 @@ export default function Settings() {
                 </Text>
               </View>
             )}
-            
+
             {subscription.purchaseDate && (
               <View style={styles.premiumInfoItem}>
                 <Text style={styles.premiumInfoLabel}>契約開始日</Text>
@@ -262,7 +276,7 @@ export default function Settings() {
                 </Text>
               </View>
             )}
-            
+
             <TouchableOpacity 
               style={styles.manageSubscriptionButton}
               onPress={() => router.push("/subscription")}

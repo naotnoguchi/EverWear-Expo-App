@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -329,18 +329,21 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
     calendarGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      maxHeight: undefined, // 固定高さ制限を削除
+      maxHeight: undefined,
     },
     emptyDay: {
-      width: `${100 / 7}%`,
-      aspectRatio: 1,
+      flexBasis: `${100 / 7}%`,
+      maxWidth: `${100 / 7}%`,
+      marginBottom: 4,
     },
     dayCell: {
-      width: `${100 / 7}%`,
-      aspectRatio: 1,
-      padding: 4, // ItemCalendarと同じ値に
-      justifyContent: 'center', // ItemCalendarと同様にcenterに戻す
+      flexBasis: `${100 / 7}%`,
+      maxWidth: `${100 / 7}%`,
+      paddingVertical: 4,
+      paddingHorizontal: 0,
+      marginBottom: 4,
       alignItems: 'center',
+      justifyContent: 'center',
     },
     hasEventsDay: {
       backgroundColor: theme.card === '#ffffff' ? '#f8f9fa' : '#2a2a2a',

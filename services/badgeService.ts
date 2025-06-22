@@ -1,184 +1,216 @@
-import { auth } from '../lib/authClient';
 import { getAuthenticatedClient } from '../lib/dbClient';
-import { AppClothingItem } from '../types/database';
-import { Badge } from '../types/statistics';
-import { BADGE_DEFINITIONS, BadgeDefinition } from './badgeDefinitions';
+import { AppClothingItem, UserBadge, WashHistory, WearHistory } from '../types/database';
+import {
+  Badge,
+  BadgeEvaluationContext,
+  evaluateAllBadges,
+  getAllBadges,
+  getBadgeById
+} from './badgeDefinitions';
 
-// ユーザーIDを取得するヘルパー関数
-async function getCurrentUserId(): Promise<string | null> {
-  try {
-    const { data: session, error: sessionError } = await auth.getSession();
-    
-    if (sessionError) {
-      if (sessionError.message?.includes('Invalid Refresh Token') || 
-          sessionError.message?.includes('Refresh Token Not Found') ||
-          sessionError.message?.includes('AuthApiError')) {
-        console.log('認証エラーが発生しました');
-        return null;
-      }
-      throw sessionError;
-    }
-    
-    return session?.session?.user?.id || null;
-  } catch (error) {
-    console.error('Error getting current user ID:', error);
-    return null;
-  }
+export interface BadgeWithStatus extends Badge {
+  isEarned: boolean;
+  earnedDate?: string;
 }
 
-// ユーザーの獲得済みバッジを取得
-export async function fetchUserBadges(userId: string): Promise<Map<string, string>> {
-  try {
-    const authClient = await getAuthenticatedClient();
+export class BadgeService {
+  private userId: string;
 
-    const { data, error } = await authClient
-      .from('user_badges')
-      .select('badge_id, earned_date')
-      .eq('user_id', userId);
+  constructor(userId: string) {
+    this.userId = userId;
+  }
 
-    if (error) {
-      console.error('Error fetching user badges:', error);
+  // 全バッジの状態を取得
+  async getAllBadgesWithStatus(
+    items: AppClothingItem[], 
+    wearRecords: WearHistory[], 
+    washRecords: WashHistory[],
+    isPremiumUser: boolean
+  ): Promise<BadgeWithStatus[]> {
+    try {
+      // 評価コンテキストを作成
+      const context: BadgeEvaluationContext = {
+        items,
+        wearRecords,
+        washRecords,
+        isPremiumUser
+      };
+
+      // 現在達成済みのバッジIDを取得
+      const achievedBadgeIds = evaluateAllBadges(context);
+
+      // データベースから獲得済みバッジを取得
+      const earnedBadges = await this.getEarnedBadges();
+      const earnedBadgeMap = new Map(earnedBadges.map(badge => [badge.badge_id, badge]));
+
+      // 全バッジ定義と状態を結合
+      const allBadges = getAllBadges();
+      return allBadges.map(badge => {
+        const isAchieved = achievedBadgeIds.includes(badge.id);
+        const earnedBadge = earnedBadgeMap.get(badge.id);
+
+        return {
+          ...badge,
+          isEarned: !!earnedBadge,
+          earnedDate: earnedBadge?.earned_date
+        };
+      });
+    } catch (error) {
+      console.error('Failed to get badges with status:', error);
       throw error;
     }
-
-    // バッジIDと獲得日のマップを作成
-    const badgeMap = new Map<string, string>();
-    data.forEach(badge => {
-      badgeMap.set(badge.badge_id, badge.earned_date);
-    });
-
-    return badgeMap;
-  } catch (e) {
-    console.error('Exception in fetchUserBadges:', e);
-    return new Map<string, string>();
   }
-}
 
-// 新規獲得バッジをデータベースに保存
-export async function saveNewlyEarnedBadges(userId: string, badges: Badge[]): Promise<void> {
-  try {
-    if (!userId || badges.length === 0) {
-      return;
-    }
+  // 新規獲得バッジを確認し、通知とデータベース更新を実行
+  async checkAndAwardNewBadges(
+    items: AppClothingItem[], 
+    wearRecords: WearHistory[], 
+    washRecords: WashHistory[],
+    isPremiumUser: boolean
+  ): Promise<Badge[]> {
+    try {
+      // 評価コンテキストを作成
+      const context: BadgeEvaluationContext = {
+        items,
+        wearRecords,
+        washRecords,
+        isPremiumUser
+      };
 
-    // 認証状態を確認
-    const { data: { user } } = await auth.getUser();
-    if (!user) {
-      return;
-    }
+      // 現在達成済みのバッジIDを取得
+      const achievedBadgeIds = evaluateAllBadges(context);
 
-    // 既存バッジを取得
-    const existingBadges = await fetchUserBadges(userId);
+      // データベースから既に獲得済みのバッジを取得
+      const earnedBadges = await this.getEarnedBadges();
+      const earnedBadgeIds = earnedBadges.map(badge => badge.badge_id);
 
-    // 新規獲得バッジをフィルタリング
-    const newlyEarnedBadges = badges.filter(
-      badge => badge.isEarned && !existingBadges.has(badge.id)
-    );
+      // 新規獲得バッジを特定
+      const newBadgeIds = achievedBadgeIds.filter(id => !earnedBadgeIds.includes(id));
 
-    if (newlyEarnedBadges.length === 0) {
-      return;
-    }
+      if (newBadgeIds.length > 0) {
+        // 新規バッジをデータベースに記録
+        await this.saveEarnedBadges(newBadgeIds);
 
-    // 挿入用データを準備
-    const badgesToInsert = newlyEarnedBadges.map(badge => ({
-      user_id: userId,
-      badge_id: badge.id,
-      earned_date: badge.earnedDate || new Date().toISOString()
-    }));
+        // 新規バッジのオブジェクトを取得して返す
+        const newBadges = newBadgeIds
+          .map(id => getBadgeById(id))
+          .filter((badge): badge is Badge => badge !== undefined);
 
-    const authClient = await getAuthenticatedClient();
+        return newBadges;
+      }
 
-    // データベースにバッジを保存
-    const { error } = await authClient
-      .from('user_badges')
-      .upsert(badgesToInsert, { onConflict: 'user_id,badge_id' });
-
-    if (error) {
-      console.error('Error saving badges to database:', error);
+      return [];
+    } catch (error) {
+      console.error('Failed to check and award new badges:', error);
       throw error;
     }
-
-  } catch (e) {
-    console.error('Exception in saveNewlyEarnedBadges:', e);
   }
-}
 
-// メインのバッジ評価・取得関数
-export async function getBadges(items: AppClothingItem[]): Promise<Badge[]> {
-  try {
-    const userId = await getCurrentUserId();
-    if (!userId) {
-      console.log('ユーザーが認証されていません - 空のバッジ配列を返します');
-      return [];
-    }
+  // データベースから獲得済みバッジを取得
+  private async getEarnedBadges(): Promise<UserBadge[]> {
+    try {
+      const client = await getAuthenticatedClient();
+      const { data, error } = await client
+        .from('user_badges')
+        .select('*')
+        .eq('user_id', this.userId);
 
-    // 既獲得バッジを取得
-    const earnedBadgeMap = await fetchUserBadges(userId);
-
-    // 各バッジ定義を評価してBadgeオブジェクトを作成
-    const badges: Badge[] = BADGE_DEFINITIONS.map(definition => {
-      const isAlreadyEarned = earnedBadgeMap.has(definition.id);
-      
-      if (isAlreadyEarned) {
-        // 既に獲得済みの場合
-        return {
-          id: definition.id,
-          name: definition.name,
-          description: definition.description,
-          imageUrl: definition.imageUrl,
-          category: definition.category,
-          isEarned: true,
-          earnedDate: earnedBadgeMap.get(definition.id),
-          progress: 100
-        };
-      } else {
-        // 新規評価
-        const evaluation = definition.evaluate(items);
-        return {
-          id: definition.id,
-          name: definition.name,
-          description: definition.description,
-          imageUrl: definition.imageUrl,
-          category: definition.category,
-          isEarned: evaluation.isEarned,
-          earnedDate: evaluation.isEarned ? new Date().toISOString() : undefined,
-          progress: evaluation.progress
-        };
+      if (error) {
+        throw error;
       }
-    });
 
-    // 新規獲得バッジを保存
-    await saveNewlyEarnedBadges(userId, badges);
-
-    return badges;
-
-  } catch (error) {
-    console.error('Error fetching badges:', error);
-    
-    // 認証エラーの場合は空の配列を返す
-    if (error instanceof Error && (
-        error.message?.includes('Invalid Refresh Token') || 
-        error.message?.includes('Refresh Token Not Found') ||
-        error.message?.includes('AuthApiError'))) {
-      console.log('認証エラーが発生しました - 空のバッジ配列を返します');
-      return [];
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get earned badges:', error);
+      throw error;
     }
-    
-    // その他のエラーの場合もエラーをスローせず、空の配列を返す
-    console.warn('バッジ取得でエラーが発生しましたが、空の配列を返します');
-    return [];
+  }
+
+  // 新規獲得バッジをデータベースに保存
+  private async saveEarnedBadges(badgeIds: string[]): Promise<void> {
+    try {
+      const earnedDate = new Date().toISOString();
+      const userBadges = badgeIds.map(badgeId => ({
+        user_id: this.userId,
+        badge_id: badgeId,
+        earned_date: earnedDate
+      }));
+
+      const client = await getAuthenticatedClient();
+      const { error } = await client
+        .from('user_badges')
+        .insert(userBadges);
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('Failed to save earned badges:', error);
+      throw error;
+    }
+  }
+
+  // 特定のバッジが獲得済みかチェック
+  async isBadgeEarned(badgeId: string): Promise<boolean> {
+    try {
+      const client = await getAuthenticatedClient();
+      const { data, error } = await client
+        .from('user_badges')
+        .select('id')
+        .eq('user_id', this.userId)
+        .eq('badge_id', badgeId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        throw error;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error('Failed to check badge status:', error);
+      return false;
+    }
+  }
+
+  // カテゴリ別バッジを取得
+  getBadgesByCategory(category: 'milestone' | 'achievement' | 'special'): Badge[] {
+    return getAllBadges().filter(badge => badge.category === category);
+  }
+
+  // バッジ統計を取得
+  async getBadgeStats(): Promise<{
+    totalBadges: number;
+    earnedBadges: number;
+    completionRate: number;
+    earnedByCategory: Record<string, number>;
+  }> {
+    try {
+      const allBadges = getAllBadges();
+      const earnedBadges = await this.getEarnedBadges();
+      const earnedBadgeIds = earnedBadges.map(badge => badge.badge_id);
+
+      // カテゴリ別獲得数を計算
+      const earnedByCategory = allBadges.reduce((acc, badge) => {
+        if (earnedBadgeIds.includes(badge.id)) {
+          acc[badge.category] = (acc[badge.category] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>);
+
+      return {
+        totalBadges: allBadges.length,
+        earnedBadges: earnedBadges.length,
+        completionRate: Math.round((earnedBadges.length / allBadges.length) * 100),
+        earnedByCategory
+      };
+    } catch (error) {
+      console.error('Failed to get badge stats:', error);
+      throw error;
+    }
   }
 }
 
-// バッジ定義を取得する関数群（クライアント側の定義を返す）
-export function getAllBadgeDefinitions(): BadgeDefinition[] {
-  return BADGE_DEFINITIONS;
-}
-
-export function getBadgeDefinitionById(id: string): BadgeDefinition | undefined {
-  return BADGE_DEFINITIONS.find(badge => badge.id === id);
-}
-
-export function getBadgeDefinitionsByCategory(category: 'usage' | 'efficiency' | 'milestone' | 'special'): BadgeDefinition[] {
-  return BADGE_DEFINITIONS.filter(badge => badge.category === category);
-}
+// ファクトリー関数
+export const createBadgeService = (userId: string): BadgeService => {
+  return new BadgeService(userId);
+};

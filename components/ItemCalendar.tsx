@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTheme } from '../contexts/ThemeContext';
 import { formatDateJapanese } from '../lib/dateUtils';
@@ -227,16 +227,20 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
     calendarGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
+      maxHeight: undefined, // 固定高さ制限を削除
       marginBottom: 2, // マージンを追加
     },
     emptyDay: {
-      width: `${100 / 7}%`,
-      aspectRatio: 1,
+      flexBasis: `${100 / 7}%`,
+      maxWidth: `${100 / 7}%`,
+      marginBottom: 4,
     },
     dayCell: {
-      width: `${100 / 7}%`,
-      aspectRatio: 1,
-      padding: 4,
+      flexBasis: `${100 / 7}%`,
+      maxWidth: `${100 / 7}%`,
+      paddingVertical: 4,
+      paddingHorizontal: 0,
+      marginBottom: 4,
       justifyContent: 'center',
       alignItems: 'center',
     },

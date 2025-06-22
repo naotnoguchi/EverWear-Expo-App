@@ -1,72 +1,35 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import ViewShot from "react-native-view-shot";
-import { useClothing } from "../contexts/ClothingContext";
+import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
-import * as badgeService from "../services/badgeService";
-import { Badge } from "../services/statisticsServiceFactory";
+import { BadgeWithStatus } from "../services/badgeService";
 
 export default function BadgesOverviewScreen() {
   const theme = useTheme();
-  const { clothingItems } = useClothing();
+  const { badges, isCalculating, calculationError, recalculateStatistics } = useStatistics();
   const viewShotRef = useRef<ViewShot>(null);
 
   // State
-  const [badges, setBadges] = useState<Badge[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showEarnedDates, setShowEarnedDates] = useState(false);
 
-  // Fetch badges data
-  const fetchBadges = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await badgeService.getBadges(clothingItems);
-      // Ensure data is an array before using array methods
-      const badgesArray = Array.isArray(data) ? data : [];
-      console.log('Badges Overview screen - getBadges result:', 
-        `count=${badgesArray.length},`, 
-        `earned=${badgesArray.filter(b => b.isEarned).length},`,
-        `categories=${Object.keys(badgesArray.reduce((acc: Record<string, boolean>, b) => {
-          acc[b.category] = true;
-          return acc;
-        }, {})).join(',')}`
-      );
-      setBadges(badgesArray);
-    } catch (err) {
-      console.error('Error fetching badges data:', err);
-      setError('バッジデータの取得に失敗しました。後でもう一度お試しください。');
-      setBadges([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [clothingItems]);
-
-  // Load data on mount
-  useEffect(() => {
-    fetchBadges();
-  }, [fetchBadges]);
-
   // Get badge icon based on category
-  const getBadgeIcon = (category: Badge['category']) => {
+  const getBadgeIcon = (category: BadgeWithStatus['category']) => {
     switch (category) {
-      case 'usage': return 'checkmark-circle';
-      case 'efficiency': return 'speedometer';
       case 'milestone': return 'trophy';
+      case 'achievement': return 'checkmark-circle';
       case 'special': return 'star';
       default: return 'ribbon';
     }
   };
 
   // Get badge color based on category
-  const getBadgeColor = (category: Badge['category']) => {
+  const getBadgeColor = (category: BadgeWithStatus['category']) => {
     switch (category) {
-      case 'usage': return '#3498db'; // Blue
-      case 'efficiency': return '#27ae60'; // Green
       case 'milestone': return '#f39c12'; // Orange
+      case 'achievement': return '#3498db'; // Blue
       case 'special': return '#9b59b6'; // Purple
       default: return '#95a5a6'; // Gray
     }
@@ -125,7 +88,9 @@ export default function BadgesOverviewScreen() {
     screenshotContainer: {
       backgroundColor: theme.card, // Use theme background color for dark mode support
       padding: 16,
-      margin: 16,
+      marginHorizontal: 16,
+      marginTop: 16,
+      marginBottom: 12,
       borderRadius: 12,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
@@ -150,13 +115,14 @@ export default function BadgesOverviewScreen() {
     badgeGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      marginBottom: 24,
+      marginBottom: 8,
     },
     badgeItem: {
-      width: '30%',
-      aspectRatio: 0.8,
-      marginBottom: 16,
+      width: '33.333%',
+      maxWidth: '33.333%',
+      flexBasis: '33.333%',
+      paddingHorizontal: 4,
+      marginBottom: 12,
       alignItems: 'center',
       position: 'relative',
     },
@@ -184,8 +150,9 @@ export default function BadgesOverviewScreen() {
       right: -5,
     },
     actionButtons: {
-      padding: 16,
-      marginBottom: 24,
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 24,
     },
     actionButton: {
       backgroundColor: theme.primary,
@@ -210,7 +177,7 @@ export default function BadgesOverviewScreen() {
   });
 
   // Render loading state
-  if (loading && badges.length === 0) {
+  if (isCalculating && badges.length === 0) {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color={theme.primary} />
@@ -220,12 +187,12 @@ export default function BadgesOverviewScreen() {
   }
 
   // Render error state
-  if (error && badges.length === 0) {
+  if (calculationError && badges.length === 0) {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
-        <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchBadges}>
+        <Text style={[styles.errorText, { color: theme.error }]}>{calculationError}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={recalculateStatistics}>
           <Text style={styles.retryButtonText}>再試行</Text>
         </TouchableOpacity>
       </View>

@@ -1,10 +1,9 @@
 // contexts/StatisticsContext.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { auth } from '../lib/authClient';
-import * as badgeService from '../services/badgeService';
+import { BadgeWithStatus, createBadgeService } from '../services/badgeService';
 import {
-  Badge,
   BasicStats,
   EfficiencyItem,
   ImpactData,
@@ -15,6 +14,7 @@ import {
 } from '../services/statisticsServiceFactory';
 import { CategoryValue } from '../types/categories';
 import { useClothing } from './ClothingContext';
+import { usePurchase } from './PurchaseContext';
 
 // 表示済みバッジ通知のキー
 const SHOWN_BADGE_NOTIFICATIONS_KEY = 'shown_badge_notifications';
@@ -24,7 +24,8 @@ interface BadgeNotification {
   id: string;
   name: string;
   description: string;
-  imageUrl: string;
+  iconName: string;
+  color: string;
 }
 
 // コンテキストの型定義（簡素化）
@@ -34,7 +35,7 @@ interface StatisticsContextType {
   rankingData: RankingItem[];
   efficiencyData: EfficiencyItem[];
   impactData: ImpactData | null;
-  badges: Badge[];
+  badges: BadgeWithStatus[];
   itemDetailStats: Map<string, ItemDetailStats>;
 
   // バッジ通知
@@ -65,15 +66,43 @@ const StatisticsContext = createContext<StatisticsContextType | undefined>(undef
 
 // プロバイダーコンポーネント
 export function StatisticsProvider({ children }: { children: React.ReactNode }) {
-  // ClothingContextからデータを取得
+  // ClothingContextとPurchaseContextからデータを取得
   const { clothingItems, loading: clothingLoading } = useClothing();
+  const { isPremium } = usePurchase();
+
+  // clothingItemsから着用・洗濯履歴を抽出
+  const wearHistory = useMemo(() => {
+    const history: any[] = [];
+    clothingItems.forEach(item => {
+      item.wearHistory.forEach(date => {
+        history.push({
+          clothing_item_id: item.id,
+          wear_date: date
+        });
+      });
+    });
+    return history;
+  }, [clothingItems]);
+
+  const washHistory = useMemo(() => {
+    const history: any[] = [];
+    clothingItems.forEach(item => {
+      item.washHistory.forEach(date => {
+        history.push({
+          clothing_item_id: item.id,
+          wash_date: date
+        });
+      });
+    });
+    return history;
+  }, [clothingItems]);
 
   // 計算済みデータの状態
   const [basicStats, setBasicStats] = useState<BasicStats | null>(null);
   const [rankingData, setRankingData] = useState<RankingItem[]>([]);
   const [efficiencyData, setEfficiencyData] = useState<EfficiencyItem[]>([]);
   const [impactData, setImpactData] = useState<ImpactData | null>(null);
-  const [badges, setBadges] = useState<Badge[]>([]);
+  const [badges, setBadges] = useState<BadgeWithStatus[]>([]);
   const [itemDetailStats, setItemDetailStats] = useState<Map<string, ItemDetailStats>>(new Map());
 
   // バッジ通知
@@ -89,7 +118,7 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
   const [categoryFilter, setCategoryFilter] = useState<CategoryValue>(null);
 
   // 前回のバッジ状態を保持（新しいバッジ検出用）
-  const previousBadgesRef = useRef<Badge[]>([]);
+  const previousBadgesRef = useRef<BadgeWithStatus[]>([]);
   // 表示済みバッジ通知のIDを保持
   const [shownNotificationIds, setShownNotificationIds] = useState<Set<string>>(new Set());
 
@@ -138,36 +167,38 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
     setCalculationError(null);
 
     try {
+      // バッジサービスを作成
+      const badgeServiceInstance = createBadgeService(user.id);
+
       // 並列で全ての統計データを計算
       const [
         basicStatsResult,
         rankingDataResult,
         efficiencyDataResult,
         impactDataResult,
-        badgesResult
+        badgesResult,
+        newBadgesResult
       ] = await Promise.all([
         statisticsService.getBasicStats(clothingItems, period),
         statisticsService.getRankingData(clothingItems, period, sortOrder, categoryFilter),
         statisticsService.getEfficiencyData(clothingItems, period),
         statisticsService.getImpactData(clothingItems, period),
-        badgeService.getBadges(clothingItems)
+        badgeServiceInstance.getAllBadgesWithStatus(clothingItems, wearHistory, washHistory, isPremium),
+        badgeServiceInstance.checkAndAwardNewBadges(clothingItems, wearHistory, washHistory, isPremium)
       ]);
 
-      // 新しいバッジの検出（表示済み通知を考慮）
-      const previousBadges = previousBadgesRef.current;
-      const newlyEarnedBadges = badgesResult.filter(
-        current => current.isEarned && 
-                  !previousBadges.some(prev => prev.id === current.id && prev.isEarned) &&
-                  !shownNotificationIds.has(current.id) // 既に表示済みでないかチェック
+      // 新しいバッジがある場合は通知を追加（表示済み通知を考慮）
+      const newlyEarnedBadges = newBadgesResult.filter(
+        badge => !shownNotificationIds.has(badge.id)
       );
 
-      // 新しいバッジがある場合は通知を追加
       if (newlyEarnedBadges.length > 0) {
         const notifications = newlyEarnedBadges.map(badge => ({
           id: badge.id,
           name: badge.name,
           description: badge.description,
-          imageUrl: badge.imageUrl
+          iconName: badge.iconName,
+          color: badge.color
         }));
         
         setBadgeNotifications(prev => [...prev, ...notifications]);
@@ -193,7 +224,7 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
     } finally {
       setIsCalculating(false);
     }
-  }, [clothingItems, clothingLoading, period, sortOrder, categoryFilter, shownNotificationIds, saveShownNotifications]);
+  }, [clothingItems, wearHistory, washHistory, clothingLoading, period, sortOrder, categoryFilter, isPremium, shownNotificationIds, saveShownNotifications]);
 
   // 手動再計算（エラー時の復旧用）
   const recalculateStatistics = useCallback(async () => {
@@ -202,91 +233,42 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
 
   // アイテム詳細統計の取得
   const getItemDetailStats = useCallback(async (itemId: string): Promise<ItemDetailStats | null> => {
-    // キャッシュから確認
-    const cached = itemDetailStats.get(itemId);
-    if (cached) {
-      return cached;
+    if (itemDetailStats.has(itemId)) {
+      return itemDetailStats.get(itemId) || null;
     }
 
     try {
+      const item = clothingItems.find(item => item.id === itemId);
+      if (!item) return null;
+
       const stats = await statisticsService.getItemDetailStats(clothingItems, itemId);
       if (stats) {
-        // キャッシュに保存
         setItemDetailStats(prev => new Map(prev).set(itemId, stats));
       }
       return stats;
     } catch (error) {
-      console.error(`StatisticsContext: Failed to get item detail stats for ${itemId}:`, error);
+      console.error('Error calculating item detail stats:', error);
       return null;
     }
-  }, [itemDetailStats, clothingItems]);
+  }, [clothingItems, itemDetailStats]);
 
-  // バッジ通知をクリア
+  // バッジ通知をクリアする関数
   const clearBadgeNotification = useCallback((badgeId: string) => {
     setBadgeNotifications(prev => prev.filter(notification => notification.id !== badgeId));
   }, []);
 
-  // 初期化時に表示済み通知を読み込み
+  // データが変更されたときの再計算
+  useEffect(() => {
+    if (!clothingLoading) {
+      calculateStatisticsInBackground();
+    }
+  }, [clothingItems, wearHistory, washHistory, period, sortOrder, categoryFilter, isPremium, calculateStatisticsInBackground]);
+
+  // 初期化処理
   useEffect(() => {
     loadShownNotifications();
   }, [loadShownNotifications]);
 
-  // 衣類データや期間・フィルターが変更されたときにバックグラウンドで統計を再計算
-  useEffect(() => {
-    if (!clothingLoading && clothingItems.length > 0 && shownNotificationIds.size >= 0) {
-      calculateStatisticsInBackground();
-    }
-  }, [period, sortOrder, categoryFilter, clothingLoading, clothingItems.length, calculateStatisticsInBackground, shownNotificationIds.size]);
-
-  // アプリ起動時にバッジデータを取得
-  useEffect(() => {
-    const initializeBadges = async () => {
-      try {
-        // 認証状態を確認してからバッジを初期化
-        const { data: { user } } = await auth.getUser();
-        if (!user) {
-          setBadges([]);
-          previousBadgesRef.current = [];
-          return;
-        }
-        
-        const initialBadges = await badgeService.getBadges(clothingItems);
-        setBadges(initialBadges);
-        // 初期化時は既に獲得済みのバッジとして設定
-        previousBadgesRef.current = initialBadges;
-      } catch (error) {
-        console.error('StatisticsContext: バッジの初期化中にエラーが発生しました:', error);
-        
-        // 認証エラーの場合は空の配列を設定
-        if (error instanceof Error && (
-            error.message?.includes('Invalid Refresh Token') || 
-            error.message?.includes('Refresh Token Not Found') ||
-            error.message?.includes('AuthApiError'))) {
-          setBadges([]);
-          previousBadgesRef.current = [];
-          return;
-        }
-      
-        // その他のエラーの場合はデフォルトバッジを試行
-        try {
-          const defaultBadges = await badgeService.getBadges(clothingItems).catch(() => []);
-          setBadges(defaultBadges);
-          previousBadgesRef.current = defaultBadges;
-        } catch (fallbackError) {
-          console.error('StatisticsContext: フォールバック処理も失敗しました:', fallbackError);
-          setBadges([]);
-          previousBadgesRef.current = [];
-        }
-      }
-    };
-
-    // 表示済み通知の読み込みが完了してから初期化
-    if (shownNotificationIds.size >= 0) {
-      initializeBadges();
-    }
-  }, [shownNotificationIds.size]);
-
-  // コンテキスト値
   const contextValue: StatisticsContextType = {
     // 計算済みデータ
     basicStats,
@@ -326,7 +308,6 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
   );
 }
 
-// カスタムフック
 export function useStatistics() {
   const context = useContext(StatisticsContext);
   if (context === undefined) {

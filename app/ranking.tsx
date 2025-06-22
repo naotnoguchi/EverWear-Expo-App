@@ -118,9 +118,11 @@ export default function RankingScreen() {
       />
 
       <View style={styles.itemInfo}>
-        <Text style={[styles.itemName, { color: theme.text }]} numberOfLines={1}>
-          {item.name}
-        </Text>
+                        {item.name && item.name.trim() && (
+                  <Text style={[styles.itemName, { color: theme.text }]} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                )}
         <Text style={[styles.itemCategory, { color: theme.text + "99" }]}>
           {item.brand ? `${item.brand} / ${item.category}` : item.category}
         </Text>
@@ -175,7 +177,6 @@ export default function RankingScreen() {
       alignItems: 'center',
     },
     filtersContainer: {
-      marginBottom: 16,
     },
     filterSection: {
       marginBottom: 12,
@@ -220,7 +221,7 @@ export default function RankingScreen() {
       marginLeft: 8,
     },
     listContent: {
-      paddingBottom: 16,
+      paddingVertical: 8,
     },
     itemCard: {
       flexDirection: 'row',
@@ -250,12 +251,13 @@ export default function RankingScreen() {
       height: 60,
       borderRadius: 8,
       marginLeft: 8,
+      marginVertical: 8, // 上下の余白を追加（アイテム名が空でも最低限の余白を確保）
       alignSelf: 'center',
       backgroundColor: theme.border,
     },
     itemInfo: {
       flex: 1,
-      padding: 12,
+      padding: 8,
     },
     itemName: {
       fontWeight: 'bold',

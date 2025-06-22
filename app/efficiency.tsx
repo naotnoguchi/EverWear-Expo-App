@@ -121,9 +121,11 @@ export default function EfficiencyScreen() {
         </View>
 
         <View style={styles.itemInfoSection}>
-          <Text style={[styles.itemName, { color: theme.text }]} numberOfLines={1}>
-            {item.name}
-          </Text>
+                          {item.name && item.name.trim() && (
+                  <Text style={[styles.itemName, { color: theme.text }]} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                )}
           <Text style={[styles.itemCategory, { color: theme.text + "99" }]}>
             {item.brand ? `${item.brand} / ${item.category}` : item.category}
           </Text>

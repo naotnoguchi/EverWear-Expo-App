@@ -293,7 +293,9 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
         />
         <View style={styles.contentContainer}>
           <View style={styles.itemDetails}>
-            <Text style={styles.itemName}>{item.name}</Text>
+            {item.name && item.name.trim() && (
+              <Text style={styles.itemName}>{item.name}</Text>
+            )}
             <Text style={styles.itemCategory}>
               {item.brand ? `${item.brand} / ${item.category}` : item.category}
             </Text>
@@ -476,7 +478,8 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
       backgroundColor: theme.border, // 画像読み込み中の背景色
       borderRadius: 8, // 角丸を追加
       alignSelf: 'center', // 上下中央配置
-      marginLeft: 12, // 左の余白
+      marginLeft: 8, // 左の余白
+      marginVertical: 8, // 上下の余白を追加（アイテム名が空でも最低限の余白を確保）
     },
     contentContainer: {
       flex: 1,
@@ -484,7 +487,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
     },
     itemDetails: {
       flex: 1,
-      padding: 10,
+      padding: 8,
       justifyContent: 'center', // 垂直方向の中央寄せで余白を均等に配分
     },
     itemName: {

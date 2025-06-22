@@ -599,7 +599,11 @@ export default function ItemDetail() {
 
       <View style={styles.detailsContainer}>
         <View style={styles.itemNameContainer}>
-          <Text style={styles.itemName}>{item.name}</Text>
+          <View style={{ flex: 1 }}>
+            {item.name && item.name.trim() && (
+              <Text style={styles.itemName}>{item.name}</Text>
+            )}
+          </View>
           <TouchableOpacity
               style={styles.editButton}
               onPress={() => router.push(`/item/edit/${item.id}`)}

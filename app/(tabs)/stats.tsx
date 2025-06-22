@@ -360,7 +360,6 @@ export default function Stats() {
       flexDirection: 'row',
       alignItems: 'center',
       padding: 8,
-      marginBottom: 8,
       borderBottomWidth: 1,
       borderBottomColor: theme.border,
     },
@@ -379,8 +378,8 @@ export default function Stats() {
       fontSize: 12,
     },
     itemImage: {
-      width: 40,
-      height: 40,
+      width: 60,
+      height: 60,
       borderRadius: 4,
       marginRight: 12,
     },
@@ -403,11 +402,11 @@ export default function Stats() {
       marginBottom: 4,
     },
     barContainer: {
-      flex: 1,
       height: 4,
       backgroundColor: theme.border,
       borderRadius: 2,
       overflow: 'hidden',
+      marginTop: 2,
     },
     bar: {
       height: '100%',
@@ -708,8 +707,8 @@ export default function Stats() {
                   source={{
                     uri: (item.id && imageUrls[item.id]) || item.imageUrl || '',
                     cacheKey: item.imageUrl || `fallback-${index}`,
-                    width: 40,
-                    height: 40
+                    width: 60,
+                    height: 60
                   }}
                   style={styles.itemImage}
                   contentFit="cover"
@@ -720,9 +719,11 @@ export default function Stats() {
                   }}
                 />
                 <View style={styles.itemInfo}>
-                  <Text style={[styles.itemName, { color: theme.text }]} numberOfLines={1}>
-                    {item.name || '名前なし'}
-                  </Text>
+                  {item.name && item.name.trim() && (
+                    <Text style={[styles.itemName, { color: theme.text }]} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                  )}
                   <Text style={[styles.itemCategory, { color: theme.text + "99" }]}>
                     {item.brand ? `${item.brand} / ${item.category || 'カテゴリなし'}` : (item.category || 'カテゴリなし')}
                   </Text>

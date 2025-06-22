@@ -14,7 +14,7 @@ CREATE TABLE users (
 CREATE TABLE clothing_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
+  name TEXT,
   category TEXT NOT NULL,
   brand_id UUID REFERENCES brands(id),
   image_path TEXT,

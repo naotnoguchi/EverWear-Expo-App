@@ -449,9 +449,11 @@ export default function ItemDetailScreen() {
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
         {/* Item basic info */}
         <View style={styles.card}>
-          <Text style={styles.itemName}>
-            {itemStats.name}
-          </Text>
+          {itemStats.name && itemStats.name.trim() && (
+            <Text style={styles.itemName}>
+              {itemStats.name}
+            </Text>
+          )}
           <Text style={styles.itemCategory}>
             {itemStats.brand ? `${itemStats.brand} / ${itemStats.category}` : itemStats.category}
           </Text>

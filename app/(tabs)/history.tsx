@@ -1,26 +1,28 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-    Alert,
-    Animated,
-    Easing,
-    LayoutAnimation,
-    NativeScrollEvent,
-    NativeSyntheticEvent,
-    Platform,
-    SectionList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    UIManager,
-    useWindowDimensions,
-    View,
+  Alert,
+  Animated,
+  Easing,
+  LayoutAnimation,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Platform,
+  SectionList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import HistoryCalendar, { HistoryCalendarRefType } from "../../components/HistoryCalendar";
 import { useClothing } from '../../contexts/ClothingContext';
 import { useTabReset } from '../../contexts/TabResetContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useImageUrls } from '../../hooks/useImageUrls';
 import { formatDateJapanese } from '../../lib/dateUtils';
 
 // React Native の LayoutAnimation を有効化（Android用）
@@ -37,6 +39,7 @@ interface HistoryItem {
   itemName: string;
   category: string;
   brand?: string; // ブランド情報を追加
+  imageUrl?: string; // アイテム画像を追加
   eventType: "wear" | "wash";
   date: string;
 }
@@ -65,6 +68,7 @@ const generateHistoryData = (clothingItems: any[]): HistoryItem[] => {
             itemName: item.name,
             category: item.category,
             brand: item.brand,
+            imageUrl: item.image,
             eventType: "wear",
             date: date
           });
@@ -84,6 +88,7 @@ const generateHistoryData = (clothingItems: any[]): HistoryItem[] => {
             itemName: item.name,
             category: item.category,
             brand: item.brand,
+            imageUrl: item.image,
             eventType: "wash",
             date: date
           });
@@ -152,6 +157,15 @@ export default function History() {
 
   // 履歴データを取得
   const historyData = useMemo(() => generateHistoryData(clothingItems), [clothingItems]);
+
+  // 画像URLを取得
+  const imageUrls = useImageUrls(historyData.map(item => ({ 
+    id: item.itemId, 
+    imageUrl: item.imageUrl || ''
+  })), { 
+    width: 320, 
+    height: 320
+  });
 
   // Filter history data based on selected date only
   const filteredHistory = useMemo(() => {
@@ -306,8 +320,26 @@ export default function History() {
             />
           </View>
         </View>
+
+        <Image
+          source={{
+            uri: imageUrls[item.itemId] || item.imageUrl || require('@/assets/images/placeholder.png'),
+            cacheKey: item.imageUrl,
+            width: 60,
+            height: 60
+          }}
+          style={styles.itemImage}
+          contentFit="cover"
+          cachePolicy="disk"
+          onError={() => {
+            // エラー時は何もしない（デフォルトのフォールバック画像が表示される）
+          }}
+        />
+
         <View style={styles.historyContent}>
-          <Text style={styles.historyTitle}>{item.itemName}</Text>
+          {item.itemName && item.itemName.trim() && (
+            <Text style={styles.historyTitle}>{item.itemName}</Text>
+          )}
           <Text style={styles.historyCategory}>
             {item.brand ? `${item.brand} / ${item.category}` : item.category}
           </Text>
@@ -466,7 +498,7 @@ export default function History() {
     historyItem: {
       backgroundColor: theme.card,
       borderRadius: 8,
-      padding: 12,
+      padding: 8,
       marginBottom: 8,
       flexDirection: "row",
       shadowColor: theme.text,
@@ -488,8 +520,17 @@ export default function History() {
       justifyContent: "center",
       alignItems: "center",
     },
+    itemImage: {
+      width: 60,
+      height: 60,
+      borderRadius: 8,
+      alignSelf: 'center',
+      backgroundColor: theme.border,
+    },
     historyContent: {
       flex: 1,
+      marginLeft: 8,
+      justifyContent: "center",
     },
     historyDate: {
       fontSize: 12,

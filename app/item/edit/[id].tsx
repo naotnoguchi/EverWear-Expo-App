@@ -175,18 +175,8 @@ export default function EditItem() {
 
   const handleUpdateItem = async () => {
     // 入力検証
-    if (!name.trim()) {
-      Alert.alert("エラー", "アイテム名を入力してください");
-      return;
-    }
-
     if (!selectedCategory) {
       Alert.alert("エラー", "カテゴリを選択してください");
-      return;
-    }
-
-    if (!washThreshold || isNaN(Number(washThreshold)) || Number(washThreshold) <= 0) {
-      Alert.alert("エラー", "有効な洗濯閾値を入力してください");
       return;
     }
 
@@ -195,7 +185,12 @@ export default function EditItem() {
       return;
     }
 
-    // ブランド入力は必須ではない
+    if (!washThreshold || isNaN(Number(washThreshold)) || Number(washThreshold) <= 0) {
+      Alert.alert("エラー", "有効な洗濯閾値を入力してください");
+      return;
+    }
+
+    // アイテム名とブランド入力は必須ではない
 
     // 現在のアイテムを取得
     const currentItem = clothingItems.find(item => item.id === id);
@@ -372,6 +367,16 @@ export default function EditItem() {
       fontWeight: "600",
       marginBottom: 8,
       color: theme.text,
+    },
+    requiredText: {
+      fontSize: 14,
+      fontWeight: "500",
+      color: "#e74c3c",
+    },
+    optionalText: {
+      fontSize: 14,
+      fontWeight: "400",
+      color: theme.text + "66",
     },
     sublabel: {
       fontSize: 14,
@@ -562,24 +567,9 @@ export default function EditItem() {
               </TouchableOpacity>
             </View>
 
-            {/* アイテム名入力 */}
+            {/* カテゴリ選択（必須） */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>アイテム名</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="text-outline" size={20} color={theme.text + "99"} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  value={name}
-                  onChangeText={setName}
-                  placeholder="例: お気に入りの白シャツ"
-                  placeholderTextColor={theme.text + "77"}
-                />
-              </View>
-            </View>
-
-            {/* カテゴリ選択 */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>カテゴリ</Text>
+              <Text style={styles.label}>カテゴリ <Text style={styles.requiredText}>*必須</Text></Text>
               <View style={styles.categoryContainer}>
                 {categories.map((category) => (
                   <TouchableOpacity
@@ -610,13 +600,28 @@ export default function EditItem() {
               </View>
             </View>
 
-            {/* ブランド選択 */}
+            {/* ブランド選択（任意） */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>ブランド</Text>
+              <Text style={styles.label}>ブランド <Text style={styles.optionalText}>（任意）</Text></Text>
               <BrandSelector
                 value={brand}
                 onValueChange={setBrand}
               />
+            </View>
+
+            {/* アイテム名入力（任意） */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>アイテム名 <Text style={styles.optionalText}>（任意）</Text></Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="text-outline" size={20} color={theme.text + "99"} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="例: お気に入りの白シャツ"
+                  placeholderTextColor={theme.text + "77"}
+                />
+              </View>
             </View>
 
             {/* 洗濯閾値設定 */}

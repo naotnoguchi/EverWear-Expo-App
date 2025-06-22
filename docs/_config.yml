@@ -1,0 +1,6 @@
+# GitHub Pages設定 - EverWear利用規約・プライバシーポリシー
+# termsとprivacyページからルートに戻れないよう設定
+
+# ナビゲーション制御 - ルートへのリンクを完全に無効化
+header_pages: []
+navigation: []

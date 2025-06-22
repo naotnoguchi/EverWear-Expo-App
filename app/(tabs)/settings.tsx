@@ -2,13 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import {
-    Alert,
-    Linking,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePremiumFeatures, usePurchase } from "../../contexts/PurchaseContext";
@@ -48,7 +47,7 @@ export default function Settings() {
     router.push({
       pathname: "/webview",
       params: {
-        url: "https://naotnoguchi.github.io/everwear/terms-ja.html",
+        url: "https://naotnoguchi.github.io/EverWear/terms-ja.html",
         title: "利用規約"
       }
     });
@@ -59,7 +58,7 @@ export default function Settings() {
     router.push({
       pathname: "/webview",
       params: {
-        url: "https://naotnoguchi.github.io/everwear/privacy-ja.html",
+        url: "https://naotnoguchi.github.io/EverWear/privacy-ja.html",
         title: "プライバシーポリシー"
       }
     });

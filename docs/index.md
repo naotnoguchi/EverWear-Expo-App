@@ -1,6 +1,0 @@
-# ドキュメント
-
-- [利用規約（日本語）](terms-ja.html)
-- [Terms of Service (English)](terms-en.html)
-- [プライバシーポリシー（日本語）](privacy-ja.html)
-- [Privacy Policy (English)](privacy-en.html) 

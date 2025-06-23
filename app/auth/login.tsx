@@ -1,7 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View, useColorScheme } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -17,6 +17,11 @@ export default function LoginScreen() {
   const { signIn, signInWithGoogle, signInWithApple, resetPassword, resendConfirmation } = useAuth();
   const { resetOnboarding } = useOnboarding();
   const theme = useTheme();
+  const colorScheme = useColorScheme();
+  const appleButtonStyle =
+    colorScheme === 'dark'
+      ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+      : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK;
 
   const handleEmailLogin = async () => {
     if (!email || !password) {
@@ -264,25 +269,24 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity
-            style={[
-              styles.socialButton, 
-              styles.googleButton,
-              { 
-                backgroundColor: theme.card,
-                borderColor: theme.border
-              }
-            ]}
+            style={[styles.socialButton, styles.googleButton]}
             onPress={handleGoogleLogin}
             disabled={isLoading}
           >
-            <Text style={[styles.socialButtonText, { color: theme.text }]}>Googleでログイン</Text>
+            <Image
+              source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
+              style={styles.googleLogo}
+            />
+            <Text style={styles.socialButtonText}>
+              {isLoading ? '認証中...' : 'Googleでログイン'}
+            </Text>
           </TouchableOpacity>
 
           {Platform.OS === 'ios' && (
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={5}
+              buttonStyle={appleButtonStyle}
+              cornerRadius={8}
               style={styles.appleButton}
               onPress={handleAppleLogin}
             />
@@ -415,19 +419,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   googleButton: {
-    backgroundColor: 'white',
+    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#dadce0',
+  },
+  googleLogo: {
+    width: 18,
+    height: 18,
+    marginRight: 8,
   },
   socialButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#5F6368',
   },
   appleButton: {
     height: 50,
     width: '100%',
     marginBottom: 15,
+    borderRadius: 8,
   },
   footer: {
     flexDirection: 'row',

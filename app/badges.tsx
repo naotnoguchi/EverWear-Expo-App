@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { Badge } from "../services/statisticsServiceFactory";
+import type { BadgeWithStatus } from "../services/badgeService";
 
 export default function BadgesScreen() {
   const theme = useTheme();
@@ -22,7 +22,7 @@ export default function BadgesScreen() {
   const error = calculationError;
 
   // ローカル状態（コンテキストにない状態）
-  const [selectedCategory, setSelectedCategory] = useState<Badge['category'] | 'all'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showEarned, setShowEarned] = useState<'all' | 'earned' | 'unearned'>('all');
 
   // バッジデータを取得
@@ -41,7 +41,7 @@ export default function BadgesScreen() {
 
   // Filter badges based on selected category and earned status
   // Ensure badges is an array before filtering
-  const badgesArray = Array.isArray(badges) ? badges : [];
+  const badgesArray: BadgeWithStatus[] = Array.isArray(badges) ? badges : [];
   const filteredBadges = badgesArray.filter(badge => {
     const categoryMatch = selectedCategory === 'all' || badge.category === selectedCategory;
     const earnedMatch = showEarned === 'all' || 
@@ -51,40 +51,43 @@ export default function BadgesScreen() {
   });
 
   // Get badge icon based on category
-  const getBadgeIcon = (category: Badge['category']) => {
+  const getBadgeIcon = (category: string) => {
     switch (category) {
       case 'usage': return 'checkmark-circle';
       case 'efficiency': return 'speedometer';
       case 'milestone': return 'trophy';
+      case 'achievement': return 'medal';
       case 'special': return 'star';
       default: return 'ribbon';
     }
   };
 
   // Get badge category display name
-  const getCategoryName = (category: Badge['category']) => {
+  const getCategoryName = (category: string) => {
     switch (category) {
       case 'usage': return '使用実績';
       case 'efficiency': return '効率化';
       case 'milestone': return 'マイルストーン';
+      case 'achievement': return '実績';
       case 'special': return '特別';
       default: return 'その他';
     }
   };
 
   // Get badge color based on category
-  const getBadgeColor = (category: Badge['category']) => {
+  const getBadgeColor = (category: string) => {
     switch (category) {
       case 'usage': return '#3498db'; // Blue
       case 'efficiency': return '#27ae60'; // Green
       case 'milestone': return '#f39c12'; // Orange
+      case 'achievement': return '#3498db'; // Blue (align with overview)
       case 'special': return '#9b59b6'; // Purple
       default: return '#95a5a6'; // Gray
     }
   };
 
   // Render badge item
-  const renderBadgeItem = ({ item }: { item: Badge }) => (
+  const renderBadgeItem = ({ item }: { item: BadgeWithStatus }) => (
     <View style={[styles.badgeCard, { backgroundColor: theme.card }]}>
       <View 
         style={[
@@ -126,13 +129,13 @@ export default function BadgesScreen() {
           </Text>
         ) : (
           <View style={styles.progressContainer}>
-            <View style={styles.progressBarContainer}>
-              <View 
-                style={[
-                  styles.progressBar, 
-                  { width: `${item.progress || 0}%`, backgroundColor: getBadgeColor(item.category) }
-                ]} 
-              />
+            <View style={[styles.progressBarContainer, { backgroundColor: getBadgeColor(item.category) + '33' }]}> 
+              <View  
+                style={[  
+                  styles.progressBar,  
+                  { width: `${item.progress || 0}%`, backgroundColor: getBadgeColor(item.category) } 
+                ]}  
+              /> 
             </View>
             <Text style={[styles.progressText, { color: theme.text + '99' }]}>
               {item.progress || 0}% 達成
@@ -150,11 +153,12 @@ export default function BadgesScreen() {
   );
 
   // Category filter options
-  const categoryOptions: { label: string; value: Badge['category'] | 'all' }[] = [
+  const categoryOptions: { label: string; value: string }[] = [
     { label: 'すべて', value: 'all' },
     { label: '使用実績', value: 'usage' },
     { label: '効率化', value: 'efficiency' },
     { label: 'マイルストーン', value: 'milestone' },
+    { label: '実績', value: 'achievement' },
     { label: '特別', value: 'special' },
   ];
 
@@ -441,13 +445,13 @@ export default function BadgesScreen() {
             <View style={styles.progressContainer}>
               <View style={styles.progressBarContainer}>
                 <View 
-                  style={[
+                  style={[ 
                     styles.progressBar, 
                     { width: `${earnedPercentage}%`, backgroundColor: theme.primary }
                   ]} 
                 />
               </View>
-              <Text style={[styles.progressText, { color: theme.text + '99' }]}>
+              <Text style={[styles.progressText, { color: theme.text + '99' }]}> 
                 {earnedPercentage}% 達成
               </Text>
             </View>

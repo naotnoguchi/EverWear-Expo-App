@@ -11,6 +11,8 @@ import {
 export interface BadgeWithStatus extends Badge {
   isEarned: boolean;
   earnedDate?: string;
+  /** バッジ達成度 (0-100) */
+  progress: number;
 }
 
 export class BadgeService {
@@ -52,7 +54,14 @@ export class BadgeService {
         return {
           ...badge,
           isEarned: !!earnedBadge,
-          earnedDate: earnedBadge?.earned_date
+          earnedDate: earnedBadge?.earned_date,
+          progress: calculateProgressForBadge(
+            badge.id,
+            items,
+            wearRecords,
+            washRecords,
+            isPremiumUser
+          )
         };
       });
     } catch (error) {
@@ -214,3 +223,128 @@ export class BadgeService {
 export const createBadgeService = (userId: string): BadgeService => {
   return new BadgeService(userId);
 };
+
+/**
+ * バッジ進捗計算用ユーティリティ関数群
+ */
+
+// アイテムごとの最大着用回数を取得
+function getMaxWearCountForItem(wearRecords: WearHistory[]): number {
+  const wearCounts = new Map<string, number>();
+  wearRecords.forEach(record => {
+    const count = wearCounts.get(record.clothing_item_id) || 0;
+    wearCounts.set(record.clothing_item_id, count + 1);
+  });
+  return Math.max(0, ...Array.from(wearCounts.values()));
+}
+
+// 洗濯削減回数を計算
+const ITEMS_PER_WASH_LOAD = 5;
+function calculateWashesReduced(
+  wearRecords: WearHistory[],
+  washRecords: WashHistory[]
+): number {
+  const totalWears = wearRecords.length;
+  const totalWashes = washRecords.length;
+  return Math.max(0, Math.floor((totalWears - totalWashes) / ITEMS_PER_WASH_LOAD));
+}
+
+// 連続記録の最長日数を取得
+function getLongestConsecutiveDays(wearRecords: WearHistory[], washRecords: WashHistory[]): number {
+  const allDates = new Set<string>();
+  wearRecords.forEach(r => allDates.add(r.wear_date));
+  washRecords.forEach(r => allDates.add(r.wash_date));
+
+  const sorted = Array.from(allDates).sort();
+  if (sorted.length === 0) return 0;
+
+  let longest = 1;
+  let current = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const cur = new Date(sorted[i]);
+    const prev = new Date(sorted[i - 1]);
+    const diffDays = Math.floor((cur.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) {
+      current += 1;
+      longest = Math.max(longest, current);
+    } else if (diffDays > 1) {
+      current = 1;
+    }
+  }
+  return longest;
+}
+
+// 汎用的な進捗計算 (0-100)
+function calcProgress(current: number, threshold: number): number {
+  return Math.min(100, Math.round((current / threshold) * 100));
+}
+
+// バッジID毎の進捗計算
+function calculateProgressForBadge(
+  badgeId: string,
+  items: AppClothingItem[],
+  wearRecords: WearHistory[],
+  washRecords: WashHistory[],
+  isPremium: boolean
+): number {
+  switch (badgeId) {
+    case 'first-item':
+      return calcProgress(items.length, 1);
+    case 'first-wear':
+      return calcProgress(wearRecords.length, 1);
+    case 'first-wash':
+      return calcProgress(washRecords.length, 1);
+
+    case 'item-collector-5':
+      return calcProgress(items.length, 5);
+    case 'item-collector-15':
+      return calcProgress(items.length, 15);
+    case 'item-collector-30':
+      return calcProgress(items.length, 30);
+
+    case 'wear-achiever-item-10':
+      return calcProgress(getMaxWearCountForItem(wearRecords), 10);
+    case 'wear-achiever-item-30':
+      return calcProgress(getMaxWearCountForItem(wearRecords), 30);
+    case 'wear-achiever-item-50':
+      return calcProgress(getMaxWearCountForItem(wearRecords), 50);
+
+    case 'wear-master-10':
+      return calcProgress(wearRecords.length, 10);
+    case 'wear-master-50':
+      return calcProgress(wearRecords.length, 50);
+    case 'wear-master-100':
+      return calcProgress(wearRecords.length, 100);
+
+    case 'wash-master-10':
+      return calcProgress(washRecords.length, 10);
+    case 'wash-master-30':
+      return calcProgress(washRecords.length, 30);
+    case 'wash-master-50':
+      return calcProgress(washRecords.length, 50);
+
+    case 'wash-saver-10':
+      return calcProgress(calculateWashesReduced(wearRecords, washRecords), 10);
+    case 'wash-saver-50':
+      return calcProgress(calculateWashesReduced(wearRecords, washRecords), 50);
+    case 'wash-saver-100':
+      return calcProgress(calculateWashesReduced(wearRecords, washRecords), 100);
+
+    case 'category-master': {
+      const categories = new Set<string>();
+      items.forEach(item => {
+        if (item.category) categories.add(item.category);
+      });
+      return calcProgress(categories.size, 7);
+    }
+
+    case 'premium-unlocked':
+      return isPremium ? 100 : 0;
+
+    case 'consistent-tracker':
+      return calcProgress(getLongestConsecutiveDays(wearRecords, washRecords), 100);
+
+    default:
+      return 0;
+  }
+}

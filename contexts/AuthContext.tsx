@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthChangeEvent, Session, User } from '@supabase/auth-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Google from 'expo-auth-session/providers/google';
+import * as Crypto from 'expo-crypto';
+// @ts-ignore - expo-random is provided by Expo runtime
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { auth } from '../lib/authClient';
@@ -304,29 +306,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // -------------------------
+  // Utility helpers (Apple Sign-In)
+  // -------------------------
+
+  // ランダムな英数字32文字（Apple 推奨）の nonce を生成
+  const generateRandomNonce = (length: number = 32): string => {
+    const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    const randomBytes = Crypto.getRandomBytes(length);
+    let result = '';
+    randomBytes.forEach((b: number) => (result += charset[b % charset.length]));
+    return result;
+  };
+
+  // SHA-256 でハッシュ化（16進文字列）
+  const sha256Async = async (value: string): Promise<string> => {
+    return await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      value,
+      { encoding: Crypto.CryptoEncoding.HEX }
+    );
+  };
+
   // Appleでサインイン
   const signInWithApple = async () => {
     try {
-      if (Platform.OS === 'ios') {
-        const credential = await AppleAuthentication.signInAsync({
-          requestedScopes: [
-            AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-            AppleAuthentication.AppleAuthenticationScope.EMAIL,
-          ],
-        });
-
-        if (credential.identityToken) {
-          const { error } = await auth.signInWithIdToken({
-            provider: 'apple',
-            token: credential.identityToken,
-          });
-
-          if (error) throw error;
-        }
-      } else {
+      if (Platform.OS !== 'ios') {
         throw new Error('Apple Sign In is only available on iOS devices');
       }
+
+      // 1️⃣ nonce を生成
+      const rawNonce = generateRandomNonce();
+      const hashedNonce = await sha256Async(rawNonce);
+
+      // 2️⃣ Apple 認証モーダルを表示
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashedNonce,
+      });
+
+      // 3️⃣ Supabase へ ID トークン + nonce を送信
+      if (credential.identityToken) {
+        const { error } = await auth.signInWithIdToken({
+          provider: 'apple',
+          token: credential.identityToken,
+          nonce: rawNonce,
+        });
+
+        if (error) throw error;
+      } else {
+        throw new Error('Failed to obtain identity token from Apple credential');
+      }
     } catch (error: any) {
+      // ユーザーキャンセルは無視
       if (error.code !== 'ERR_CANCELED') {
         console.error('Error signing in with Apple:', error);
         throw error;

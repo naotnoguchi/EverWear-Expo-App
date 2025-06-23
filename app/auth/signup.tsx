@@ -1,8 +1,8 @@
+import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { router } from 'expo-router';
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('');
@@ -83,6 +83,25 @@ export default function SignupScreen() {
           {isLoading ? '登録中...' : 'アカウント作成'}
         </Text>
       </TouchableOpacity>
+
+      {/* 規約同意注釈 */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 12 }}>
+        <Text style={{ color: theme.textSecondary }}>「アカウント作成」をタップすると、</Text>
+        <Text
+          style={{ color: theme.primary, textDecorationLine: 'underline' }}
+          onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/terms-ja.html', title: '利用規約' } })}
+        >
+          利用規約
+        </Text>
+        <Text style={{ color: theme.textSecondary }}>と</Text>
+        <Text
+          style={{ color: theme.primary, textDecorationLine: 'underline' }}
+          onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/privacy-ja.html', title: 'プライバシーポリシー' } })}
+        >
+          プライバシーポリシー
+        </Text>
+        <Text style={{ color: theme.textSecondary }}>に同意したものとみなします。</Text>
+      </View>
 
       <View style={styles.footer}>
         <Text style={[styles.footerText, { color: theme.textSecondary }]}>

@@ -288,6 +288,25 @@ export default function LoginScreen() {
             />
           )}
 
+          {/* 規約同意注釈 */}
+          <Text style={[styles.agreementText, { color: theme.textSecondary }]} selectable={false}>
+            「ログイン」または「サインイン」ボタンをタップすると、
+            <Text
+              style={{ color: theme.primary, textDecorationLine: 'underline' }}
+              onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/terms-ja.html', title: '利用規約' } })}
+            >
+              利用規約
+            </Text>
+            と
+            <Text
+              style={{ color: theme.primary, textDecorationLine: 'underline' }}
+              onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/privacy-ja.html', title: 'プライバシーポリシー' } })}
+            >
+              プライバシーポリシー
+            </Text>
+            に同意したものとみなします。
+          </Text>
+
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: theme.textSecondary }]}>
               アカウントをお持ちでない場合は
@@ -354,7 +373,6 @@ const styles = StyleSheet.create({
   },
   linkContainer: {
     alignItems: 'center',
-    marginBottom: 15,
   },
   resetForm: {
     marginTop: 20,
@@ -392,6 +410,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 15,
     marginBottom: 15,
     flexDirection: 'row',
   },
@@ -425,6 +444,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
     marginBottom: 20,
+  },
+  agreementText: {
+    textAlign: 'center',
+    marginBottom: 12,
   },
   onboardingLinkText: {
     fontSize: 14,

@@ -71,8 +71,11 @@ function MainApp() {
   // Check if we're already on an auth screen
   const inAuthGroup = segments[0] === 'auth';
 
-  // If user is not authenticated and not already on auth screen, redirect to login
-  if (!user && !inAuthGroup) {
+  // 未ログインユーザが /webview にアクセスする場合は許可 (規約・ポリシー閲覧用)
+  const isPublicScreen = segments[0] === 'webview';
+
+  // If user is not authenticated and not already on auth screen or public screen, redirect to login
+  if (!user && !inAuthGroup && !isPublicScreen) {
     console.log('No user, redirecting to login...');
     return <Redirect href="/auth/login" />;
   }

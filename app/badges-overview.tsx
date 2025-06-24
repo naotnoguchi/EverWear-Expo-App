@@ -208,7 +208,7 @@ export default function BadgesOverviewScreen() {
         }} 
       />
       <ScrollView style={styles.container}>
-        {badges.length > 0 ? (
+        {totalBadges > 0 ? (
           <ViewShot 
             ref={viewShotRef} 
             options={{ format: "jpg", quality: 0.9 }}
@@ -262,9 +262,9 @@ export default function BadgesOverviewScreen() {
         ) : (
           <View style={[styles.screenshotContainer, styles.centerContent]}>
             <Ionicons name="ribbon-outline" size={64} color={theme.text + "66"} />
-            <Text style={[styles.title, { marginTop: 16 }]}>バッジはまだありません</Text>
+            <Text style={[styles.title, { marginTop: 16 }]}>バッジデータを読み込み中です</Text>
             <Text style={[styles.subtitle, { textAlign: 'center', marginTop: 8, marginBottom: 16 }]}>
-              アイテムを登録して着用・洗濯を記録すると、様々なバッジを獲得できます。最初のアイテムを登録して、バッジ収集を始めましょう！
+              しばらくお待ちください
             </Text>
           </View>
         )}

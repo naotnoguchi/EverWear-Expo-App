@@ -144,87 +144,153 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
+  // 認証されていない場合のバッジ進捗計算
+  const calculateProgressForUnauthenticatedUser = useCallback((
+    badgeId: string,
+    itemCount: number,
+    wearCount: number,
+    washCount: number
+  ): number => {
+    switch (badgeId) {
+      case 'first-item':
+        return Math.min(100, Math.round((itemCount / 1) * 100));
+      case 'first-wear':
+        return Math.min(100, Math.round((wearCount / 1) * 100));
+      case 'first-wash':
+        return Math.min(100, Math.round((washCount / 1) * 100));
+      case 'item-collector-5':
+        return Math.min(100, Math.round((itemCount / 5) * 100));
+      case 'item-collector-15':
+        return Math.min(100, Math.round((itemCount / 15) * 100));
+      case 'item-collector-30':
+        return Math.min(100, Math.round((itemCount / 30) * 100));
+      case 'wear-master-10':
+        return Math.min(100, Math.round((wearCount / 10) * 100));
+      case 'wear-master-50':
+        return Math.min(100, Math.round((wearCount / 50) * 100));
+      case 'wear-master-100':
+        return Math.min(100, Math.round((wearCount / 100) * 100));
+      case 'wash-master-10':
+        return Math.min(100, Math.round((washCount / 10) * 100));
+      case 'wash-master-30':
+        return Math.min(100, Math.round((washCount / 30) * 100));
+      case 'wash-master-50':
+        return Math.min(100, Math.round((washCount / 50) * 100));
+      case 'premium-unlocked':
+        return isPremium ? 100 : 0;
+      default:
+        return 0;
+    }
+  }, [isPremium]);
+
   // バックグラウンドで統計を計算する関数
   const calculateStatisticsInBackground = useCallback(async () => {
-    if (clothingLoading || clothingItems.length === 0) {
-      return;
-    }
-
-    // 認証状態を確認してから統計計算を実行
-    const { data: { user } } = await auth.getUser();
-    if (!user) {
-      // 認証されていない場合は空の状態を設定
-      setBasicStats(null);
-      setRankingData([]);
-      setEfficiencyData([]);
-      setImpactData(null);
-      setBadges([]);
-      previousBadgesRef.current = [];
-      return;
-    }
-
     setIsCalculating(true);
     setCalculationError(null);
 
     try {
-      // バッジサービスを作成
-      const badgeServiceInstance = createBadgeService(user.id);
+      // 認証状態を確認
+      const { data: { user } } = await auth.getUser();
+      
+      // バッジは常に表示する（認証やアイテムの有無に関係なく）
+      let badgeServiceInstance: any = null;
+      let badgesResult: BadgeWithStatus[] = [];
+      let newBadgesResult: any[] = [];
 
-      // 並列で全ての統計データを計算
-      const [
-        basicStatsResult,
-        rankingDataResult,
-        efficiencyDataResult,
-        impactDataResult,
-        badgesResult,
-        newBadgesResult
-      ] = await Promise.all([
-        statisticsService.getBasicStats(clothingItems, period),
-        statisticsService.getRankingData(clothingItems, period, sortOrder, categoryFilter),
-        statisticsService.getEfficiencyData(clothingItems, period),
-        statisticsService.getImpactData(clothingItems, period),
-        badgeServiceInstance.getAllBadgesWithStatus(clothingItems, wearHistory, washHistory, isPremium),
-        badgeServiceInstance.checkAndAwardNewBadges(clothingItems, wearHistory, washHistory, isPremium)
-      ]);
-
-      // 新しいバッジがある場合は通知を追加（表示済み通知を考慮）
-      const newlyEarnedBadges = newBadgesResult.filter(
-        badge => !shownNotificationIds.has(badge.id)
-      );
-
-      if (newlyEarnedBadges.length > 0) {
-        const notifications = newlyEarnedBadges.map(badge => ({
-          id: badge.id,
-          name: badge.name,
-          description: badge.description,
-          iconName: badge.iconName,
-          color: badge.color
+      if (user) {
+        badgeServiceInstance = createBadgeService(user.id);
+        badgesResult = await badgeServiceInstance.getAllBadgesWithStatus(clothingItems, wearHistory, washHistory, isPremium);
+        newBadgesResult = await badgeServiceInstance.checkAndAwardNewBadges(clothingItems, wearHistory, washHistory, isPremium);
+      } else {
+        // 認証されていない場合は、全バッジを未獲得状態で表示
+        const { getAllBadges } = await import('../services/badgeDefinitions');
+        const allBadges = getAllBadges();
+        badgesResult = allBadges.map(badge => ({
+          ...badge,
+          isEarned: false,
+          earnedDate: undefined,
+          progress: calculateProgressForUnauthenticatedUser(badge.id, clothingItems.length, wearHistory.length, washHistory.length)
         }));
-        
-        setBadgeNotifications(prev => [...prev, ...notifications]);
-
-        // 表示済み通知として記録
-        const newShownIds = new Set([...shownNotificationIds, ...newlyEarnedBadges.map(b => b.id)]);
-        setShownNotificationIds(newShownIds);
-        saveShownNotifications(newShownIds);
       }
 
-      // 状態を更新
-      setBasicStats(basicStatsResult);
-      setRankingData(rankingDataResult);
-      setEfficiencyData(efficiencyDataResult);
-      setImpactData(impactDataResult);
+      // アイテムデータがある場合のみ統計を計算
+      if (!clothingLoading && clothingItems.length > 0) {
+        const [
+          basicStatsResult,
+          rankingDataResult,
+          efficiencyDataResult,
+          impactDataResult
+        ] = await Promise.all([
+          statisticsService.getBasicStats(clothingItems, period),
+          statisticsService.getRankingData(clothingItems, period, sortOrder, categoryFilter),
+          statisticsService.getEfficiencyData(clothingItems, period),
+          statisticsService.getImpactData(clothingItems, period)
+        ]);
+
+        // 状態を更新
+        setBasicStats(basicStatsResult);
+        setRankingData(rankingDataResult);
+        setEfficiencyData(efficiencyDataResult);
+        setImpactData(impactDataResult);
+      } else {
+        // アイテムがない場合は統計を空にリセット
+        setBasicStats(null);
+        setRankingData([]);
+        setEfficiencyData([]);
+        setImpactData(null);
+      }
+
+      // バッジは常に設定
       setBadges(badgesResult);
+
+      // 新しいバッジがある場合は通知を追加（認証済みユーザーのみ）
+      if (user && newBadgesResult.length > 0) {
+        const newlyEarnedBadges = newBadgesResult.filter(
+          badge => !shownNotificationIds.has(badge.id)
+        );
+
+        if (newlyEarnedBadges.length > 0) {
+          const notifications = newlyEarnedBadges.map(badge => ({
+            id: badge.id,
+            name: badge.name,
+            description: badge.description,
+            iconName: badge.iconName,
+            color: badge.color
+          }));
+          
+          setBadgeNotifications(prev => [...prev, ...notifications]);
+
+          // 表示済み通知として記録
+          const newShownIds = new Set([...shownNotificationIds, ...newlyEarnedBadges.map(b => b.id)]);
+          setShownNotificationIds(newShownIds);
+          saveShownNotifications(newShownIds);
+        }
+      }
 
       // 前回のバッジ状態を更新
       previousBadgesRef.current = badgesResult;
     } catch (error) {
       console.error('StatisticsContext: Background calculation failed:', error);
       setCalculationError('統計データの計算に失敗しました。統計タブで再計算を試してください。');
+      
+      // エラーが発生してもバッジデータは表示する
+      try {
+        const { getAllBadges } = await import('../services/badgeDefinitions');
+        const allBadges = getAllBadges();
+        const badgesResult = allBadges.map(badge => ({
+          ...badge,
+          isEarned: false,
+          earnedDate: undefined,
+          progress: calculateProgressForUnauthenticatedUser(badge.id, clothingItems.length, wearHistory.length, washHistory.length)
+        }));
+        setBadges(badgesResult);
+      } catch (badgeError) {
+        console.error('Failed to load badge definitions:', badgeError);
+      }
     } finally {
       setIsCalculating(false);
     }
-  }, [clothingItems, wearHistory, washHistory, clothingLoading, period, sortOrder, categoryFilter, isPremium, shownNotificationIds, saveShownNotifications]);
+  }, [clothingItems, wearHistory, washHistory, clothingLoading, period, sortOrder, categoryFilter, isPremium, shownNotificationIds, saveShownNotifications, calculateProgressForUnauthenticatedUser]);
 
   // 手動再計算（エラー時の復旧用）
   const recalculateStatistics = useCallback(async () => {
@@ -259,15 +325,15 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
 
   // データが変更されたときの再計算
   useEffect(() => {
-    if (!clothingLoading) {
-      calculateStatisticsInBackground();
-    }
+    calculateStatisticsInBackground();
   }, [clothingItems, wearHistory, washHistory, period, sortOrder, categoryFilter, isPremium, calculateStatisticsInBackground]);
 
   // 初期化処理
   useEffect(() => {
     loadShownNotifications();
-  }, [loadShownNotifications]);
+    // 初期化時にもバッジデータを読み込む
+    calculateStatisticsInBackground();
+  }, [loadShownNotifications, calculateStatisticsInBackground]);
 
   const contextValue: StatisticsContextType = {
     // 計算済みデータ

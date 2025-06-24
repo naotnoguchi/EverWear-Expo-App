@@ -212,7 +212,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
       position: 'relative',
     },
     tabBarContainer: {
-      backgroundColor: theme.card,
+      backgroundColor: theme.tabBackground,
       borderBottomWidth: 1,
       borderBottomColor: theme.border,
       zIndex: 10,
@@ -233,7 +233,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
       paddingVertical: 8,
       marginRight: 8,
       borderRadius: 20,
-      backgroundColor: theme.background,
+      backgroundColor: theme.tabButton,
     },
     activeTabButton: {
       backgroundColor: "#3498db",

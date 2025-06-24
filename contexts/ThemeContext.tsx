@@ -12,6 +12,8 @@ const themes = {
     primary: '#3498db',      // 追加
     secondary: '#95a5a6',    // 追加
     textSecondary: '#757575', // 追加 - 二次テキスト用のグレー
+    tabBackground: '#ffffff',
+    tabButton: '#f5f5f5',
     success: '#27ae60',      // 追加
     warning: '#f39c12',      // 追加
     error: '#e74c3c',        // 追加
@@ -25,6 +27,8 @@ const themes = {
     primary: '#3498db',      // 追加
     secondary: '#7f8c8d',    // 追加
     textSecondary: '#9e9e9e', // 追加 - 二次テキスト用のグレー（暗い背景に対して読みやすい）
+    tabBackground: '#000000',
+    tabButton: '#1e1e1e',
     success: '#27ae60',      // 追加
     warning: '#f39c12',      // 追加
     error: '#e74c3c',        // 追加

@@ -518,24 +518,34 @@ export default function BadgesScreen() {
         </View>
 
         {/* Badge list */}
-        {filteredBadges.length > 0 ? (
-          <FlatList
-            data={filteredBadges}
-            renderItem={renderBadgeItem}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-          />
+        {totalBadges > 0 ? (
+          filteredBadges.length > 0 ? (
+            <FlatList
+              data={filteredBadges}
+              renderItem={renderBadgeItem}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="ribbon-outline" size={64} color={theme.text + "66"} />
+              <Text style={[styles.emptyText, { color: theme.text }]}>
+                該当するバッジがありません
+              </Text>
+              <Text style={[styles.emptySubtext, { color: theme.text + "99" }]}>
+                フィルター条件を変更してお試しください
+              </Text>
+            </View>
+          )
         ) : (
           <View style={styles.emptyContainer}>
             <Ionicons name="ribbon-outline" size={64} color={theme.text + "66"} />
             <Text style={[styles.emptyText, { color: theme.text }]}>
-              {badges.length > 0 ? '該当するバッジがありません' : 'バッジはまだありません'}
+              バッジデータを読み込み中です
             </Text>
             <Text style={[styles.emptySubtext, { color: theme.text + "99" }]}>
-              {badges.length > 0 
-                ? 'フィルター条件を変更してお試しください' 
-                : 'アイテムを登録して着用・洗濯を記録すると、様々なバッジを獲得できます。\n最初のアイテムを登録して、バッジ収集を始めましょう！'}
+              しばらくお待ちください
             </Text>
           </View>
         )}

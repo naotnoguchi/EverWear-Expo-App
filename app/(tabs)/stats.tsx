@@ -824,52 +824,44 @@ export default function Stats() {
           </TouchableOpacity>
         </View>
 
-        {impactData ? (
-          <View style={styles.impactContainer}>
-            <View style={styles.impactRow}>
-              <View key="washes-reduced" style={styles.impactItem}>
-                <View style={[styles.impactIconContainer, { backgroundColor: 'rgba(52, 152, 219, 0.1)' }]}>
-                  <Ionicons name="water" size={24} color="#3498db" />
-                </View>
-                <Text style={styles.impactValue}>{impactData?.totalWashesReduced?.toFixed(1) || '0.0'}</Text>
-                <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>洗濯回数削減</Text>
+        <View style={styles.impactContainer}>
+          <View style={styles.impactRow}>
+            <View key="washes-reduced" style={styles.impactItem}>
+              <View style={[styles.impactIconContainer, { backgroundColor: 'rgba(52, 152, 219, 0.1)' }]}>
+                <Ionicons name="water" size={24} color="#3498db" />
               </View>
-
-              <View key="co2-reduced" style={styles.impactItem}>
-                <View style={[styles.impactIconContainer, { backgroundColor: 'rgba(39, 174, 96, 0.1)' }]}>
-                  <Ionicons name="leaf" size={24} color="#27ae60" />
-                </View>
-                <Text style={styles.impactValue}>{impactData?.co2Reduced?.toFixed(1) || '0.0'} kg</Text>
-                <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>CO2削減量</Text>
-              </View>
-
-              <View key="savings" style={styles.impactItem}>
-                <View style={[styles.impactIconContainer, { backgroundColor: 'rgba(241, 196, 15, 0.1)' }]}>
-                  <Ionicons name="cash" size={24} color="#f1c40f" />
-                </View>
-                <Text style={styles.impactValue}>
-                  {impactData ? (
-                    ((impactData.waterSaved?.cost || 0) + 
-                    (impactData.electricitySaved?.cost || 0) + 
-                    (impactData.detergentSaved?.cost || 0)).toLocaleString()
-                  ) : 0}円
-                </Text>
-                <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>節約金額</Text>
-              </View>
+              <Text style={styles.impactValue}>{impactData?.totalWashesReduced?.toFixed(1) || '0.0'}</Text>
+              <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>洗濯回数削減</Text>
             </View>
 
-            <Text style={[styles.impactDescription, { color: theme.text + "CC" }]}>
-              「着用するたびに洗濯する」場合と比較して、あなたは{impactData?.totalWashesReduced?.toFixed(1) || '0.0'}回の洗濯を削減しました。
-              これは約{impactData?.treeEquivalent?.toFixed(1) || '0.0'}本の木を植えるのと同等のCO2削減効果があります。
-            </Text>
+            <View key="co2-reduced" style={styles.impactItem}>
+              <View style={[styles.impactIconContainer, { backgroundColor: 'rgba(39, 174, 96, 0.1)' }]}>
+                <Ionicons name="leaf" size={24} color="#27ae60" />
+              </View>
+              <Text style={styles.impactValue}>{impactData?.co2Reduced?.toFixed(1) || '0.0'} kg</Text>
+              <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>CO2削減量</Text>
+            </View>
+
+            <View key="savings" style={styles.impactItem}>
+              <View style={[styles.impactIconContainer, { backgroundColor: 'rgba(241, 196, 15, 0.1)' }]}>
+                <Ionicons name="cash" size={24} color="#f1c40f" />
+              </View>
+              <Text style={styles.impactValue}>
+                {impactData ? (
+                  ((impactData.waterSaved?.cost || 0) + 
+                  (impactData.electricitySaved?.cost || 0) + 
+                  (impactData.detergentSaved?.cost || 0)).toLocaleString()
+                ) : '0'}円
+              </Text>
+              <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>節約金額</Text>
+            </View>
           </View>
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: theme.text }]}>
-              データがありません
-            </Text>
-          </View>
-        )}
+
+          <Text style={[styles.impactDescription, { color: theme.text + "CC" }]}>
+            「着用するたびに洗濯する」場合と比較して、あなたは{impactData?.totalWashesReduced?.toFixed(1) || '0.0'}回の洗濯を削減しました。
+            これは約{impactData?.treeEquivalent?.toFixed(1) || '0.0'}本の木を植えるのと同等のCO2削減効果があります。
+          </Text>
+        </View>
       </View>
 
       {/* Badges section */}

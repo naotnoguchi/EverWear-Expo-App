@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { Stack, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,13 +12,15 @@ import {
   View,
 } from "react-native";
 import { PurchasesPackage } from "react-native-purchases";
+import { useAuth } from "../contexts/AuthContext";
 import { usePremiumFeatures, usePurchase } from "../contexts/PurchaseContext";
 import { useTheme } from "../contexts/ThemeContext";
 
 export default function SubscriptionScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const { subscription, offerings, loading, error, purchasePackage, restorePurchases, clearError } = usePurchase();
+  const { user } = useAuth();
+  const { subscription, offerings, loading, error, purchasePackage, restorePurchases, clearError, refreshOfferings } = usePurchase();
   const { isPremium } = usePremiumFeatures();
   const [purchasing, setPurchasing] = useState(false);
 
@@ -26,6 +29,27 @@ export default function SubscriptionScreen() {
     clearError();
   }, [clearError]);
 
+  // ログイン状態変化時にオファリング情報を再取得
+  useEffect(() => {
+    if (user?.id && !loading) {
+      // ログインしているかつローディング中でない場合に、オファリング情報を確認
+      if (offerings.length === 0) {
+        console.log('User logged in but no offerings available, refreshing...');
+        refreshOfferings();
+      }
+    }
+  }, [user?.id, loading, offerings.length, refreshOfferings]);
+
+  // 画面フォーカス時にオファリング情報を再取得（必要に応じて）
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id && !loading && offerings.length === 0) {
+        console.log('Screen focused with no offerings, refreshing...');
+        refreshOfferings();
+      }
+    }, [user?.id, loading, offerings.length, refreshOfferings])
+  );
+
   const monthlyPackage = offerings
     .flatMap(offering => offering.availablePackages)
     .find(pkg => pkg.product.identifier === process.env.EXPO_PUBLIC_PREMIUM_MONTHLY_PRODUCT_ID);
@@ -33,6 +57,29 @@ export default function SubscriptionScreen() {
   const yearlyPackage = offerings
     .flatMap(offering => offering.availablePackages)
     .find(pkg => pkg.product.identifier === process.env.EXPO_PUBLIC_PREMIUM_YEARLY_PRODUCT_ID);
+
+  // 月額・年額プランでは RevenueCat から返るローカライズ済みの priceString をそのまま使用する
+  // 無料プランは端末のロケールに合わせて 0 をフォーマット
+  const localeCurrencyCode = monthlyPackage?.product.currencyCode || yearlyPackage?.product.currencyCode || 'JPY';
+  const freePlanPriceString = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: localeCurrencyCode,
+  }).format(0);
+
+  const monthlyPriceString = monthlyPackage?.product.priceString;
+  const yearlyPriceString = yearlyPackage?.product.priceString;
+  const yearlyMonthlyEquivalentString = yearlyPackage ? new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: yearlyPackage.product.currencyCode,
+  }).format(yearlyPackage.product.price / 12) : '';
+
+  // formatPrice は互換用途に残しておく（今後の削除候補）
+  const formatPrice = (price: number, currencyCode: string) => {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currencyCode,
+    }).format(price);
+  };
 
   const handlePurchase = async (packageToPurchase: PurchasesPackage) => {
     try {
@@ -92,13 +139,6 @@ export default function SubscriptionScreen() {
     } finally {
       setPurchasing(false);
     }
-  };
-
-  const formatPrice = (price: number, currencyCode: string) => {
-    return new Intl.NumberFormat('ja-JP', {
-      style: 'currency',
-      currency: currencyCode,
-    }).format(price);
   };
 
   const styles = StyleSheet.create({
@@ -479,7 +519,7 @@ export default function SubscriptionScreen() {
           <View style={styles.planCard}>
             <View style={styles.planHeader}>
               <Text style={styles.planTitle}>無料プラン</Text>
-              <Text style={styles.planPrice}>¥0</Text>
+              <Text style={styles.planPrice}>{freePlanPriceString}</Text>
             </View>
             <View style={styles.planFeatures}>
               <View style={styles.featureItem}>
@@ -511,7 +551,7 @@ export default function SubscriptionScreen() {
               <View style={styles.planHeader}>
                 <Text style={[styles.planTitle, styles.premiumTitle]}>月額プラン</Text>
                 <Text style={styles.planPrice}>
-                  {formatPrice(monthlyPackage.product.price, monthlyPackage.product.currencyCode)}
+                  {monthlyPriceString}
                 </Text>
               </View>
               <View style={styles.planFeatures}>
@@ -546,10 +586,10 @@ export default function SubscriptionScreen() {
               <View style={styles.planHeader}>
                 <Text style={[styles.planTitle, styles.premiumTitle]}>年額プラン</Text>
                 <Text style={styles.planPrice}>
-                  {formatPrice(yearlyPackage.product.price, yearlyPackage.product.currencyCode)}
+                  {yearlyPriceString}
                 </Text>
                 <Text style={styles.yearlyPrice}>
-                  月額換算: {formatPrice(yearlyPackage.product.price / 12, yearlyPackage.product.currencyCode)}
+                  月額換算: {yearlyMonthlyEquivalentString}
                 </Text>
               </View>
               <View style={styles.planFeatures}>

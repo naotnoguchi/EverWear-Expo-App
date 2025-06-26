@@ -50,17 +50,30 @@ export default function CallbackScreen() {
             let error_code = null;
             let error_description = null;
 
+            // 追加: クエリ(?foo=bar) からパラメータを取得
+            const queryParams = parsedUrl.searchParams;
+            if (queryParams) {
+              type = queryParams.get('type') || type;
+              access_token = queryParams.get('access_token') || access_token;
+              token_hash = queryParams.get('token_hash') || token_hash;
+              token = queryParams.get('token') || token;
+              refresh_token = queryParams.get('refresh_token') || refresh_token;
+              error = queryParams.get('error') || error;
+              error_code = queryParams.get('error_code') || error_code;
+              error_description = queryParams.get('error_description') || error_description;
+            }
+
             // フラグメント（#）からパラメータを取得
             if (parsedUrl.hash) {
               const hashParams = new URLSearchParams(parsedUrl.hash.substring(1));
-              type = hashParams.get('type');
-              access_token = hashParams.get('access_token');
-              token_hash = hashParams.get('token_hash');
-              token = hashParams.get('token');
-              refresh_token = hashParams.get('refresh_token');
-              error = hashParams.get('error');
-              error_code = hashParams.get('error_code');
-              error_description = hashParams.get('error_description');
+              type = type || hashParams.get('type');
+              access_token = access_token || hashParams.get('access_token');
+              token_hash = token_hash || hashParams.get('token_hash');
+              token = token || hashParams.get('token');
+              refresh_token = refresh_token || hashParams.get('refresh_token');
+              error = error || hashParams.get('error');
+              error_code = error_code || hashParams.get('error_code');
+              error_description = error_description || hashParams.get('error_description');
             }
 
             console.log('Parsed parameters from URL:', { type, error, error_code, has_access_token: !!access_token });

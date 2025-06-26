@@ -12,6 +12,7 @@ interface PurchaseContextType {
   purchasePackage: (packageToPurchase: PurchasesPackage) => Promise<void>;
   restorePurchases: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
+  refreshOfferings: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -38,14 +39,24 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
   // 初期化が完了するまでは安全側に倒してプレミアム制限を適用（フラッシュを防ぐため）
   const isPremium = initializing ? false : subscription.isActive;
 
-  // Revenue Cat初期化
+  // Revenue Cat初期化 - ログイン状態変化を検知してより適切に処理
   useEffect(() => {
     if (user?.id) {
+      // ログインした場合は初期化を実行
       initializePurchases();
     } else {
-      // ユーザーがいない場合は初期化完了状態にする
+      // ログアウトした場合は状態をリセット
+      setOfferings([]);
+      setSubscription({
+        isActive: false,
+        productId: null,
+        expirationDate: null,
+        purchaseDate: null,
+        isTrialPeriod: false,
+      });
       setInitializing(false);
       setLoading(false);
+      setError(null);
     }
   }, [user?.id]);
 
@@ -80,6 +91,7 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
     try {
       setLoading(true);
       setError(null);
+      setInitializing(true); // 初期化開始をマーク
 
       // Revenue Cat設定
       await purchaseService.configure(user!.id);
@@ -118,11 +130,31 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
 
   const loadOfferings = async () => {
     try {
+      console.log('Loading offerings...');
       const offeringsData = await purchaseService.getOfferings();
       setOfferings(offeringsData);
+      console.log('Offerings loaded successfully:', offeringsData.length, 'offerings');
+      
+      // オファリング内のパッケージ情報もログ出力
+      offeringsData.forEach((offering, index) => {
+        console.log(`Offering ${index + 1}:`, offering.identifier, 'packages:', offering.availablePackages.length);
+      });
     } catch (err) {
       console.error('Error loading offerings:', err);
       // オファリングの取得失敗は致命的ではないためエラー状態は設定しない
+      // ただし、空の配列を設定して状態を明確にする
+      setOfferings([]);
+    }
+  };
+
+  // オファリング情報を再取得する関数を追加
+  const refreshOfferings = async () => {
+    try {
+      console.log('Refreshing offerings...');
+      setError(null);
+      await loadOfferings();
+    } catch (err) {
+      console.error('Error refreshing offerings:', err);
     }
   };
 
@@ -193,6 +225,7 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
     purchasePackage: handlePurchasePackage,
     restorePurchases: handleRestorePurchases,
     refreshSubscription,
+    refreshOfferings,
     clearError,
   };
 
@@ -223,4 +256,7 @@ export function usePremiumFeatures() {
     canAccessStatistics: () => true, // 統計機能は無料で利用可能
     shouldShowAds: () => !isPremium && !loading, // 初期化中は広告も表示しない
   };
-} 
+}
+
+// Stub 用など他コンポーネントから直接 Context を参照できるようにエクスポート
+export { PurchaseContext, PurchaseContextType };

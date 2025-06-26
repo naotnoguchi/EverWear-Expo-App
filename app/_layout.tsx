@@ -15,9 +15,6 @@ import { PurchaseProvider } from '../contexts/PurchaseContext';
 import { StatisticsProvider, useStatistics } from '../contexts/StatisticsContext';
 import { TabResetProvider } from '../contexts/TabResetContext';
 
-// app/_layout.tsx の先頭に追加
-console.log('App starting...');
-
 // Main app component with navigation and auth flow
 function MainApp() {
   const { isOnboardingComplete } = useOnboarding();
@@ -26,6 +23,15 @@ function MainApp() {
   const segments = useSegments();
   const colorScheme = useColorScheme();
   const theme = useTheme();
+  
+  const adaptedBadgeNotifications = React.useMemo(() =>
+    badgeNotifications.map((n: any) => ({
+      id: n.id,
+      name: n.name,
+      description: n.description,
+      imageUrl: n.iconName || n.imageUrl || '',
+    })),
+  [badgeNotifications]);
 
   // ディープリンクリスナーを設定
   useEffect(() => {
@@ -33,7 +39,6 @@ function MainApp() {
     const getInitialURL = async () => {
       const initialUrl = await Linking.getInitialURL();
       if (initialUrl) {
-        console.log('Initial URL:', initialUrl);
         handleDeepLink(initialUrl);
       }
     };
@@ -42,24 +47,39 @@ function MainApp() {
 
     // リスナーを設定
     const subscription = Linking.addEventListener('url', ({ url }) => {
-      console.log('Received URL:', url);
       handleDeepLink(url);
     });
 
     return () => {
       subscription.remove();
     };
-  }, [handleDeepLink]);
+  }, []); // handleDeepLinkを依存配列から削除
+
+  // 認証状態の変更に基づくナビゲーション処理
+  useEffect(() => {
+    if (loading) {
+      return; // ローディング中は何もしない
+    }
+
+    const inAuthGroup = segments[0] === 'auth';
+    const isPublicScreen = segments[0] === 'webview';
+
+    // 未ログインユーザーがauth画面以外にいる場合（publicScreenは除く）
+    if (!user && !inAuthGroup && !isPublicScreen) {
+    }
+
+    // ログイン済みユーザーがauth画面にいる場合
+    if (user && inAuthGroup) {
+    }
+  }, [user, loading, segments]);
 
   // Show loading state
   if (loading) {
-    console.log('App is loading...');
     return null; // または適切なローディングインジケーター
   }
-
+  
   // If onboarding is not complete, show the onboarding screen
   if (!isOnboardingComplete) {
-    console.log('Showing onboarding...');
     return (
       <>
         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
@@ -75,14 +95,12 @@ function MainApp() {
   const isPublicScreen = segments[0] === 'webview';
 
   // If user is not authenticated and not already on auth screen or public screen, redirect to login
-  if (!user && !inAuthGroup && !isPublicScreen) {
-    console.log('No user, redirecting to login...');
+  if (!user && !inAuthGroup && !isPublicScreen && !loading) {
     return <Redirect href="/auth/login" />;
   }
 
   // If user is authenticated and on auth screen, redirect to main app
-  if (user && inAuthGroup) {
-    console.log('User authenticated, redirecting to main app...');
+  if (user && inAuthGroup && !loading) {
     return <Redirect href="/" />;
   }
 
@@ -98,13 +116,9 @@ function MainApp() {
       <Stack screenOptions={{
         headerTitleStyle: {
           fontWeight: "600",
-          color: theme.text,
         },
         headerStyle: {
           backgroundColor: theme.background,
-        },
-        headerBackTitleStyle: {
-          color: theme.text,
         },
         headerTintColor: Platform.select({
           android: colorScheme === 'dark' ? 'white' : theme.text,
@@ -129,6 +143,14 @@ function MainApp() {
           name="auth/callback"
           options={{
             headerShown: false,
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="auth/verify"
+          options={{
+            title: "確認コード入力",
+            headerBackVisible: false,
             gestureEnabled: false,
           }}
         />
@@ -166,7 +188,7 @@ function MainApp() {
         <Stack.Screen name="webview" options={{ headerBackTitle: "戻る" }} />
       </Stack>
       <BadgeNotificationManager 
-        notifications={badgeNotifications} 
+        notifications={adaptedBadgeNotifications} 
         onDismiss={clearBadgeNotification} 
       />
     </>

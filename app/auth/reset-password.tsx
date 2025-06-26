@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -10,7 +10,7 @@ export default function ResetPasswordScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const { updatePassword, recoveryToken, clearRecoveryToken, signOut } = useAuth();
   const theme = useTheme();
-  const params = useLocalSearchParams();
+  const params = useLocalSearchParams<{ email?: string; token?: string }>();
 
   const handleResetPassword = async () => {
     if (!password || !confirmPassword) {
@@ -26,15 +26,13 @@ export default function ResetPasswordScreen() {
     try {
       setIsLoading(true);
       
-      // コンテキストのrecoveryTokenまたはパラメータのtokenを使用
-      const token = (params.token as string) || recoveryToken;
-      
-      if (!token) {
-        Alert.alert('エラー', '認証トークンが見つかりません。パスワードリセットリンクを再度クリックしてください。');
+      // OTPベースのパスワードリセットではrecoveryTokenのみを使用
+      if (!recoveryToken) {
+        Alert.alert('エラー', '認証トークンが見つかりません。パスワードリセットを再度実行してください。');
         return;
       }
       
-      await updatePassword(password, token);
+      await updatePassword(password);
 
       // セキュリティのため、パスワード変更後は一度ログアウト
       console.log('Password reset successful, signing out for security');
@@ -65,37 +63,39 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.title, { color: theme.text }]}>新しいパスワードを設定</Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <Text style={[styles.title, { color: theme.text }]}>新しいパスワードを設定</Text>
 
-      <TextInput
-        style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-        placeholder="新しいパスワード"
-        placeholderTextColor={theme.textSecondary}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+        <TextInput
+          style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
+          placeholder="新しいパスワード"
+          placeholderTextColor={theme.textSecondary}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
 
-      <TextInput
-        style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-        placeholder="新しいパスワード（確認）"
-        placeholderTextColor={theme.textSecondary}
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry
-      />
+        <TextInput
+          style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
+          placeholder="新しいパスワード（確認）"
+          placeholderTextColor={theme.textSecondary}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+        />
 
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: theme.primary }]}
-        onPress={handleResetPassword}
-        disabled={isLoading}
-      >
-        <Text style={styles.buttonText}>
-          {isLoading ? '処理中...' : 'パスワードを変更'}
-        </Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: theme.primary }]}
+          onPress={handleResetPassword}
+          disabled={isLoading}
+        >
+          <Text style={styles.buttonText}>
+            {isLoading ? '処理中...' : 'パスワードを変更'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -116,6 +116,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 15,
     marginBottom: 15,
+    letterSpacing: 0,
   },
   button: {
     height: 50,

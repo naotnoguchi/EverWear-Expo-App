@@ -44,7 +44,7 @@ const ClothingContext = createContext<ClothingContextType | undefined>(undefined
 // No longer need hardcoded initial data as we'll load from the service
 
 export function ClothingProvider({ children }: { children: ReactNode }) {
-  const { isPremium, loading: purchaseLoading } = usePurchase(); // PurchaseContextのローディング状態も取得
+  const { isPremium, loading: purchaseLoading } = usePurchase();
   const [allClothingItems, setAllClothingItems] = useState<ClothingItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

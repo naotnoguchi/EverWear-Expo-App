@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -27,11 +27,11 @@ export default function SignupScreen() {
       setIsLoading(true);
       await signUp(email, password);
       Alert.alert(
-        '確認メール送信',
-        'メールアドレスの確認リンクを送信しました。メールを確認してアカウントを有効化してください。',
-        [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
+        '確認コード送信',
+        'メールに 6 桁の確認コードを送信しました。コードを入力してください。',
+        [{ text: 'OK', onPress: () => router.replace({ pathname: '/auth/verify', params: { email, type: 'signup' } }) }]
       );
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('登録エラー', error.message || 'アカウント登録に失敗しました');
     } finally {
       setIsLoading(false);
@@ -43,77 +43,79 @@ export default function SignupScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.title, { color: theme.text }]}>アカウント作成</Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <Text style={[styles.title, { color: theme.text }]}>アカウント作成</Text>
 
-      <TextInput
-        style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-        placeholder="メールアドレス"
-        placeholderTextColor={theme.textSecondary}
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
+        <TextInput
+          style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
+          placeholder="メールアドレス"
+          placeholderTextColor={theme.textSecondary}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
 
-      <TextInput
-        style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-        placeholder="パスワード"
-        placeholderTextColor={theme.textSecondary}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+        <TextInput
+          style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
+          placeholder="パスワード"
+          placeholderTextColor={theme.textSecondary}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
 
-      <TextInput
-        style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-        placeholder="パスワード（確認）"
-        placeholderTextColor={theme.textSecondary}
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry
-      />
+        <TextInput
+          style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
+          placeholder="パスワード（確認）"
+          placeholderTextColor={theme.textSecondary}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+        />
 
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: theme.primary }]}
-        onPress={handleSignUp}
-        disabled={isLoading}
-      >
-        <Text style={[styles.buttonText, { color: '#ffffff' }]}>
-          {isLoading ? '登録中...' : 'アカウント作成'}
-        </Text>
-      </TouchableOpacity>
-
-      {/* 規約同意注釈 */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 12 }}>
-        <Text style={{ color: theme.textSecondary }}>「アカウント作成」をタップすると、</Text>
-        <Text
-          style={{ color: theme.primary, textDecorationLine: 'underline' }}
-          onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/terms-ja.html', title: '利用規約' } })}
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: theme.primary }]}
+          onPress={handleSignUp}
+          disabled={isLoading}
         >
-          利用規約
-        </Text>
-        <Text style={{ color: theme.textSecondary }}>と</Text>
-        <Text
-          style={{ color: theme.primary, textDecorationLine: 'underline' }}
-          onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/privacy-ja.html', title: 'プライバシーポリシー' } })}
-        >
-          プライバシーポリシー
-        </Text>
-        <Text style={{ color: theme.textSecondary }}>に同意したものとみなします。</Text>
-      </View>
-
-      <View style={styles.footer}>
-        <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-          すでにアカウントをお持ちの場合は
-        </Text>
-        <TouchableOpacity onPress={handleLogin}>
-          <Text style={[styles.footerLink, { color: theme.primary }]}>
-            ログイン
+          <Text style={[styles.buttonText, { color: '#ffffff' }]}>
+            {isLoading ? '登録中...' : 'アカウント作成'}
           </Text>
         </TouchableOpacity>
+
+        {/* 規約同意注釈 */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 12 }}>
+          <Text style={{ color: theme.textSecondary }}>「アカウント作成」をタップすると、</Text>
+          <Text
+            style={{ color: theme.primary, textDecorationLine: 'underline' }}
+            onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/terms-ja.html', title: '利用規約' } })}
+          >
+            利用規約
+          </Text>
+          <Text style={{ color: theme.textSecondary }}>と</Text>
+          <Text
+            style={{ color: theme.primary, textDecorationLine: 'underline' }}
+            onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/privacy-ja.html', title: 'プライバシーポリシー' } })}
+          >
+            プライバシーポリシー
+          </Text>
+          <Text style={{ color: theme.textSecondary }}>に同意したものとみなします。</Text>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+            すでにアカウントをお持ちの場合は
+          </Text>
+          <TouchableOpacity onPress={handleLogin}>
+            <Text style={[styles.footerLink, { color: theme.primary }]}>
+              ログイン
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 }
 

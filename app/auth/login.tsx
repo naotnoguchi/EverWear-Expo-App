@@ -1,7 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { Alert, Image, Keyboard, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, useColorScheme } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -98,8 +98,14 @@ export default function LoginScreen() {
       await resetPassword(resetEmail);
       Alert.alert(
         'パスワードリセット',
-        'パスワードリセットのリンクを送信しました。メールを確認してください。',
-        [{ text: 'OK', onPress: () => setShowResetForm(false) }]
+        'メールに 6 桁のリセットコードを送信しました。コードを入力してください。',
+        [{ 
+          text: 'OK', 
+          onPress: () => {
+            setShowResetForm(false);
+            router.push({ pathname: '/auth/verify', params: { email: resetEmail, type: 'recovery' } });
+          }
+        }]
       );
     } catch (error: any) {
       Alert.alert('エラー', error.message || 'パスワードリセットに失敗しました');
@@ -206,132 +212,134 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.title, { color: theme.text }]}>EverWear</Text>
-      <Text style={[styles.subtitle, { color: theme.text }]}>アカウントにログイン</Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <Text style={[styles.title, { color: theme.text }]}>EverWear</Text>
+        <Text style={[styles.subtitle, { color: theme.text }]}>アカウントにログイン</Text>
 
-      {!showResetForm && !showResendForm && (
-        <>
-          <TextInput
-            style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-            placeholder="メールアドレス"
-            placeholderTextColor={theme.textSecondary}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-
-          <TextInput
-            style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-            placeholder="パスワード"
-            placeholderTextColor={theme.textSecondary}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: theme.primary }]}
-            onPress={handleEmailLogin}
-            disabled={isLoading}
-          >
-            <Text style={[styles.buttonText, { color: '#ffffff' }]}>
-              {isLoading ? 'ログイン中...' : 'ログイン'}
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.linkContainer}>
-            <TouchableOpacity onPress={() => setShowResetForm(true)}>
-              <Text style={[styles.forgotPassword, { color: theme.primary }]}>
-                パスワードをお忘れですか？
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity onPress={() => setShowResendForm(true)}>
-              <Text style={[styles.forgotPassword, { color: theme.primary }]}>
-                メール確認を再送信
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
-
-      {renderResetForm()}
-      {renderResendForm()}
-
-      {!showResetForm && !showResendForm && (
-        <>
-          <View style={styles.divider}>
-            <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-            <Text style={[styles.dividerText, { color: theme.textSecondary }]}>または</Text>
-            <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-          </View>
-
-          <TouchableOpacity
-            style={[styles.socialButton, styles.googleButton]}
-            onPress={handleGoogleLogin}
-            disabled={isLoading}
-          >
-            <Image
-              source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
-              style={styles.googleLogo}
+        {!showResetForm && !showResendForm && (
+          <>
+            <TextInput
+              style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
+              placeholder="メールアドレス"
+              placeholderTextColor={theme.textSecondary}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
             />
-            <Text style={styles.socialButtonText}>
-              {isLoading ? '認証中...' : 'Googleでログイン'}
-            </Text>
-          </TouchableOpacity>
 
-          {Platform.OS === 'ios' && (
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={appleButtonStyle}
-              cornerRadius={8}
-              style={styles.appleButton}
-              onPress={handleAppleLogin}
+            <TextInput
+              style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
+              placeholder="パスワード"
+              placeholderTextColor={theme.textSecondary}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
             />
-          )}
 
-          {/* 規約同意注釈 */}
-          <Text style={[styles.agreementText, { color: theme.textSecondary }]} selectable={false}>
-            「ログイン」または「サインイン」ボタンをタップすると、
-            <Text
-              style={{ color: theme.primary, textDecorationLine: 'underline' }}
-              onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/terms-ja.html', title: '利用規約' } })}
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: theme.primary }]}
+              onPress={handleEmailLogin}
+              disabled={isLoading}
             >
-              利用規約
-            </Text>
-            と
-            <Text
-              style={{ color: theme.primary, textDecorationLine: 'underline' }}
-              onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/privacy-ja.html', title: 'プライバシーポリシー' } })}
-            >
-              プライバシーポリシー
-            </Text>
-            に同意したものとみなします。
-          </Text>
-
-          <View style={styles.footer}>
-            <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-              アカウントをお持ちでない場合は
-            </Text>
-            <TouchableOpacity onPress={handleSignUp}>
-              <Text style={[styles.footerLink, { color: theme.primary }]}>
-                新規登録
+              <Text style={[styles.buttonText, { color: '#ffffff' }]}>
+                {isLoading ? 'ログイン中...' : 'ログイン'}
               </Text>
             </TouchableOpacity>
-          </View>
 
-          <View style={styles.onboardingLink}>
-            <TouchableOpacity onPress={handleOpenOnboarding}>
-              <Text style={[styles.onboardingLinkText, { color: theme.primary }]}>
-                アプリの使い方を見る
+            <View style={styles.linkContainer}>
+              <TouchableOpacity onPress={() => setShowResetForm(true)}>
+                <Text style={[styles.forgotPassword, { color: theme.primary }]}>
+                  パスワードをお忘れですか？
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity onPress={() => setShowResendForm(true)}>
+                <Text style={[styles.forgotPassword, { color: theme.primary }]}>
+                  メール確認を再送信
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {renderResetForm()}
+        {renderResendForm()}
+
+        {!showResetForm && !showResendForm && (
+          <>
+            <View style={styles.divider}>
+              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+              <Text style={[styles.dividerText, { color: theme.textSecondary }]}>または</Text>
+              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.socialButton, styles.googleButton]}
+              onPress={handleGoogleLogin}
+              disabled={isLoading}
+            >
+              <Image
+                source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
+                style={styles.googleLogo}
+              />
+              <Text style={styles.socialButtonText}>
+                {isLoading ? '認証中...' : 'Googleでログイン'}
               </Text>
             </TouchableOpacity>
-          </View>
-        </>
-      )}
-    </View>
+
+            {Platform.OS === 'ios' && (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={appleButtonStyle}
+                cornerRadius={8}
+                style={styles.appleButton}
+                onPress={handleAppleLogin}
+              />
+            )}
+
+            {/* 規約同意注釈 */}
+            <Text style={[styles.agreementText, { color: theme.textSecondary }]} selectable={false}>
+              「ログイン」または「サインイン」ボタンをタップすると、
+              <Text
+                style={{ color: theme.primary, textDecorationLine: 'underline' }}
+                onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/terms-ja.html', title: '利用規約' } })}
+              >
+                利用規約
+              </Text>
+              と
+              <Text
+                style={{ color: theme.primary, textDecorationLine: 'underline' }}
+                onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/privacy-ja.html', title: 'プライバシーポリシー' } })}
+              >
+                プライバシーポリシー
+              </Text>
+              に同意したものとみなします。
+            </Text>
+
+            <View style={styles.footer}>
+              <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+                アカウントをお持ちでない場合は
+              </Text>
+              <TouchableOpacity onPress={handleSignUp}>
+                <Text style={[styles.footerLink, { color: theme.primary }]}>
+                  新規登録
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.onboardingLink}>
+              <TouchableOpacity onPress={handleOpenOnboarding}>
+                <Text style={[styles.onboardingLinkText, { color: theme.primary }]}>
+                  アプリの使い方を見る
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 

@@ -119,8 +119,8 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
 
   // 前回のバッジ状態を保持（新しいバッジ検出用）
   const previousBadgesRef = useRef<BadgeWithStatus[]>([]);
-  // 表示済みバッジ通知のIDを保持
-  const [shownNotificationIds, setShownNotificationIds] = useState<Set<string>>(new Set());
+  // 表示済みバッジ通知のIDを保持 (Ref に変更して再計算ループを防止)
+  const shownNotificationIdsRef = useRef<Set<string>>(new Set());
 
   // 表示済み通知の読み込み
   const loadShownNotifications = useCallback(async () => {
@@ -128,7 +128,7 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
       const stored = await AsyncStorage.getItem(SHOWN_BADGE_NOTIFICATIONS_KEY);
       if (stored) {
         const ids = JSON.parse(stored) as string[];
-        setShownNotificationIds(new Set(ids));
+        shownNotificationIdsRef.current = new Set(ids);
       }
     } catch (error) {
       console.error('Failed to load shown notifications:', error);
@@ -246,7 +246,7 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
       // 新しいバッジがある場合は通知を追加（認証済みユーザーのみ）
       if (user && newBadgesResult.length > 0) {
         const newlyEarnedBadges = newBadgesResult.filter(
-          badge => !shownNotificationIds.has(badge.id)
+          badge => !shownNotificationIdsRef.current.has(badge.id)
         );
 
         if (newlyEarnedBadges.length > 0) {
@@ -261,8 +261,8 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
           setBadgeNotifications(prev => [...prev, ...notifications]);
 
           // 表示済み通知として記録
-          const newShownIds = new Set([...shownNotificationIds, ...newlyEarnedBadges.map(b => b.id)]);
-          setShownNotificationIds(newShownIds);
+          const newShownIds = new Set([...shownNotificationIdsRef.current, ...newlyEarnedBadges.map(b => b.id)]);
+          shownNotificationIdsRef.current = newShownIds;
           saveShownNotifications(newShownIds);
         }
       }
@@ -290,7 +290,7 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
     } finally {
       setIsCalculating(false);
     }
-  }, [clothingItems, wearHistory, washHistory, clothingLoading, period, sortOrder, categoryFilter, isPremium, shownNotificationIds, saveShownNotifications, calculateProgressForUnauthenticatedUser]);
+  }, [clothingItems, wearHistory, washHistory, clothingLoading, period, sortOrder, categoryFilter, isPremium, saveShownNotifications, calculateProgressForUnauthenticatedUser]);
 
   // 手動再計算（エラー時の復旧用）
   const recalculateStatistics = useCallback(async () => {
@@ -321,7 +321,14 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
   // バッジ通知をクリアする関数
   const clearBadgeNotification = useCallback((badgeId: string) => {
     setBadgeNotifications(prev => prev.filter(notification => notification.id !== badgeId));
-  }, []);
+    // 通知を既読に
+    if (shownNotificationIdsRef.current.has(badgeId)) {
+      const newSet = new Set(shownNotificationIdsRef.current);
+      newSet.delete(badgeId);
+      shownNotificationIdsRef.current = newSet;
+      saveShownNotifications(newSet);
+    }
+  }, [saveShownNotifications]);
 
   // データが変更されたときの再計算
   useEffect(() => {

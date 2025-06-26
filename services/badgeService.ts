@@ -146,9 +146,13 @@ export class BadgeService {
       }));
 
       const client = await getAuthenticatedClient();
+      // 重複行は無視し、既存レコードの earned_date を変更しない
       const { error } = await client
         .from('user_badges')
-        .insert(userBadges);
+        .upsert(userBadges, {
+          onConflict: 'user_id,badge_id',
+          ignoreDuplicates: true
+        });
 
       if (error) {
         throw error;

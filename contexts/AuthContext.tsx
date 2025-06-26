@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AuthChangeEvent, Session, User } from '@supabase/auth-js';
+import { Session, User } from '@supabase/auth-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Google from 'expo-auth-session/providers/google';
 import * as Crypto from 'expo-crypto';
@@ -19,6 +19,7 @@ interface AuthContextType {
   isFirstLaunch: boolean;
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  verifyOtp: (email: string, token: string, type: 'signup' | 'recovery') => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -35,12 +36,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  console.log('AuthProvider: Component mounting/re-mounting');
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean>(true);
   const [recoveryToken, setRecoveryToken] = useState<string | null>(null);
   const [recoveryRefreshToken, setRecoveryRefreshToken] = useState<string | null>(null);
+
   const [isPasswordResetting, setIsPasswordResetting] = useState<boolean>(false);
 
   // Google認証の設定（iOS用、Supabase連携でwebClientIdも必要）
@@ -55,11 +58,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 認証エラー処理関数
   const handleAuthError = async () => {
-    console.log('Handling auth error - clearing session and redirecting to login');
+    console.log('handleAuthError: Starting auth error handling');
     
     // ローカル状態をクリア
+    console.log('handleAuthError: Clearing session and user state');
     setSession(null);
     setUser(null);
+    console.log('handleAuthError: Setting loading to false');
+    setLoading(false); // ローディング状態を確実にクリア
     
     // AsyncStorageから認証データを削除
     try {
@@ -105,76 +111,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // セッションの取得と認証状態の監視
   useEffect(() => {
-    const loadSession = async () => {
-      try {
-        setLoading(true);
+    let cleanup: (() => void) | undefined;
+    let isHandlingAuthError = false;
+    let loadSessionCallCount = 0;
 
-        // セッションの取得
+    const loadSession = async () => {
+      loadSessionCallCount++;
+      setLoading(true);
+
+      try {
         const { data, error } = await auth.getSession();
-        
+
         if (error) {
           console.error('Auth session error:', error);
-          
-          // リフレッシュトークンエラーの場合は自動的にサインアウト
-          if (error.message?.includes('Invalid Refresh Token') || 
+          if (error.message?.includes('Invalid Refresh Token') ||
               error.message?.includes('Refresh Token Not Found') ||
               error.message?.includes('AuthApiError')) {
-            await handleAuthError();
+            if (!isHandlingAuthError) {
+              isHandlingAuthError = true;
+              await handleAuthError();
+            }
             return;
           }
-          
           throw error;
         }
 
         setSession(data.session);
         setUser(data.session?.user ?? null);
 
-                // 認証状態の変更を監視
-        const { data: authListener } = auth.onAuthStateChange(
-          async (event: AuthChangeEvent, session: Session | null) => {
-            console.log('Auth state changed:', event, session?.user?.id || 'no user');
-            
-            // パスワードリセット中は一時的なセッション変更を無視
-            if (isPasswordResetting && event === 'SIGNED_IN') {
-              console.log('Password reset in progress, ignoring temporary session change');
-              return;
-            }
-            
-            setSession(session);
-            setUser(session?.user ?? null);
-            
-            // Google認証成功時の特別処理
-            if (event === 'SIGNED_IN' && session?.user?.app_metadata?.provider === 'google') {
-              console.log('Google authentication completed successfully');
-            }
-            
-            // トークンリフレッシュに失敗した場合やサインアウトイベント
-            if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
-              console.log('Auth session lost, clearing state');
-              await handleAuthError();
-            }
-          }
-        );
+        const { data: authListener } = auth.onAuthStateChange(async (event, session) => {
+          setSession(session);
+          setUser(session?.user ?? null);
 
-        return () => {
-          authListener.subscription.unsubscribe();
-        };
-              } catch (error) {
-          console.error('Error loading auth session:', error);
-          
-          // 認証エラーの場合は自動的にクリーンアップ
-          if (error instanceof Error && (
-              error.message?.includes('Invalid Refresh Token') || 
-              error.message?.includes('Refresh Token Not Found') ||
-              error.message?.includes('AuthApiError'))) {
+          if ((event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) && !isHandlingAuthError) {
+            isHandlingAuthError = true;
             await handleAuthError();
           }
-        } finally {
+        });
+
+        cleanup = () => {
+          authListener.subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error loading auth session:', error);
+        if (error instanceof Error && (
+            error.message?.includes('Invalid Refresh Token') ||
+            error.message?.includes('Refresh Token Not Found') ||
+            error.message?.includes('AuthApiError'))) {
+          if (!isHandlingAuthError) {
+            isHandlingAuthError = true;
+            await handleAuthError();
+          }
+        }
+      } finally {
         setLoading(false);
       }
     };
 
     loadSession();
+
+    return () => {
+      if (cleanup) {
+        cleanup();
+      }
+    };
   }, []);
 
   // Google認証レスポンスの処理
@@ -470,6 +470,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // OTP検証
+  const verifyOtp = async (email: string, token: string, type: 'signup' | 'recovery') => {
+    try {
+      const { data, error } = await auth.verifyOtp({
+        email: email,
+        token: token,
+        type: type,
+      });
+
+      if (error) {
+        console.error('Verify OTP error:', error);
+        throw new Error(translateAuthError(error));
+      }
+
+      // パスワードリセットの場合、セッションを作成せずにトークンを保存
+      if (type === 'recovery' && data.session) {
+        console.log('Password recovery OTP verified, storing tokens');
+        
+        setRecoveryToken(data.session.access_token);
+        setRecoveryRefreshToken(data.session.refresh_token);
+        
+        // セッションを保持せずにトークンのみ保存
+        // signOutは呼ばずに、状態管理でセッションをクリア
+        setSession(null);
+        setUser(null);
+      } else if (type === 'recovery') {
+        console.error('Recovery OTP verified but no session data received');
+      }
+    } catch (error: any) {
+      console.error('Error verifying OTP:', error);
+      throw error;
+    }
+  };
+
   // パスワードの更新
   const updatePassword = async (password: string, token?: string) => {
     try {
@@ -484,6 +518,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!activeToken) {
         throw new Error('認証トークンが見つかりません。パスワードリセットリンクを再度クリックしてください。');
       }
+      
+      console.log('Setting up session for password update');
       
       // recovery用のaccess_tokenとrefresh_tokenでセッションを設定
       const { data: sessionData, error: sessionError } = await auth.setSession({
@@ -504,6 +540,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         throw new Error(`セッションの設定に失敗しました: ${sessionError.message}`);
       }
+      
+      console.log('Session setup successful, updating password');
       
       // セッション設定後、パスワードを更新
       const { data, error } = await auth.updateUser({
@@ -675,6 +713,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isFirstLaunch,
         signUp,
         signIn,
+        verifyOtp,
         signInWithGoogle,
         signInWithApple,
         signOut,

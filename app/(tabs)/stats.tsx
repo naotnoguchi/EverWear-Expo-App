@@ -7,7 +7,8 @@ import { useStatistics } from "../../contexts/StatisticsContext";
 import { useTabReset } from "../../contexts/TabResetContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { getPrivateUrls } from "../../lib/storageClient";
-import { Badge, Period, RankingItem } from "../../services/statisticsServiceFactory";
+import type { BadgeWithStatus } from "../../services/badgeService";
+import { Period, RankingItem } from "../../services/statisticsServiceFactory";
 
 export default function Stats() {
   const theme = useTheme();
@@ -32,7 +33,7 @@ export default function Stats() {
 
   // トップ5アイテムと最新バッジの状態
   const [topItems, setTopItems] = useState<RankingItem[]>([]);
-  const [recentBadge, setRecentBadge] = useState<Badge | null>(null);
+  const [recentBadge, setRecentBadge] = useState<BadgeWithStatus | null>(null);
 
   // ローディングとエラーの状態をコンテキストから取得
   const loading = isCalculating;
@@ -78,6 +79,30 @@ export default function Stats() {
       case '洗濯不足': return '#f39c12'; // Orange
       case '洗いすぎ': return '#e74c3c'; // Red
       default: return '#3498db'; // Blue
+    }
+  };
+
+  // 追加: バッジカテゴリごとの色を取得（Badges 画面と統一）
+  const getBadgeColor = (category: string) => {
+    switch (category) {
+      case 'usage': return '#3498db'; // Blue
+      case 'efficiency': return '#27ae60'; // Green
+      case 'milestone': return '#f39c12'; // Orange
+      case 'achievement': return '#3498db'; // Blue (align with overview)
+      case 'special': return '#9b59b6'; // Purple
+      default: return '#95a5a6'; // Gray
+    }
+  };
+
+  // 追加: バッジカテゴリごとのアイコンを取得（Badges 画面と統一）
+  const getBadgeIcon = (category: string) => {
+    switch (category) {
+      case 'usage': return 'checkmark-circle';
+      case 'efficiency': return 'speedometer';
+      case 'milestone': return 'trophy';
+      case 'achievement': return 'medal';
+      case 'special': return 'star';
+      default: return 'ribbon';
     }
   };
 
@@ -887,21 +912,12 @@ export default function Stats() {
                 style={[
                   styles.badgeIconContainer, 
                   { 
-                    backgroundColor: 
-                      recentBadge.category === 'usage' ? '#3498db' : 
-                      recentBadge.category === 'efficiency' ? '#27ae60' : 
-                      recentBadge.category === 'milestone' ? '#f39c12' : 
-                      '#9b59b6'
+                    backgroundColor: getBadgeColor(recentBadge.category)
                   }
                 ]}
               >
                 <Ionicons 
-                  name={
-                    recentBadge.category === 'usage' ? 'checkmark-circle' : 
-                    recentBadge.category === 'efficiency' ? 'speedometer' : 
-                    recentBadge.category === 'milestone' ? 'trophy' : 
-                    'star'
-                  } 
+                  name={getBadgeIcon(recentBadge.category)} 
                   size={32} 
                   color="white" 
                 />

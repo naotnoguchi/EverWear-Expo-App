@@ -73,6 +73,11 @@ export default function SubscriptionScreen() {
     currency: yearlyPackage.product.currencyCode,
   }).format(yearlyPackage.product.price / 12) : '';
 
+  // ---- 日本国内のみ配信のため価格表示を固定 ------------------
+  const monthlyDisplayPrice = '¥480';
+  const yearlyDisplayPrice = '¥3,800';
+  const yearlyMonthlyEquivalentDisplay = '¥317';
+
   // formatPrice は互換用途に残しておく（今後の削除候補）
   const formatPrice = (price: number, currencyCode: string) => {
     return new Intl.NumberFormat(undefined, {
@@ -550,9 +555,7 @@ export default function SubscriptionScreen() {
             <View style={[styles.planCard, styles.premiumCard]}>
               <View style={styles.planHeader}>
                 <Text style={[styles.planTitle, styles.premiumTitle]}>月額プラン</Text>
-                <Text style={styles.planPrice}>
-                  {monthlyPriceString}
-                </Text>
+                <Text style={styles.planPrice}>{monthlyDisplayPrice}</Text>
               </View>
               <View style={styles.planFeatures}>
                 <View style={styles.featureItem}>
@@ -585,11 +588,9 @@ export default function SubscriptionScreen() {
             <View style={[styles.planCard, styles.premiumCard]}>
               <View style={styles.planHeader}>
                 <Text style={[styles.planTitle, styles.premiumTitle]}>年額プラン</Text>
-                <Text style={styles.planPrice}>
-                  {yearlyPriceString}
-                </Text>
+                <Text style={styles.planPrice}>{yearlyDisplayPrice}</Text>
                 <Text style={styles.yearlyPrice}>
-                  月額換算: {yearlyMonthlyEquivalentString}
+                  月額換算: {yearlyMonthlyEquivalentDisplay}
                 </Text>
               </View>
               <View style={styles.planFeatures}>

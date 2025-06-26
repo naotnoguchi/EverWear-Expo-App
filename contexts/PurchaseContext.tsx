@@ -101,7 +101,7 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
         try {
           await purchaseService.restorePurchases();
         } catch (restoreError) {
-          // 購入履歴がない場合は正常
+          // 購入履歴がない、あるいはキャンセルされた場合は無視
         }
       }
 

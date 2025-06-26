@@ -1,19 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Stack, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import BrandSelector from "../components/BrandSelector";
 import { useClothing } from "../contexts/ClothingContext";
@@ -127,7 +127,7 @@ export default function AddItem() {
       setIsLoading(true);
 
       // アイテムをデータストアに追加
-      await addItem(newItem, selectedImageUri);
+      await addItem(newItem, selectedImageUri ?? undefined);
 
       // 成功通知
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -564,7 +564,7 @@ export default function AddItem() {
 
             {/* 状態選択 (新品/中古) */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>状態</Text>
+              <Text style={styles.label}>状態 <Text style={styles.optionalText}>（任意）</Text></Text>
               <Text style={styles.sublabel}>新品で購入したか中古で購入したかを選択します</Text>
               <View style={styles.categoryContainer}>
                 <TouchableOpacity
@@ -618,8 +618,8 @@ export default function AddItem() {
 
             {/* 購入価格入力 */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>購入価格</Text>
-              <Text style={styles.sublabel}>任意：アイテムの購入価格を入力します</Text>
+              <Text style={styles.label}>購入価格 <Text style={styles.optionalText}>（任意）</Text></Text>
+              <Text style={styles.sublabel}>アイテムの購入価格を入力します</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="pricetag-outline" size={20} color={theme.text + "99"} style={styles.inputIcon} />
                 <TextInput
@@ -635,8 +635,8 @@ export default function AddItem() {
 
             {/* メモ入力 */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>メモ</Text>
-              <Text style={styles.sublabel}>任意：アイテムに関するメモを入力します</Text>
+              <Text style={styles.label}>メモ <Text style={styles.optionalText}>（任意）</Text></Text>
+              <Text style={styles.sublabel}>アイテムに関するメモを入力します</Text>
               <View style={[styles.inputContainer, { height: 100 }]}>
                 <Ionicons name="document-text-outline" size={20} color={theme.text + "99"} style={styles.inputIcon} />
                 <TextInput

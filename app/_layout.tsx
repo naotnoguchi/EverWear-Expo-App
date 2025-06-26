@@ -116,6 +116,7 @@ function MainApp() {
       <Stack screenOptions={{
         headerTitleStyle: {
           fontWeight: "600",
+          color: theme.text,
         },
         headerStyle: {
           backgroundColor: theme.background,

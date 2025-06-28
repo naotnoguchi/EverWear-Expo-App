@@ -10,7 +10,8 @@ export default function VerifyCodeScreen() {
   const type = params.type as 'signup' | 'recovery' | undefined;
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const { verifyOtp } = useAuth();
+  const [isResending, setIsResending] = useState(false);
+  const { verifyOtp, resendConfirmation, resetPassword } = useAuth();
   const theme = useTheme();
 
   const handleVerify = async () => {
@@ -45,6 +46,31 @@ export default function VerifyCodeScreen() {
     }
   };
 
+  const handleResend = async () => {
+    if (!email) {
+      Alert.alert('エラー', 'メールアドレスが不明です。やり直してください。');
+      return;
+    }
+
+    try {
+      setIsResending(true);
+
+      if (type === 'recovery') {
+        // パスワードリセット用のコードを再送
+        await resetPassword(email);
+        Alert.alert('送信完了', 'リセットコードを再送信しました。メールをご確認ください。');
+      } else {
+        // サインアップ確認用のコードを再送
+        await resendConfirmation(email);
+        Alert.alert('送信完了', '確認コードを再送信しました。メールをご確認ください。');
+      }
+    } catch (e: any) {
+      Alert.alert('エラー', e.message || 'コードの再送信に失敗しました。');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -66,6 +92,17 @@ export default function VerifyCodeScreen() {
         >
           <Text style={styles.buttonText}>{loading ? '確認中...' : '確認する'}</Text>
         </TouchableOpacity>
+
+        <View style={styles.linkContainer}>
+          <TouchableOpacity onPress={handleResend} disabled={isResending}>
+            <Text style={[styles.resendLink, { color: theme.primary }]}> 
+              {isResending ? '送信中...' : type === 'recovery' ? 'リセットコードを再送信' : '確認コードを再送信'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.replace('/auth/login')}>
+            <Text style={[styles.cancelLink, { color: theme.textSecondary }]}>キャンセル</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </TouchableWithoutFeedback>
   );
@@ -107,5 +144,18 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  linkContainer: {
+    alignItems: 'center',
+    marginTop: 28,
+  },
+  resendLink: {
+    fontSize: 14,
+    fontWeight: '500',
+    textDecorationLine: 'underline',
+    marginBottom: 20,
+  },
+  cancelLink: {
+    fontSize: 14,
   },
 }); 

@@ -10,11 +10,9 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [resetEmail, setResetEmail] = useState('');
-  const [resendEmail, setResendEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showResetForm, setShowResetForm] = useState(false);
-  const [showResendForm, setShowResendForm] = useState(false);
-  const { signIn, signInWithGoogle, signInWithApple, resetPassword, resendConfirmation } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple, resetPassword } = useAuth();
   const { resetOnboarding } = useOnboarding();
   const theme = useTheme();
   const colorScheme = useColorScheme();
@@ -34,7 +32,13 @@ export default function LoginScreen() {
       await signIn(email, password);
       router.replace('/');
     } catch (error: any) {
-      Alert.alert('ログインエラー', error.message || 'ログインに失敗しました');
+      const message = error.message || '';
+      if (message.includes('メールアドレスの確認')) {
+        // メール未確認の場合は確認コード入力画面へ遷移
+        router.push({ pathname: '/auth/verify', params: { email, type: 'signup' } });
+      } else {
+        Alert.alert('ログインエラー', message || 'ログインに失敗しました');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -114,28 +118,6 @@ export default function LoginScreen() {
     }
   };
 
-  // メール確認再送信処理
-  const handleResendConfirmation = async () => {
-    if (!resendEmail) {
-      Alert.alert('エラー', 'メールアドレスを入力してください');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      await resendConfirmation(resendEmail);
-      Alert.alert(
-        '確認メール再送信',
-        'メールアドレス確認のリンクを再送信しました。\n\nメールを確認してください。メールが届かない場合は、迷惑メールフォルダもご確認ください。',
-        [{ text: 'OK', onPress: () => setShowResendForm(false) }]
-      );
-    } catch (error: any) {
-      Alert.alert('エラー', error.message || 'メール再送信に失敗しました');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // パスワードリセットフォームを表示する関数
   const renderResetForm = () => {
     if (!showResetForm) return null;
@@ -160,49 +142,10 @@ export default function LoginScreen() {
           disabled={isLoading}
         >
           <Text style={styles.buttonText}>
-            {isLoading ? '送信中...' : 'リセットリンクを送信'}
+            {isLoading ? '送信中...' : 'リセットコードを送信'}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setShowResetForm(false)}>
-          <Text style={[styles.cancelText, { color: theme.textSecondary }]}>
-            キャンセル
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
-  // メール確認再送信フォームを表示する関数
-  const renderResendForm = () => {
-    if (!showResendForm) return null;
-
-    return (
-      <View style={styles.resetForm}>
-        <Text style={[styles.resetTitle, { color: theme.text }]}>
-          メール確認を再送信
-        </Text>
-        <Text style={[styles.resendDescription, { color: theme.textSecondary }]}>
-          アカウント登録時のメールアドレスを入力してください
-        </Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-          placeholder="メールアドレス"
-          placeholderTextColor={theme.textSecondary}
-          value={resendEmail}
-          onChangeText={setResendEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: theme.primary }]}
-          onPress={handleResendConfirmation}
-          disabled={isLoading}
-        >
-          <Text style={styles.buttonText}>
-            {isLoading ? '送信中...' : '確認メールを再送信'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setShowResendForm(false)}>
           <Text style={[styles.cancelText, { color: theme.textSecondary }]}>
             キャンセル
           </Text>
@@ -217,7 +160,7 @@ export default function LoginScreen() {
         <Text style={[styles.title, { color: theme.text }]}>EverWear</Text>
         <Text style={[styles.subtitle, { color: theme.text }]}>アカウントにログイン</Text>
 
-        {!showResetForm && !showResendForm && (
+        {!showResetForm && (
           <>
             <TextInput
               style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
@@ -254,20 +197,13 @@ export default function LoginScreen() {
                   パスワードをお忘れですか？
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity onPress={() => setShowResendForm(true)}>
-                <Text style={[styles.forgotPassword, { color: theme.primary }]}>
-                  メール確認を再送信
-                </Text>
-              </TouchableOpacity>
             </View>
           </>
         )}
 
         {renderResetForm()}
-        {renderResendForm()}
 
-        {!showResetForm && !showResendForm && (
+        {!showResetForm && (
           <>
             <View style={styles.divider}>
               <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
@@ -365,6 +301,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 15,
     marginBottom: 15,
+    letterSpacing: 0,
   },
   button: {
     height: 50,

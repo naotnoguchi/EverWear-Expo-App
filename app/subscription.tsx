@@ -490,11 +490,20 @@ export default function SubscriptionScreen() {
                   </Text>
                 </View>
 
-                {subscription.purchaseDate && (
+                {subscription.originalPurchaseDate && (
                   <View style={styles.subscriptionInfoItem}>
-                    <Text style={styles.subscriptionInfoLabel}>契約開始日</Text>
+                    <Text style={styles.subscriptionInfoLabel}>初回契約開始日</Text>
                     <Text style={styles.subscriptionInfoValue}>
-                      {subscription.purchaseDate.toLocaleDateString('ja-JP')}
+                      {subscription.originalPurchaseDate.toLocaleDateString('ja-JP')}
+                    </Text>
+                  </View>
+                )}
+
+                {subscription.latestPurchaseDate && (
+                  <View style={styles.subscriptionInfoItem}>
+                    <Text style={styles.subscriptionInfoLabel}>現在の契約開始日</Text>
+                    <Text style={styles.subscriptionInfoValue}>
+                      {subscription.latestPurchaseDate.toLocaleDateString('ja-JP')}
                     </Text>
                   </View>
                 )}

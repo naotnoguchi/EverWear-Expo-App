@@ -28,7 +28,8 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
     isActive: false,
     productId: null,
     expirationDate: null,
-    purchaseDate: null,
+    originalPurchaseDate: null,
+    latestPurchaseDate: null,
     isTrialPeriod: false,
   });
   const [offerings, setOfferings] = useState<PurchasesOffering[]>([]);
@@ -51,7 +52,8 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
         isActive: false,
         productId: null,
         expirationDate: null,
-        purchaseDate: null,
+        originalPurchaseDate: null,
+        latestPurchaseDate: null,
         isTrialPeriod: false,
       });
       setInitializing(false);

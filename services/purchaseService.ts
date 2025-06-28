@@ -12,7 +12,8 @@ export interface SubscriptionInfo {
   isActive: boolean;
   productId: string | null;
   expirationDate: Date | null;
-  purchaseDate: Date | null;
+  originalPurchaseDate: Date | null;
+  latestPurchaseDate: Date | null;
   isTrialPeriod: boolean;
 }
 
@@ -142,9 +143,9 @@ export class PurchaseService {
         revenue_cat_user_id: customerInfo.originalAppUserId,
         subscription_status: subscriptionInfo.isActive ? 'active' : 'expired',
         product_id: productId, // 確実にproduct_idを設定
-        purchase_date: subscriptionInfo.purchaseDate?.toISOString(),
+        purchase_date: subscriptionInfo.latestPurchaseDate?.toISOString(),
         expiration_date: subscriptionInfo.expirationDate?.toISOString(),
-        original_purchase_date: subscriptionInfo.purchaseDate?.toISOString(),
+        original_purchase_date: subscriptionInfo.originalPurchaseDate?.toISOString(),
         revenue_cat_entitlements: customerInfo.entitlements.all,
       };
 
@@ -193,7 +194,8 @@ export class PurchaseService {
         isActive: true,
         productId: premiumEntitlement.productIdentifier,
         expirationDate: premiumEntitlement.expirationDate ? new Date(premiumEntitlement.expirationDate) : null,
-        purchaseDate: premiumEntitlement.originalPurchaseDate ? new Date(premiumEntitlement.originalPurchaseDate) : null,
+        originalPurchaseDate: premiumEntitlement.originalPurchaseDate ? new Date(premiumEntitlement.originalPurchaseDate) : null,
+        latestPurchaseDate: premiumEntitlement.latestPurchaseDate ? new Date(premiumEntitlement.latestPurchaseDate) : null,
         isTrialPeriod: false,
       };
     }
@@ -206,7 +208,8 @@ export class PurchaseService {
       isActive: false,
       productId: null,
       expirationDate: null,
-      purchaseDate: null,
+      originalPurchaseDate: null,
+      latestPurchaseDate: null,
       isTrialPeriod: false,
     };
   }

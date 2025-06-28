@@ -258,20 +258,29 @@ export default function Settings() {
               </Text>
             </View>
 
-            {subscription.expirationDate && (
+            {subscription.originalPurchaseDate && (
               <View style={styles.premiumInfoItem}>
-                <Text style={styles.premiumInfoLabel}>有効期限</Text>
+                <Text style={styles.premiumInfoLabel}>初回契約開始日</Text>
                 <Text style={styles.premiumInfoValue}>
-                  {subscription.expirationDate.toLocaleDateString('ja-JP')}
+                  {subscription.originalPurchaseDate.toLocaleDateString('ja-JP')}
                 </Text>
               </View>
             )}
 
-            {subscription.purchaseDate && (
+            {subscription.latestPurchaseDate && (
               <View style={styles.premiumInfoItem}>
-                <Text style={styles.premiumInfoLabel}>契約開始日</Text>
+                <Text style={styles.premiumInfoLabel}>現在の契約開始日</Text>
                 <Text style={styles.premiumInfoValue}>
-                  {subscription.purchaseDate.toLocaleDateString('ja-JP')}
+                  {subscription.latestPurchaseDate.toLocaleDateString('ja-JP')}
+                </Text>
+              </View>
+            )}
+
+            {subscription.expirationDate && (
+              <View style={styles.premiumInfoItem}>
+                <Text style={styles.premiumInfoLabel}>次回更新日</Text>
+                <Text style={styles.premiumInfoValue}>
+                  {subscription.expirationDate.toLocaleDateString('ja-JP')}
                 </Text>
               </View>
             )}

@@ -240,14 +240,14 @@ export default function LoginScreen() {
               「ログイン」または「サインイン」ボタンをタップすると、
               <Text
                 style={{ color: theme.primary, textDecorationLine: 'underline' }}
-                onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/terms-ja.html', title: '利用規約' } })}
+                onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/terms.html', title: '利用規約' } })}
               >
                 利用規約
               </Text>
               と
               <Text
                 style={{ color: theme.primary, textDecorationLine: 'underline' }}
-                onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/privacy-ja.html', title: 'プライバシーポリシー' } })}
+                onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/privacy.html', title: 'プライバシーポリシー' } })}
               >
                 プライバシーポリシー
               </Text>

@@ -90,14 +90,14 @@ export default function SignupScreen() {
           <Text style={{ color: theme.textSecondary }}>「アカウント作成」をタップすると、</Text>
           <Text
             style={{ color: theme.primary, textDecorationLine: 'underline' }}
-            onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/terms-ja.html', title: '利用規約' } })}
+            onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/terms.html', title: '利用規約' } })}
           >
             利用規約
           </Text>
           <Text style={{ color: theme.textSecondary }}>と</Text>
           <Text
             style={{ color: theme.primary, textDecorationLine: 'underline' }}
-            onPress={() => router.push({ pathname: '/webview', params: { url: 'https://naotnoguchi.github.io/EverWear/privacy-ja.html', title: 'プライバシーポリシー' } })}
+            onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/privacy.html', title: 'プライバシーポリシー' } })}
           >
             プライバシーポリシー
           </Text>

@@ -47,7 +47,7 @@ export default function Settings() {
     router.push({
       pathname: "/webview",
       params: {
-        url: "https://naotnoguchi.github.io/EverWear/terms-ja.html",
+        url: "https://everwearapp.com/terms.html",
         title: "利用規約"
       }
     });
@@ -58,7 +58,7 @@ export default function Settings() {
     router.push({
       pathname: "/webview",
       params: {
-        url: "https://naotnoguchi.github.io/EverWear/privacy-ja.html",
+        url: "https://everwearapp.com/privacy.html",
         title: "プライバシーポリシー"
       }
     });

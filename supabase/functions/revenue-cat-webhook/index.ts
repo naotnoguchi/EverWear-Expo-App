@@ -28,30 +28,139 @@ interface RevenueCatWebhookPayload {
   };
 }
 
+// 処理済みイベントを追跡するための簡易キャッシュ（メモリ内）
+const processedEvents = new Set<string>();
+
+// バリデーション関数
+function validatePayload(payload: any): payload is RevenueCatWebhookPayload {
+  return (
+    payload &&
+    payload.event &&
+    typeof payload.event.id === 'string' &&
+    typeof payload.event.type === 'string' &&
+    typeof payload.event.app_user_id === 'string' &&
+    typeof payload.event.product_id === 'string' &&
+    typeof payload.event.environment === 'string'
+  );
+}
+
 serve(async (req) => {
+  const startTime = Date.now();
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  try {
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+  // POSTリクエストのみ受け付ける
+  if (req.method !== 'POST') {
+    console.warn(`Invalid HTTP method: ${req.method}`);
+    return new Response('Method not allowed', { 
+      status: 405, 
+      headers: corsHeaders 
+    });
+  }
 
-    // Verify webhook authenticity (optional but recommended)
-    const webhookSecret = Deno.env.get('REVENUE_CAT_WEBHOOK_SECRET')
+  try {
+    // 署名検証
+    const webhookSecret = Deno.env.get('REVENUE_CAT_WEBHOOK_SECRET');
+    const authHeader = req.headers.get('Authorization');
+
+    // Normalize tokens by removing `Bearer ` prefix (case-insensitive) and trimming spaces
+    const normalize = (v?: string | null) => v?.replace(/^Bearer\s+/i, '').trim();
+
+    // --- Debug logging helper --------------------------------------------------
+    const calcHash = async (value?: string | null) => {
+      if (!value) return null;
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+      // 先頭 6byte だけ 16進で可視化（漏えい防止）
+      return Array.from(new Uint8Array(buf).slice(0, 6))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+    };
+
+    const normalizedHeader = normalize(authHeader);
+    const normalizedSecret = normalize(webhookSecret);
+
+    // 長さとハッシュをログ出力
+    try {
+      const [headerHash, secretHash] = await Promise.all([
+        calcHash(normalizedHeader),
+        calcHash(normalizedSecret),
+      ]);
+      console.log(
+        'authLen', normalizedHeader?.length,
+        'secretLen', normalizedSecret?.length,
+        'authHash', headerHash,
+        'secretHash', secretHash,
+      );
+    } catch (_hashErr) {
+      // ignore hashing errors (should not happen)
+    }
+
     if (webhookSecret) {
-      const signature = req.headers.get('Authorization')
-      // In production, verify the signature here
-      console.log('Webhook signature verification would happen here')
+      // Authorization ヘッダーが無い場合
+      if (!authHeader) {
+        console.error('Authorization header missing');
+        return new Response('Authorization header required', {
+          status: 401,
+          headers: corsHeaders,
+        });
+      }
+
+      // トークン不一致の場合
+      if (normalizedHeader?.toLowerCase() !== normalizedSecret?.toLowerCase()) {
+        console.error('Webhook signature verification failed');
+        return new Response('Unauthorized', {
+          status: 401,
+          headers: corsHeaders,
+        });
+      }
     }
 
     // Parse webhook payload
-    const payload: RevenueCatWebhookPayload = await req.json()
-    console.log('Received Revenue Cat webhook:', payload.event.type)
+    let payload: any;
+    try {
+      payload = await req.json();
+    } catch (parseError) {
+      console.error('Invalid JSON payload:', parseError);
+      return new Response('Invalid JSON', { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
+    // ペイロードのバリデーション
+    if (!validatePayload(payload)) {
+      console.error('Invalid payload structure:', payload);
+      return new Response('Invalid payload structure', { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
+    const typedPayload = payload as RevenueCatWebhookPayload;
+    const { event } = typedPayload;
+
+    console.log(`Received RevenueCat webhook: ${event.type} (ID: ${event.id})`);
+
+    // 重複イベントチェック
+    if (processedEvents.has(event.id)) {
+      console.log(`Duplicate event detected, skipping: ${event.id}`);
+      return new Response(JSON.stringify({ received: true, duplicate: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    // イベントを処理済みとしてマーク
+    processedEvents.add(event.id);
+
+    // 古いイベントIDを削除（メモリ使用量を制限）
+    if (processedEvents.size > 1000) {
+      const oldestIds = Array.from(processedEvents).slice(0, 100);
+      oldestIds.forEach(id => processedEvents.delete(id));
+    }
 
     // Extract relevant information
     const {
@@ -61,41 +170,46 @@ serve(async (req) => {
       purchased_at_ms,
       expiration_at_ms,
       environment
-    } = payload.event
+    } = event;
 
     // Skip sandbox events in production (optional)
     if (environment === 'SANDBOX' && Deno.env.get('ENVIRONMENT') === 'production') {
-      console.log('Skipping sandbox event in production')
-      return new Response(JSON.stringify({ received: true }), {
+      console.log('Skipping sandbox event in production');
+      return new Response(JSON.stringify({ received: true, skipped: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
-      })
+      });
     }
 
+    // Initialize Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     // Map Revenue Cat user ID to Supabase user ID
-    // Assuming app_user_id is the Supabase user UUID
-    const userId = app_user_id
+    const userId = app_user_id;
 
     // Determine subscription status based on event type
-    let subscriptionStatus = 'active'
+    let subscriptionStatus = 'active';
     switch (type) {
       case 'INITIAL_PURCHASE':
       case 'RENEWAL':
       case 'PRODUCT_CHANGE':
-        subscriptionStatus = 'active'
-        break
+        subscriptionStatus = 'active';
+        break;
       case 'CANCELLATION':
-        subscriptionStatus = 'cancelled'
-        break
+        subscriptionStatus = 'cancelled';
+        break;
       case 'EXPIRATION':
-        subscriptionStatus = 'expired'
-        break
+        subscriptionStatus = 'expired';
+        break;
       case 'BILLING_ISSUE':
-        subscriptionStatus = 'billing_retry'
-        break
+        subscriptionStatus = 'billing_retry';
+        break;
       default:
-        console.log(`Unhandled event type: ${type}`)
-        subscriptionStatus = 'active' // Default to active for unknown events
+        console.warn(`Unhandled event type: ${type}, defaulting to active`);
+        subscriptionStatus = 'active';
     }
 
     // Prepare subscription data
@@ -107,9 +221,9 @@ serve(async (req) => {
       purchase_date: purchased_at_ms ? new Date(purchased_at_ms).toISOString() : null,
       expiration_date: expiration_at_ms ? new Date(expiration_at_ms).toISOString() : null,
       original_purchase_date: purchased_at_ms ? new Date(purchased_at_ms).toISOString() : null,
-      revenue_cat_entitlements: payload.event,
+      revenue_cat_entitlements: event,
       updated_at: new Date().toISOString(),
-    }
+    };
 
     // Upsert subscription data in Supabase
     const { data, error } = await supabaseClient
@@ -117,29 +231,42 @@ serve(async (req) => {
       .upsert(subscriptionData, { 
         onConflict: 'user_id',
         ignoreDuplicates: false 
-      })
+      });
 
     if (error) {
-      console.error('Error updating subscription:', error)
-      return new Response(JSON.stringify({ error: error.message }), {
+      console.error(`Database error for user ${userId}:`, error);
+      return new Response(JSON.stringify({ 
+        error: 'Database operation failed',
+        details: error.message 
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
-      })
+      });
     }
 
-    console.log('Successfully updated subscription for user:', userId)
+    const processingTime = Date.now() - startTime;
+    console.log(`Successfully processed ${type} for user ${userId} in ${processingTime}ms`);
 
     // Send success response to Revenue Cat
-    return new Response(JSON.stringify({ received: true }), {
+    return new Response(JSON.stringify({ 
+      received: true,
+      processed_at: new Date().toISOString(),
+      processing_time_ms: processingTime
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
-    })
+    });
 
   } catch (error) {
-    console.error('Webhook processing error:', error)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    const processingTime = Date.now() - startTime;
+    console.error(`Webhook processing error after ${processingTime}ms:`, error);
+    
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error',
+      timestamp: new Date().toISOString()
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
-    })
+    });
   }
 }) 

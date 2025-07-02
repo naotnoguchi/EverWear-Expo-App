@@ -15,6 +15,7 @@ const convertRpcResponseToAppItem = (rpcResponse: any): AppClothingItem => {
     wearCount: rpcResponse.wear_count,
     washThreshold: rpcResponse.wash_threshold,
     lastWorn: rpcResponse.last_worn || '',
+    lastWashed: rpcResponse.last_washed || '',
     memo: rpcResponse.memo || '',
     condition: rpcResponse.condition || '',
     purchasePrice: rpcResponse.purchase_price,

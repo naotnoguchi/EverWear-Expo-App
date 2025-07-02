@@ -19,6 +19,7 @@ export interface ClothingItem {
   wear_count: number;
   wash_threshold: number;
   last_worn: string | null; // ISO date string
+  last_washed: string | null; // ISO date string
   memo: string | null;
   condition: string | null;
   purchase_price: number | null;
@@ -151,6 +152,7 @@ export interface AppClothingItem {
   wearCount: number;
   washThreshold: number;
   lastWorn: string;
+  lastWashed: string;
   memo: string;
   condition: string;
   purchasePrice: number | null;
@@ -170,6 +172,7 @@ export const toAppClothingItem = (dbItem: ClothingItem, wearHistory: WearHistory
     wearCount: dbItem.wear_count,
     washThreshold: dbItem.wash_threshold,
     lastWorn: dbItem.last_worn || '',
+    lastWashed: dbItem.last_washed || '',
     memo: dbItem.memo || '',
     condition: dbItem.condition || '',
     purchasePrice: dbItem.purchase_price,
@@ -189,6 +192,7 @@ export const toDbClothingItem = (appItem: Partial<AppClothingItem>, userId: stri
     wear_count: appItem.wearCount || 0,
     wash_threshold: appItem.washThreshold || 3,
     last_worn: appItem.lastWorn || null,
+    last_washed: appItem.lastWashed || null,
     memo: appItem.memo || null,
     condition: appItem.condition || null,
     purchase_price: appItem.purchasePrice || null

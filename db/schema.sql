@@ -21,6 +21,7 @@ CREATE TABLE clothing_items (
   wear_count INTEGER DEFAULT 0,
   wash_threshold INTEGER DEFAULT 3,
   last_worn DATE,
+  last_washed DATE,
   memo TEXT,
   condition TEXT,
   purchase_price NUMERIC,
@@ -220,42 +221,6 @@ BEFORE UPDATE ON clothing_items
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- Function to increment wear_count and update last_worn when a wear record is added
-CREATE OR REPLACE FUNCTION increment_wear_count()
-RETURNS TRIGGER AS $$
-BEGIN
-  UPDATE clothing_items
-  SET 
-    wear_count = wear_count + 1,
-    last_worn = NEW.wear_date
-  WHERE id = NEW.clothing_item_id;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger to call the function when a wear_history record is inserted
-CREATE TRIGGER increment_wear_count_on_wear
-AFTER INSERT ON wear_history
-FOR EACH ROW
-EXECUTE FUNCTION increment_wear_count();
-
--- Function to reset wear_count when a wash record is added
-CREATE OR REPLACE FUNCTION reset_wear_count()
-RETURNS TRIGGER AS $$
-BEGIN
-  UPDATE clothing_items
-  SET wear_count = 0
-  WHERE id = NEW.clothing_item_id;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger to call the function when a wash_history record is inserted
-CREATE TRIGGER reset_wear_count_on_wash
-AFTER INSERT ON wash_history
-FOR EACH ROW
-EXECUTE FUNCTION reset_wear_count();
-
 -- Function to automatically create a user record when a new auth user is created
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
@@ -299,6 +264,7 @@ RETURNS TABLE (
   wear_count INTEGER,
   wash_threshold INTEGER,
   last_worn DATE,
+  last_washed DATE,
   memo TEXT,
   condition TEXT,
   purchase_price NUMERIC,
@@ -314,6 +280,7 @@ DECLARE
   item_exists INTEGER;
   latest_wash_date DATE;
   new_wear_count INTEGER;
+  new_last_worn DATE;
 BEGIN
   -- Verify the item belongs to the user
   SELECT COUNT(*) INTO item_exists
@@ -347,9 +314,14 @@ BEGIN
     WHERE clothing_item_id = item_id_param;
   END IF;
 
-  -- Update the clothing item
+  -- Get the latest wear date from history (not the parameter date)
+  SELECT MAX(wear_date) INTO new_last_worn
+  FROM wear_history
+  WHERE clothing_item_id = item_id_param;
+
+  -- Update the clothing item (last_washed is not updated for wear records)
   UPDATE clothing_items
-  SET last_worn = wear_date_param,
+  SET last_worn = new_last_worn,
       wear_count = new_wear_count,
       updated_at = NOW()
   WHERE clothing_items.id = item_id_param;
@@ -366,6 +338,7 @@ BEGIN
     ci.wear_count,
     ci.wash_threshold,
     ci.last_worn,
+    ci.last_washed,
     ci.memo,
     ci.condition,
     ci.purchase_price,
@@ -406,6 +379,7 @@ RETURNS TABLE (
   wear_count INTEGER,
   wash_threshold INTEGER,
   last_worn DATE,
+  last_washed DATE,
   memo TEXT,
   condition TEXT,
   purchase_price NUMERIC,
@@ -470,7 +444,7 @@ BEGIN
     WHERE clothing_item_id = item_id_param;
   END IF;
 
-  -- Update the clothing item
+  -- Update the clothing item (last_washed is not updated for wear records)
   UPDATE clothing_items
   SET last_worn = new_last_worn,
       wear_count = new_wear_count,
@@ -489,6 +463,7 @@ BEGIN
     ci.wear_count,
     ci.wash_threshold,
     ci.last_worn,
+    ci.last_washed,
     ci.memo,
     ci.condition,
     ci.purchase_price,
@@ -529,6 +504,7 @@ RETURNS TABLE (
   wear_count INTEGER,
   wash_threshold INTEGER,
   last_worn DATE,
+  last_washed DATE,
   memo TEXT,
   condition TEXT,
   purchase_price NUMERIC,
@@ -543,6 +519,8 @@ AS $$
 DECLARE
   item_exists INTEGER;
   new_wear_count INTEGER;
+  new_last_worn DATE;
+  new_last_washed DATE;
 BEGIN
   -- Verify the item belongs to the user
   SELECT COUNT(*) INTO item_exists
@@ -557,15 +535,33 @@ BEGIN
   INSERT INTO wash_history (clothing_item_id, wash_date)
   VALUES (item_id_param, wash_date_param);
 
-  -- Calculate wear count (wears after this wash)
-  SELECT COUNT(*) INTO new_wear_count
+  -- Get the latest wash date from history (after insertion)
+  SELECT MAX(wash_date) INTO new_last_washed
+  FROM wash_history
+  WHERE clothing_item_id = item_id_param;
+
+  -- Calculate wear count (wears after the latest wash)
+  IF new_last_washed IS NOT NULL THEN
+    SELECT COUNT(*) INTO new_wear_count
+    FROM wear_history
+    WHERE clothing_item_id = item_id_param
+    AND wear_date > new_last_washed;
+  ELSE
+    SELECT COUNT(*) INTO new_wear_count
+    FROM wear_history
+    WHERE clothing_item_id = item_id_param;
+  END IF;
+
+  -- Get the latest wear date from history
+  SELECT MAX(wear_date) INTO new_last_worn
   FROM wear_history
-  WHERE clothing_item_id = item_id_param
-  AND wear_date > wash_date_param;
+  WHERE clothing_item_id = item_id_param;
 
   -- Update the clothing item
   UPDATE clothing_items
   SET wear_count = new_wear_count,
+      last_worn = new_last_worn,
+      last_washed = new_last_washed,
       updated_at = NOW()
   WHERE clothing_items.id = item_id_param;
 
@@ -581,6 +577,7 @@ BEGIN
     ci.wear_count,
     ci.wash_threshold,
     ci.last_worn,
+    ci.last_washed,
     ci.memo,
     ci.condition,
     ci.purchase_price,
@@ -621,6 +618,7 @@ RETURNS TABLE (
   wear_count INTEGER,
   wash_threshold INTEGER,
   last_worn DATE,
+  last_washed DATE,
   memo TEXT,
   condition TEXT,
   purchase_price NUMERIC,
@@ -637,6 +635,8 @@ DECLARE
   record_exists INTEGER;
   latest_wash_date DATE;
   new_wear_count INTEGER;
+  new_last_worn DATE;
+  new_last_washed DATE;
 BEGIN
   -- Verify the item belongs to the user
   SELECT COUNT(*) INTO item_exists
@@ -679,9 +679,21 @@ BEGIN
     WHERE clothing_item_id = item_id_param;
   END IF;
 
+  -- Get the latest wear date from history
+  SELECT MAX(wear_date) INTO new_last_worn
+  FROM wear_history
+  WHERE clothing_item_id = item_id_param;
+
+  -- Get the latest wash date from history (should be same as latest_wash_date)
+  SELECT MAX(wash_date) INTO new_last_washed
+  FROM wash_history
+  WHERE clothing_item_id = item_id_param;
+
   -- Update the clothing item
   UPDATE clothing_items
   SET wear_count = new_wear_count,
+      last_worn = new_last_worn,
+      last_washed = new_last_washed,
       updated_at = NOW()
   WHERE clothing_items.id = item_id_param;
 
@@ -697,6 +709,7 @@ BEGIN
     ci.wear_count,
     ci.wash_threshold,
     ci.last_worn,
+    ci.last_washed,
     ci.memo,
     ci.condition,
     ci.purchase_price,
@@ -733,6 +746,7 @@ RETURNS TABLE (
   wear_count INTEGER,
   wash_threshold INTEGER,
   last_worn DATE,
+  last_washed DATE,
   memo TEXT,
   condition TEXT,
   purchase_price NUMERIC,
@@ -756,6 +770,7 @@ BEGIN
     ci.wear_count,
     ci.wash_threshold,
     ci.last_worn,
+    ci.last_washed,
     ci.memo,
     ci.condition,
     ci.purchase_price,
@@ -795,6 +810,7 @@ RETURNS TABLE (
   wear_count INTEGER,
   wash_threshold INTEGER,
   last_worn DATE,
+  last_washed DATE,
   memo TEXT,
   condition TEXT,
   purchase_price NUMERIC,
@@ -818,6 +834,7 @@ BEGIN
     ci.wear_count,
     ci.wash_threshold,
     ci.last_worn,
+    ci.last_washed,
     ci.memo,
     ci.condition,
     ci.purchase_price,

@@ -20,6 +20,7 @@ interface ClothingItem {
   wearCount: number;
   washThreshold: number;
   lastWorn: string;
+  lastWashed?: string; // 最終洗濯日を追加
   memo: string;
   condition: string;
   purchasePrice: number | null;
@@ -684,7 +685,7 @@ export default function ItemDetail() {
 
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>最終洗濯日:</Text>
-            <Text style={styles.statValue}>{item.washHistory.length > 0 ? formatDateJapanese(item.washHistory[item.washHistory.length - 1]) : "なし"}</Text>
+            <Text style={styles.statValue}>{item.lastWashed ? formatDateJapanese(item.lastWashed) : "なし"}</Text>
           </View>
         </View>
 

@@ -61,10 +61,13 @@ export default function SubscriptionScreen() {
   // 月額・年額プランでは RevenueCat から返るローカライズ済みの priceString をそのまま使用する
   // 無料プランは端末のロケールに合わせて 0 をフォーマット
   const localeCurrencyCode = monthlyPackage?.product.currencyCode || yearlyPackage?.product.currencyCode || 'JPY';
-  const freePlanPriceString = new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: localeCurrencyCode,
-  }).format(0);
+  // const freePlanPriceString = new Intl.NumberFormat(undefined, {
+  //   style: 'currency',
+  //   currency: localeCurrencyCode,
+  // }).format(0);
+  
+  // 暫定対応：日本国内のみ配信のため無料プランの価格を固定表示
+  const freePlanPriceString = '¥0';
 
   const monthlyPriceString = monthlyPackage?.product.priceString;
   const yearlyPriceString = yearlyPackage?.product.priceString;

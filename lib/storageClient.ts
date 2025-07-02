@@ -81,7 +81,7 @@ export const getPrivateUrls = async (paths: string[], width: number = 320, heigh
 };
 
 // 画像パスからURLを取得する関数（既存のURLはそのまま返す）
-export const getImageUrl = async (imagePath: string | null): Promise<string | null> => {
+export const getImageUrl = async (imagePath: string | null, width: number = 320, height: number = 320): Promise<string | null> => {
   if (!imagePath) return null;
 
   // 既にURLの場合はそのまま返す
@@ -90,5 +90,5 @@ export const getImageUrl = async (imagePath: string | null): Promise<string | nu
   }
 
   // パスの場合は署名付きURLを取得
-  return await getPrivateUrl(imagePath);
+  return await getPrivateUrl(imagePath, width, height);
 };

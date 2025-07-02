@@ -58,7 +58,8 @@ export default function ItemDetail() {
       if (!item) return;
 
       try {
-        const url = await getImageUrl(item.image);
+        // アイテム詳細では高解像度(1024x1024)を使用
+        const url = await getImageUrl(item.image, 1024, 1024);
         setImageUrl(url);
       } catch (error) {
         console.error(`Error generating URL for item ${item.id}:`, error);
@@ -589,7 +590,7 @@ export default function ItemDetail() {
       <Image 
         source={{ 
           uri: imageUrl || item.image,
-          cacheKey: item?.image
+          cacheKey: item?.image ? `${item.image}_1024x1024` : undefined
         }} 
         style={styles.itemImage} 
         contentFit="cover"

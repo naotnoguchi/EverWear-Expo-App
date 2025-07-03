@@ -122,6 +122,7 @@ ALTER TABLE wear_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wash_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE brands ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_badges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
 -- Clothing items policies
 CREATE POLICY "Users can view their own clothing items" 
@@ -204,6 +205,27 @@ CREATE POLICY "Users can insert their own badges"
   ON user_badges FOR INSERT 
   WITH CHECK (auth.uid() = user_id);
 
+-- Users table policies
+CREATE POLICY "Users can view their own profile" 
+  ON users FOR SELECT 
+  USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert their own profile" 
+  ON users FOR INSERT 
+  WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Users can update their own profile" 
+  ON users FOR UPDATE 
+  USING (auth.uid() = id);
+
+CREATE POLICY "Users can delete their own profile" 
+  ON users FOR DELETE 
+  USING (auth.uid() = id);
+
+CREATE POLICY "Service role can manage user profiles" 
+  ON users FOR ALL 
+  USING (auth.role() = 'service_role');
+
 -- Functions and Triggers
 
 -- Function to update clothing_items.updated_at when a record is updated
@@ -282,6 +304,11 @@ DECLARE
   new_wear_count INTEGER;
   new_last_worn DATE;
 BEGIN
+  -- Check if the authenticated user matches the user_id parameter
+  IF auth.uid() != user_id_param THEN
+    RAISE EXCEPTION 'Access denied: user_id does not match authenticated user';
+  END IF;
+
   -- Verify the item belongs to the user
   SELECT COUNT(*) INTO item_exists
   FROM clothing_items
@@ -398,6 +425,11 @@ DECLARE
   new_last_worn DATE;
   new_wear_count INTEGER;
 BEGIN
+  -- Check if the authenticated user matches the user_id parameter
+  IF auth.uid() != user_id_param THEN
+    RAISE EXCEPTION 'Access denied: user_id does not match authenticated user';
+  END IF;
+
   -- Verify the item belongs to the user
   SELECT COUNT(*) INTO item_exists
   FROM clothing_items
@@ -522,6 +554,11 @@ DECLARE
   new_last_worn DATE;
   new_last_washed DATE;
 BEGIN
+  -- Check if the authenticated user matches the user_id parameter
+  IF auth.uid() != user_id_param THEN
+    RAISE EXCEPTION 'Access denied: user_id does not match authenticated user';
+  END IF;
+
   -- Verify the item belongs to the user
   SELECT COUNT(*) INTO item_exists
   FROM clothing_items
@@ -638,6 +675,11 @@ DECLARE
   new_last_worn DATE;
   new_last_washed DATE;
 BEGIN
+  -- Check if the authenticated user matches the user_id parameter
+  IF auth.uid() != user_id_param THEN
+    RAISE EXCEPTION 'Access denied: user_id does not match authenticated user';
+  END IF;
+
   -- Verify the item belongs to the user
   SELECT COUNT(*) INTO item_exists
   FROM clothing_items
@@ -759,6 +801,11 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
+  -- Check if the authenticated user matches the user_id parameter
+  IF auth.uid() != user_id_param THEN
+    RAISE EXCEPTION 'Access denied: user_id does not match authenticated user';
+  END IF;
+
   RETURN QUERY
   SELECT 
     ci.id as item_id,
@@ -823,6 +870,11 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
+  -- Check if the authenticated user matches the user_id parameter
+  IF auth.uid() != user_id_param THEN
+    RAISE EXCEPTION 'Access denied: user_id does not match authenticated user';
+  END IF;
+
   RETURN QUERY
   SELECT 
     ci.id as item_id,

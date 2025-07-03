@@ -103,6 +103,11 @@ export default function Settings() {
     );
   };
 
+  // Handle account management
+  const handleAccountManagement = () => {
+    router.push('/account');
+  };
+
   // Define styles with theme colors
   const styles = StyleSheet.create({
     container: {
@@ -236,6 +241,15 @@ export default function Settings() {
       ref={scrollViewRef}
       style={styles.container}
       contentContainerStyle={{ paddingTop: 16 }}>
+
+      {/* アカウント管理セクション */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>アカウント</Text>
+        <TouchableOpacity style={styles.actionButton} onPress={handleAccountManagement}>
+          <Ionicons name="person-outline" size={24} color="#3498db" />
+          <Text style={styles.actionButtonText}>アカウント管理</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>プレミアムプラン</Text>

@@ -7,6 +7,8 @@ import * as Crypto from 'expo-crypto';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { auth } from '../lib/authClient';
+import { getAuthenticatedClient } from '../lib/dbClient';
+import { deleteImage } from '../lib/imageUtils';
 
 // AsyncStorageのキー
 const AUTH_STATE_KEY = 'auth_state';
@@ -31,6 +33,9 @@ interface AuthContextType {
   recoveryToken: string | null;
   recoveryRefreshToken: string | null;
   clearRecoveryToken: () => void;
+  deleteAccount: () => Promise<void>;
+  getAuthProvider: () => 'email' | 'google' | 'apple' | 'unknown';
+  getUserInfo: () => { provider: string; email: string | null; createdAt: string | null };
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -704,6 +709,98 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRecoveryRefreshToken(null);
   };
 
+  // アカウント削除
+  const deleteAccount = async () => {
+    try {
+      if (!user?.id) {
+        throw new Error('ユーザーが認証されていません');
+      }
+
+      // データベース関数を呼び出してアカウントを削除
+      const authClient = await getAuthenticatedClient();
+      const { data, error } = await authClient
+        .rpc('delete_user_account', { user_id_param: user.id });
+
+      if (error) {
+        console.error('Error deleting account:', error);
+        throw error;
+      }
+
+      if (!data || !data[0]?.success) {
+        throw new Error(data?.[0]?.message || 'アカウント削除に失敗しました');
+      }
+
+      // 画像ファイルを削除
+      const deletedImagePaths = data[0].deleted_image_paths || [];
+      for (const imagePath of deletedImagePaths) {
+        if (imagePath && imagePath.includes('supabase')) {
+          try {
+            await deleteImage(imagePath);
+          } catch (imageError) {
+            console.error('Error deleting image:', imagePath, imageError);
+            // 画像削除エラーは続行
+          }
+        }
+      }
+
+      // ローカル状態をクリア
+      setSession(null);
+      setUser(null);
+      
+      // AsyncStorageをクリア
+      await handleAuthError();
+      
+      console.log('Account deleted successfully');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      throw error;
+    }
+  };
+
+  // 認証プロバイダーの取得
+  const getAuthProvider = (): 'email' | 'google' | 'apple' | 'unknown' => {
+    if (!user) return 'unknown';
+    
+    // identitiesから最初のプロバイダーを取得
+    const provider = user.identities?.[0]?.provider || user.app_metadata?.provider;
+    
+    switch (provider) {
+      case 'email':
+        return 'email';
+      case 'google':
+        return 'google';
+      case 'apple':
+        return 'apple';
+      default:
+        return 'unknown';
+    }
+  };
+
+  // ユーザー情報の取得
+  const getUserInfo = () => {
+    if (!user) {
+      return {
+        provider: 'unknown',
+        email: null,
+        createdAt: null
+      };
+    }
+
+    const provider = getAuthProvider();
+    const providerNames = {
+      email: 'メール/パスワード',
+      google: 'Google',
+      apple: 'Apple',
+      unknown: '不明'
+    };
+
+    return {
+      provider: providerNames[provider],
+      email: user.email || null,
+      createdAt: user.created_at || null
+    };
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -725,6 +822,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         recoveryToken,
         recoveryRefreshToken,
         clearRecoveryToken,
+        deleteAccount,
+        getAuthProvider,
+        getUserInfo,
       }}
     >
       {children}

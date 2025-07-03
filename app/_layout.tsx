@@ -186,6 +186,7 @@ function MainApp() {
         <Stack.Screen name="badges-overview" options={{ title: "バッジコレクション", headerBackTitle: "戻る" }} />
         <Stack.Screen name="item/stats/[id]" options={{ title: "アイテム詳細分析", headerBackTitle: "戻る" }} />
         <Stack.Screen name="subscription" options={{ title: "プレミアムプラン", headerBackTitle: "戻る" }} />
+        <Stack.Screen name="account" options={{ title: "アカウント管理", headerBackTitle: "戻る" }} />
         <Stack.Screen name="webview" options={{ headerBackTitle: "戻る" }} />
       </Stack>
       <BadgeNotificationManager 

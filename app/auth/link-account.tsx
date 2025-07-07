@@ -14,7 +14,7 @@ export default function LinkAccountScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const { isAnonymous, startEmailLinking, linkGoogleIdentity, setTempLinkPassword } = useAuth();
   const theme = useTheme();
-  
+
   // 自動フォーカス用のref
   const emailInputRef = useRef<TextInput>(null);
 
@@ -240,16 +240,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     justifyContent: 'center',
-  },
-  backButtonHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  backButtonHeaderText: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
   },
   title: {
     fontSize: 28,

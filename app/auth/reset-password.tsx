@@ -25,21 +25,18 @@ export default function ResetPasswordScreen() {
 
     try {
       setIsLoading(true);
-      
+
       // OTPベースのパスワードリセットではrecoveryTokenのみを使用
       if (!recoveryToken) {
         Alert.alert('エラー', '認証トークンが見つかりません。パスワードリセットを再度実行してください。');
         return;
       }
-      
+
       await updatePassword(password);
 
-      // セキュリティのため、パスワード変更後は一度ログアウト
-      console.log('Password reset successful, signing out for security');
-      
       // リカバリートークンをクリア
       clearRecoveryToken();
-      
+
       // ログアウト処理を先に実行
       await signOut();
 

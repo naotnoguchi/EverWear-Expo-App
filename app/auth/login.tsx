@@ -48,7 +48,6 @@ export default function LoginScreen() {
   const handleGoogleLogin = async () => {
     try {
       setIsLoading(true);
-      console.log('Starting Google login process');
       await signInWithGoogle();
       // 注: Google認証はリダイレクトベースなので、AuthContextのuseEffectで処理される
       // 成功時は自動的にホーム画面にリダイレクトされる

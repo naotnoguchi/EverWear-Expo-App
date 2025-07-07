@@ -96,14 +96,14 @@ export default function LinkAccountScreen() {
       await linkGoogleIdentity();
       // 成功時のフィードバック
       Alert.alert(
-        'Google紐付け完了！',
-        'Googleアカウントとの紐付けが完了しました。\n\n既存のデータは引き続き利用できます。',
+        'アカウント登録完了！',
+        'Googleアカウントの登録が完了しました。\n\nデータは引き続き安全に利用できます。',
         [
-          { text: 'ホームに戻る', onPress: () => router.replace('/') },
+          { text: 'OK', onPress: () => router.replace('/') },
         ]
       );
     } catch (error: any) {
-      Alert.alert('Google紐付けエラー', error.message || 'Google認証に失敗しました');
+      Alert.alert('アカウント登録エラー', error.message || 'Google認証に失敗しました');
     } finally {
       setIsLoading(false);
     }

@@ -30,7 +30,7 @@ export default function DeleteAccountModal({
 }: DeleteAccountModalProps) {
   const theme = useTheme();
   const { user, deleteAccount, getAuthProvider, signInWithGoogle, signInWithApple } = useAuth();
-  
+
   const [step, setStep] = useState<'warning' | 'auth' | 'final'>('warning');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -102,7 +102,13 @@ export default function DeleteAccountModal({
       // Apple認証成功後、最終確認へ
       setStep('final');
     } catch (error: any) {
-      if (error.code !== 'ERR_CANCELED') {
+      // ユーザーキャンセルは無視（複数のパターンをチェック）
+      const isUserCanceled = 
+        error.code === 'ERR_CANCELED' || 
+        error.message?.includes('user canceled') ||
+        error.message?.includes('The user canceled');
+
+      if (!isUserCanceled) {
         setAuthError('Apple認証に失敗しました');
       }
     } finally {
@@ -115,7 +121,7 @@ export default function DeleteAccountModal({
 
     try {
       await deleteAccount();
-      
+
       Alert.alert(
         'アカウント削除完了',
         'アカウントが正常に削除されました。',
@@ -145,15 +151,15 @@ export default function DeleteAccountModal({
       <View style={[styles.iconContainer, { backgroundColor: theme.error + '20' }]}>
         <Ionicons name="warning-outline" size={48} color={theme.error} />
       </View>
-      
+
       <Text style={[styles.title, { color: theme.text }]}>
         アカウントを削除しますか？
       </Text>
-      
+
       <Text style={[styles.warningText, { color: theme.textSecondary }]}>
         アカウントを削除すると、以下のデータがすべて完全に削除されます：
       </Text>
-      
+
       <View style={styles.dataList}>
         <Text style={[styles.dataItem, { color: theme.textSecondary }]}>
           • すべての衣類データ
@@ -171,11 +177,11 @@ export default function DeleteAccountModal({
           • サブスクリプション情報
         </Text>
       </View>
-      
+
       <Text style={[styles.warningNote, { color: theme.error }]}>
         ⚠️ この操作は取り消すことができません
       </Text>
-      
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[styles.button, styles.cancelButton, { borderColor: theme.border }]}
@@ -185,7 +191,7 @@ export default function DeleteAccountModal({
             キャンセル
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.button, styles.dangerButton, { backgroundColor: theme.error }]}
           onPress={handleWarningContinue}
@@ -206,7 +212,7 @@ export default function DeleteAccountModal({
       <Text style={[styles.title, { color: theme.text }]}>
         本人確認
       </Text>
-      
+
       <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
         アカウントを削除するには、再度認証が必要です
       </Text>
@@ -226,13 +232,13 @@ export default function DeleteAccountModal({
               editable={!isAuthenticating}
             />
           </View>
-          
+
           {authError ? (
             <Text style={[styles.errorText, { color: theme.error }]}>
               {authError}
             </Text>
           ) : null}
-          
+
           <TouchableOpacity
             style={[
               styles.authButton,
@@ -287,7 +293,7 @@ export default function DeleteAccountModal({
               </>
             )}
           </TouchableOpacity>
-          
+
           {authError ? (
             <Text style={[styles.errorText, { color: theme.error }]}>
               {authError}
@@ -295,7 +301,7 @@ export default function DeleteAccountModal({
           ) : null}
         </View>
       )}
-      
+
       <TouchableOpacity
         style={[styles.textButton]}
         onPress={handleClose}
@@ -312,20 +318,20 @@ export default function DeleteAccountModal({
       <View style={[styles.iconContainer, { backgroundColor: theme.error + '20' }]}>
         <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
       </View>
-      
+
       <Text style={[styles.title, { color: theme.text }]}>
         最終確認
       </Text>
-      
+
       <Text style={[styles.finalWarningText, { color: theme.text }]}>
         本当にアカウントを削除しますか？
       </Text>
-      
+
       <Text style={[styles.finalWarningSubtext, { color: theme.textSecondary }]}>
         この操作は取り消すことができません。
         すべてのデータが完全に削除されます。
       </Text>
-      
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[styles.button, styles.cancelButton, { borderColor: theme.border }]}
@@ -336,7 +342,7 @@ export default function DeleteAccountModal({
             キャンセル
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.button, styles.dangerButton, { backgroundColor: theme.error }]}
           onPress={handleDeleteAccount}

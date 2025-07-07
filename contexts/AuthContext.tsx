@@ -174,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('User email:', session?.user?.email);
           console.log('User is_anonymous:', session?.user?.is_anonymous);
           console.log('=======================');
-          
+
           setSession(session);
           setUser(session?.user ?? null);
 
@@ -412,8 +412,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Failed to obtain identity token from Apple credential');
       }
     } catch (error: any) {
-      // ユーザーキャンセルは無視
-      if (error.code !== 'ERR_CANCELED') {
+      // ユーザーキャンセルは無視（複数のパターンをチェック）
+      const isUserCanceled = 
+        error.code === 'ERR_CANCELED' || 
+        error.message?.includes('user canceled') ||
+        error.message?.includes('The user canceled');
+
+      if (!isUserCanceled) {
         console.error('Error signing in with Apple:', error);
         throw error;
       }
@@ -700,10 +705,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // トークンの種類に応じて処理
         if (type === 'link' && access_token) {
           console.log('Processing identity link callback');
-          
+
           // URLから refresh_token を取得
           const refresh_token = parsedUrl.hash ? new URLSearchParams(parsedUrl.hash.substring(1)).get('refresh_token') : null;
-          
+
           const { error } = await auth.setSession({
             access_token: access_token,
             refresh_token: refresh_token || '',

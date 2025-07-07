@@ -69,8 +69,14 @@ export default function LoginScreen() {
       await signInWithApple();
       // 注: Apple認証の成功はAuthContextで処理
     } catch (error: any) {
-      if (error.code !== 'ERR_CANCELED') {
-        Alert.alert('Appleログインエラー', error.message || 'Appleログインに失敗しました');
+      // ユーザーキャンセルは無視（複数のパターンをチェック）
+      const isUserCanceled = 
+        error.code === 'ERR_CANCELED' || 
+        error.message?.includes('user canceled') ||
+        error.message?.includes('The user canceled');
+
+      if (!isUserCanceled) {
+        Alert.alert('Appleログインに失敗しました');
       }
     } finally {
       setIsLoading(false);

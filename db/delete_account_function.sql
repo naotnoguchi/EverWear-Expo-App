@@ -52,10 +52,6 @@ BEGIN
   -- 6. users テーブルのレコードを削除
   DELETE FROM users WHERE id = user_id_param;
   
-  -- 7. Supabase Authのユーザーを削除
-  -- 注意: この操作にはサービスロールの権限が必要
-  DELETE FROM auth.users WHERE id = user_id_param;
-  
   -- 成功を返す
   RETURN QUERY 
   SELECT 

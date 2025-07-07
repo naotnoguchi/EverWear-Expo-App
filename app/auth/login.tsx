@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -12,7 +13,7 @@ export default function LoginScreen() {
   const [resetEmail, setResetEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showResetForm, setShowResetForm] = useState(false);
-  const { signIn, signInWithGoogle, signInWithApple, resetPassword } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple, resetPassword, signInAnonymously, isAnonymous } = useAuth();
   const { resetOnboarding } = useOnboarding();
   const theme = useTheme();
   const colorScheme = useColorScheme();
@@ -76,8 +77,25 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGuestLogin = async () => {
+    try {
+      setIsLoading(true);
+      await signInAnonymously();
+      router.replace('/');
+    } catch (error: any) {
+      Alert.alert('ゲストログインエラー', error.message || 'ゲストログインに失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSignUp = () => {
-    router.push('/auth/signup');
+    // 匿名ユーザーの場合はアカウント紐付け画面に遷移
+    if (isAnonymous) {
+      router.push('/auth/link-account');
+    } else {
+      router.push('/auth/signup');
+    }
   };
 
   const handleOpenOnboarding = async () => {
@@ -157,8 +175,7 @@ export default function LoginScreen() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Text style={[styles.title, { color: theme.text }]}>EverWear</Text>
-        <Text style={[styles.subtitle, { color: theme.text }]}>アカウントにログイン</Text>
+        <Text style={[styles.title, { color: theme.text }]}>EverWearにログイン</Text>
 
         {!showResetForm && (
           <>
@@ -192,6 +209,12 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             <View style={styles.linkContainer}>
+              <TouchableOpacity onPress={handleSignUp}>
+                <Text style={[styles.forgotPassword, { color: theme.primary }]}>
+                  新規登録
+                </Text>
+              </TouchableOpacity>
+              <Text style={{ color: theme.textSecondary, marginHorizontal: 8 }}> | </Text>
               <TouchableOpacity onPress={() => setShowResetForm(true)}>
                 <Text style={[styles.forgotPassword, { color: theme.primary }]}>
                   パスワードをお忘れですか？
@@ -235,9 +258,30 @@ export default function LoginScreen() {
               />
             )}
 
+            <View style={styles.divider}>
+              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+              <Text style={[styles.dividerText, { color: theme.textSecondary }]}>または</Text>
+              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.guestButton, { backgroundColor: theme.card, borderColor: theme.border }]}
+              onPress={handleGuestLogin}
+              disabled={isLoading}
+            >
+              <Ionicons name="person-outline" size={20} color={theme.primary} />
+              <Text style={[styles.guestButtonText, { color: theme.primary }]}>
+                {isLoading ? 'ゲストログイン中...' : 'ゲストとして利用'}
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={[styles.notice, { color: theme.textSecondary }]}>
+              ※ ゲスト利用の場合、後から Apple アカウントで登録はできません。
+            </Text>
+
             {/* 規約同意注釈 */}
             <Text style={[styles.agreementText, { color: theme.textSecondary }]} selectable={false}>
-              「ログイン」または「サインイン」ボタンをタップすると、
+              いずれかのログイン方法を選択すると、
               <Text
                 style={{ color: theme.primary, textDecorationLine: 'underline' }}
                 onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/terms.html', title: '利用規約' } })}
@@ -253,17 +297,6 @@ export default function LoginScreen() {
               </Text>
               に同意したものとみなします。
             </Text>
-
-            <View style={styles.footer}>
-              <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-                アカウントをお持ちでない場合は
-              </Text>
-              <TouchableOpacity onPress={handleSignUp}>
-                <Text style={[styles.footerLink, { color: theme.primary }]}>
-                  新規登録
-                </Text>
-              </TouchableOpacity>
-            </View>
 
             <View style={styles.onboardingLink}>
               <TouchableOpacity onPress={handleOpenOnboarding}>
@@ -286,9 +319,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 24,
     textAlign: 'center',
   },
   subtitle: {
@@ -308,7 +341,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 20,
   },
   buttonText: {
     color: 'white',
@@ -317,10 +350,10 @@ const styles = StyleSheet.create({
   },
   forgotPassword: {
     textAlign: 'center',
-    marginTop: 10,
-    marginBottom: 10,
   },
   linkContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   resetForm: {
@@ -354,12 +387,25 @@ const styles = StyleSheet.create({
   dividerText: {
     marginHorizontal: 10,
   },
+  guestButton: {
+    height: 50,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+    flexDirection: 'row',
+    borderWidth: 1,
+  },
+  guestButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
   socialButton: {
     height: 50,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 15,
     marginBottom: 15,
     flexDirection: 'row',
   },
@@ -408,5 +454,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     textDecorationLine: 'underline',
+  },
+  notice: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: 28,
+    lineHeight: 16,
+    paddingHorizontal: 16,
   },
 });

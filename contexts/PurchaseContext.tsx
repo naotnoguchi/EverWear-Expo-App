@@ -23,7 +23,7 @@ interface PurchaseProviderProps {
 }
 
 export function PurchaseProvider({ children }: PurchaseProviderProps) {
-  const { user } = useAuth();
+  const { user, isAnonymous } = useAuth();
   const [subscription, setSubscription] = useState<SubscriptionInfo>({
     isActive: false,
     productId: null,
@@ -37,16 +37,16 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
   const [error, setError] = useState<string | null>(null);
   const [initializing, setInitializing] = useState(true); // 初期化中フラグを追加
 
-  // 初期化が完了するまでは安全側に倒してプレミアム制限を適用（フラッシュを防ぐため）
-  const isPremium = initializing ? false : subscription.isActive;
+  // 匿名ユーザーはプレミアム機能を利用できない
+  const isPremium = initializing ? false : (isAnonymous ? false : subscription.isActive);
 
-  // Revenue Cat初期化 - ログイン状態変化を検知してより適切に処理
+  // Revenue Cat初期化 - 匿名ユーザーは初期化しない
   useEffect(() => {
-    if (user?.id) {
-      // ログインした場合は初期化を実行
+    if (user?.id && !isAnonymous) {
+      // 通常ユーザーの場合のみ初期化を実行
       initializePurchases();
     } else {
-      // ログアウトした場合は状態をリセット
+      // ログアウトまたは匿名ユーザーの場合は状態をリセット
       setOfferings([]);
       setSubscription({
         isActive: false,
@@ -60,7 +60,7 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
       setLoading(false);
       setError(null);
     }
-  }, [user?.id]);
+  }, [user?.id, isAnonymous]);
 
   // 開発環境では定期的にサブスクリプション状態をチェック（短期間テスト用）
   useEffect(() => {
@@ -249,14 +249,15 @@ export function usePurchase(): PurchaseContextType {
 // プレミアム機能の制限チェック用フック
 export function usePremiumFeatures() {
   const { isPremium, loading } = usePurchase();
+  const { isAnonymous } = useAuth();
   
   return {
     isPremium,
-    loading, // ローディング状態も提供
-    canAccessPremiumFeatures: () => isPremium,
-    canAddMoreItems: (currentCount: number) => isPremium || currentCount < 5,
-    canAccessStatistics: () => true, // 統計機能は無料で利用可能
-    shouldShowAds: () => !isPremium && !loading, // 初期化中は広告も表示しない
+    loading,
+    canAccessPremiumFeatures: () => !isAnonymous && isPremium,
+    canAddMoreItems: (currentCount: number) => isPremium || currentCount < 5, // 匿名/無料共に5件制限
+    canAccessStatistics: () => true, // 統計機能は匿名ユーザーも利用可能
+    shouldShowAds: () => !isPremium && !loading,
   };
 }
 

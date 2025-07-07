@@ -19,7 +19,7 @@ export default function Settings() {
   const router = useRouter();
 
   // Get auth functions
-  const { signOut } = useAuth();
+  const { signOut, isAnonymous, resetAnonymousData } = useAuth();
 
   // Get premium features and subscription info
   const { isPremium } = usePremiumFeatures();
@@ -96,6 +96,32 @@ export default function Settings() {
             } catch (error) {
               Alert.alert("エラー", "ログアウトに失敗しました");
               console.error("Logout error:", error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // 匿名ユーザーのデータリセット処理
+  const handleResetAnonymousData = async () => {
+    Alert.alert(
+      "データリセット",
+      "全てのデータが削除され、ログイン画面に戻ります。\n\nこの操作は取り消すことができません。",
+      [
+        {
+          text: "キャンセル",
+          style: "cancel",
+        },
+        {
+          text: "リセット",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await resetAnonymousData();
+            } catch (error) {
+              Alert.alert("エラー", "データリセットに失敗しました");
+              console.error("Reset error:", error);
             }
           },
         },
@@ -234,6 +260,59 @@ export default function Settings() {
       color: "#3498db",
       marginLeft: 8,
     },
+    // 匿名ユーザー向けスタイル
+    anonymousNotice: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+      backgroundColor: '#FFF5F5',
+      borderRadius: 8,
+      marginBottom: 12,
+    },
+    anonymousNoticeText: {
+      marginLeft: 8,
+      fontSize: 16,
+      fontWeight: '500',
+      color: theme.text,
+    },
+    anonymousDescription: {
+      fontSize: 14,
+      color: theme.text + "99",
+      marginTop: 8,
+      lineHeight: 20,
+    },
+    resetButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      marginHorizontal: 32,
+      marginTop: 8,
+      paddingVertical: 12,
+      borderWidth: 1,
+      borderColor: "#d9534f",
+      borderRadius: 8,
+    },
+    resetButtonText: {
+      color: "#d9534f",
+      fontSize: 16,
+      marginLeft: 8,
+    },
+    logoutButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      marginHorizontal: 32,
+      marginTop: 8,
+      paddingVertical: 12,
+      borderWidth: 1,
+      borderColor: "#d9534f",
+      borderRadius: 8,
+    },
+    logoutButtonText: {
+      color: "#d9534f",
+      fontSize: 16,
+      marginLeft: 8,
+    },
   });
 
   return (
@@ -242,87 +321,118 @@ export default function Settings() {
       style={styles.container}
       contentContainerStyle={{ paddingTop: 16 }}>
 
-      {/* アカウント管理セクション */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>アカウント</Text>
-        <TouchableOpacity style={styles.actionButton} onPress={handleAccountManagement}>
-          <Ionicons name="person-outline" size={24} color="#3498db" />
-          <Text style={styles.actionButtonText}>アカウント管理</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>プレミアムプラン</Text>
-
-        {isPremium ? (
-          // プレミアム契約済みの場合
-          <View style={styles.premiumActiveContainer}>
-            <View style={styles.premiumStatusHeader}>
-              <Ionicons name="star" size={24} color="#FFD700" />
-              <Text style={styles.premiumActiveTitle}>プレミアム会員</Text>
-              <View style={styles.premiumBadge}>
-                <Text style={styles.premiumBadgeText}>有効</Text>
-              </View>
-            </View>
-
-            <View style={styles.premiumInfoItem}>
-              <Text style={styles.premiumInfoLabel}>契約プラン</Text>
-              <Text style={styles.premiumInfoValue}>
-                {subscription.productId === process.env.EXPO_PUBLIC_PREMIUM_YEARLY_PRODUCT_ID ? '年額プラン' : '月額プラン'}
-              </Text>
-            </View>
-
-            {subscription.originalPurchaseDate && (
-              <View style={styles.premiumInfoItem}>
-                <Text style={styles.premiumInfoLabel}>初回契約開始日</Text>
-                <Text style={styles.premiumInfoValue}>
-                  {subscription.originalPurchaseDate.toLocaleDateString('ja-JP')}
-                </Text>
-              </View>
-            )}
-
-            {subscription.latestPurchaseDate && (
-              <View style={styles.premiumInfoItem}>
-                <Text style={styles.premiumInfoLabel}>現在の契約開始日</Text>
-                <Text style={styles.premiumInfoValue}>
-                  {subscription.latestPurchaseDate.toLocaleDateString('ja-JP')}
-                </Text>
-              </View>
-            )}
-
-            {subscription.expirationDate && (
-              <View style={styles.premiumInfoItem}>
-                <Text style={styles.premiumInfoLabel}>次回更新日</Text>
-                <Text style={styles.premiumInfoValue}>
-                  {subscription.expirationDate.toLocaleDateString('ja-JP')}
-                </Text>
-              </View>
-            )}
-
-            <TouchableOpacity 
-              style={styles.manageSubscriptionButton}
-              onPress={() => router.push("/subscription")}
-            >
-              <Ionicons name="settings" size={20} color="#3498db" />
-              <Text style={styles.manageSubscriptionText}>契約管理</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          // 無料プランの場合
-          <>
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.premiumButton]} 
-              onPress={() => router.push("/subscription")}
-            >
-              <Ionicons name="star" size={24} color="#FFD700" />
-              <Text style={styles.actionButtonText}>プレミアムプランを見る</Text>
-            </TouchableOpacity>
-            <Text style={styles.premiumDescription}>
-              プレミアムプランでは、アイテム登録数の制限解除（無料プランは5件まで）などの特典があります。
+      {/* 匿名ユーザー向けアカウント案内 */}
+      {isAnonymous && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>アカウント</Text>
+          <View style={styles.anonymousNotice}>
+            <Ionicons name="information-circle" size={24} color="#FF6B6B" />
+            <Text style={styles.anonymousNoticeText}>
+              現在ゲストとして利用中です
             </Text>
-          </>
-        )}
-      </View>
+          </View>
+          <TouchableOpacity 
+            style={[styles.actionButton, { borderBottomWidth: 0 }]} 
+            onPress={() => router.push('/auth/link-account')}
+          >
+            <Ionicons name="person-add-outline" size={24} color="#3498db" />
+            <Text style={styles.actionButtonText}>アカウント登録</Text>
+          </TouchableOpacity>
+          <Text style={styles.anonymousDescription}>
+            アカウント登録すると：{'\n'}
+            • 長期間経過してもデータが安全に保存されます{'\n'}
+            • 複数端末でデータを同期できます{'\n'}
+            • プレミアム機能(無制限のアイテム登録)を購入できます
+          </Text>
+        </View>
+      )}
+
+      {/* 通常ユーザー向けアカウント管理 */}
+      {!isAnonymous && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>アカウント</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={handleAccountManagement}>
+            <Ionicons name="person-outline" size={24} color="#3498db" />
+            <Text style={styles.actionButtonText}>アカウント管理</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* プレミアムプラン - 匿名ユーザーには表示しない */}
+      {!isAnonymous && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>プレミアムプラン</Text>
+
+          {isPremium ? (
+            // プレミアム契約済みの場合
+            <View style={styles.premiumActiveContainer}>
+              <View style={styles.premiumStatusHeader}>
+                <Ionicons name="star" size={24} color="#FFD700" />
+                <Text style={styles.premiumActiveTitle}>プレミアム会員</Text>
+                <View style={styles.premiumBadge}>
+                  <Text style={styles.premiumBadgeText}>有効</Text>
+                </View>
+              </View>
+
+              <View style={styles.premiumInfoItem}>
+                <Text style={styles.premiumInfoLabel}>契約プラン</Text>
+                <Text style={styles.premiumInfoValue}>
+                  {subscription.productId === process.env.EXPO_PUBLIC_PREMIUM_YEARLY_PRODUCT_ID ? '年額プラン' : '月額プラン'}
+                </Text>
+              </View>
+
+              {subscription.originalPurchaseDate && (
+                <View style={styles.premiumInfoItem}>
+                  <Text style={styles.premiumInfoLabel}>初回契約開始日</Text>
+                  <Text style={styles.premiumInfoValue}>
+                    {subscription.originalPurchaseDate.toLocaleDateString('ja-JP')}
+                  </Text>
+                </View>
+              )}
+
+              {subscription.latestPurchaseDate && (
+                <View style={styles.premiumInfoItem}>
+                  <Text style={styles.premiumInfoLabel}>現在の契約開始日</Text>
+                  <Text style={styles.premiumInfoValue}>
+                    {subscription.latestPurchaseDate.toLocaleDateString('ja-JP')}
+                  </Text>
+                </View>
+              )}
+
+              {subscription.expirationDate && (
+                <View style={styles.premiumInfoItem}>
+                  <Text style={styles.premiumInfoLabel}>次回更新日</Text>
+                  <Text style={styles.premiumInfoValue}>
+                    {subscription.expirationDate.toLocaleDateString('ja-JP')}
+                  </Text>
+                </View>
+              )}
+
+              <TouchableOpacity 
+                style={styles.manageSubscriptionButton}
+                onPress={() => router.push("/subscription")}
+              >
+                <Ionicons name="settings" size={20} color="#3498db" />
+                <Text style={styles.manageSubscriptionText}>契約管理</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            // 無料プランの場合
+            <>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.premiumButton]} 
+                onPress={() => router.push("/subscription")}
+              >
+                <Ionicons name="star" size={24} color="#FFD700" />
+                <Text style={styles.actionButtonText}>プレミアムプランを見る</Text>
+              </TouchableOpacity>
+              <Text style={styles.premiumDescription}>
+                プレミアムプランでは、アイテム登録数の制限解除（無料プランは5件まで）などの特典があります。
+              </Text>
+            </>
+          )}
+        </View>
+      )}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>アプリ情報</Text>
@@ -351,24 +461,24 @@ export default function Settings() {
         </TouchableOpacity>
       </View>
 
-      {/* 独立したログアウトボタン */}
-      <TouchableOpacity
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "center",
-          marginHorizontal: 32,
-          marginTop: 8,
-          paddingVertical: 12,
-          borderWidth: 1,
-          borderColor: "#d9534f",
-          borderRadius: 8,
-        }}
-        onPress={handleLogout}
-      >
-        <Ionicons name="log-out" size={20} color="#d9534f" />
-        <Text style={{ color: "#d9534f", fontSize: 16, marginLeft: 8 }}>ログアウト</Text>
-      </TouchableOpacity>
+      {/* ログアウト/リセットボタン */}
+      {isAnonymous ? (
+        <TouchableOpacity
+          style={styles.resetButton}
+          onPress={handleResetAnonymousData}
+        >
+          <Ionicons name="refresh" size={20} color="#d9534f" />
+          <Text style={styles.resetButtonText}>データをリセット</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out" size={20} color="#d9534f" />
+          <Text style={styles.logoutButtonText}>ログアウト</Text>
+        </TouchableOpacity>
+      )}
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>

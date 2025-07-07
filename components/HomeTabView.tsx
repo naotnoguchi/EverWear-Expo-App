@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useAuth } from '../contexts/AuthContext';
 import { useClothing } from "../contexts/ClothingContext";
 import { usePremiumFeatures } from "../contexts/PurchaseContext";
 import SortModal from "./SortModal";
@@ -54,6 +55,7 @@ export type HomeTabViewRefType = {
 export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
   const router = useRouter();
   const { isPremium, loading: purchaseLoading } = usePremiumFeatures();
+  const { isAnonymous } = useAuth();
   const tabScrollViewRef = useRef<ScrollView>(null);
   const contentScrollViewRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -185,22 +187,41 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
       return;
     }
     
-    // 無課金ユーザーは5件制限
+    // 5件制限に達した場合の処理
     if (currentItemCount >= 5) {
-      Alert.alert(
-        "アイテム登録制限",
-        `現在${currentItemCount}件のアイテムが登録されています。\n\n無料プランでは最大5件まで登録可能です。\n\nプレミアムプランにアップグレードすると、無制限にアイテムを登録できます。`,
-        [
-          {
-            text: "キャンセル",
-            style: "cancel"
-          },
-          {
-            text: "プレミアムプランを見る",
-            onPress: () => router.push("/subscription")
-          }
-        ]
-      );
+      if (isAnonymous) {
+        // 匿名ユーザー向けメッセージ
+        Alert.alert(
+          "アイテム登録制限",
+          `現在${currentItemCount}件のアイテムが登録されています。\n\n無料プランでは最大5件まで登録可能です。\n\nアカウント登録してプレミアムプランにアップグレードすると、無制限にアイテムを登録できます。`,
+          [
+            {
+              text: "キャンセル",
+              style: "cancel"
+            },
+            {
+              text: "アカウント登録",
+              onPress: () => router.push("/auth/link-account")
+            }
+          ]
+        );
+      } else {
+        // 通常の無料ユーザー向けメッセージ
+        Alert.alert(
+          "アイテム登録制限",
+          `現在${currentItemCount}件のアイテムが登録されています。\n\n無料プランでは最大5件まで登録可能です。\n\nプレミアムプランにアップグレードすると、無制限にアイテムを登録できます。`,
+          [
+            {
+              text: "キャンセル",
+              style: "cancel"
+            },
+            {
+              text: "プレミアムプランを見る",
+              onPress: () => router.push("/subscription")
+            }
+          ]
+        );
+      }
     } else {
       router.push("/add");
     }
@@ -328,6 +349,24 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
       color: theme.text + "99", // with transparency
       marginTop: 16,
     },
+    anonymousBanner: {
+      backgroundColor: '#FFF5F5',
+      borderColor: '#FF6B6B',
+      borderWidth: 1,
+      borderRadius: 8,
+      marginHorizontal: 16,
+      marginTop: 8,
+      marginBottom: 8,
+    },
+    anonymousBannerText: {
+      flex: 1,
+      marginLeft: 8,
+      marginRight: 8,
+      fontSize: 13,
+      fontWeight: '500',
+      color: '#FF6B6B',
+      lineHeight: 18,
+    },
   });
 
   // 初期化中はローディング画面を表示
@@ -392,8 +431,24 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
         </View>
       </View>
 
-      {/* 非表示アイテム通知バナー */}
-      {!isPremium && hiddenItemsCount > 0 && (
+      {/* 匿名ユーザー向けバナー */}
+      {isAnonymous && (
+        <TouchableOpacity 
+          style={styles.anonymousBanner}
+          onPress={() => router.push('/auth/link-account')}
+        >
+          <View style={styles.bannerContent}>
+            <Ionicons name="person-outline" size={20} color="#FF6B6B" />
+            <Text style={styles.anonymousBannerText}>
+              ゲスト利用中 - 長期間経過するとデータが失われる可能性があります。アカウント登録をお願いします。
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#FF6B6B" />
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {/* 既存のプレミアム制限バナー（無料ユーザーのみ） */}
+      {!isPremium && !isAnonymous && hiddenItemsCount > 0 && (
         <TouchableOpacity 
           style={styles.hiddenItemsBanner}
           onPress={() => router.push('/subscription')}

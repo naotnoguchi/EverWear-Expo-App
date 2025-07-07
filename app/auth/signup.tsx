@@ -136,6 +136,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 15,
     marginBottom: 15,
+    letterSpacing: 0,
   },
   button: {
     height: 50,
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   buttonText: {
-    color: 'white', // Will be overridden for dark mode
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },

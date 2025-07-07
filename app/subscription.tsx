@@ -5,6 +5,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,6 +25,7 @@ export default function SubscriptionScreen() {
   const { subscription, offerings, loading, error, purchasePackage, restorePurchases, clearError, refreshOfferings } = usePurchase();
   const { isPremium } = usePremiumFeatures();
   const [purchasing, setPurchasing] = useState(false);
+  const { isAnonymous } = useAuth();
 
   // 画面が表示される時にエラー状態をクリア
   useEffect(() => {
@@ -90,6 +93,18 @@ export default function SubscriptionScreen() {
   };
 
   const handlePurchase = async (packageToPurchase: PurchasesPackage) => {
+    if (isAnonymous) {
+      Alert.alert(
+        "アカウント登録が必要です",
+        "プレミアム機能を利用するにはアカウント登録が必要です。",
+        [
+          { text: "キャンセル", style: "cancel" },
+          { text: "アカウント登録", onPress: () => router.push('/auth/link-account') }
+        ]
+      );
+      return;
+    }
+
     try {
       setPurchasing(true);
       await purchasePackage(packageToPurchase);
@@ -123,6 +138,18 @@ export default function SubscriptionScreen() {
   };
 
   const handleRestore = async () => {
+    if (isAnonymous) {
+      Alert.alert(
+        "アカウント登録が必要です",
+        "購入の復元機能を利用するにはアカウント登録が必要です。",
+        [
+          { text: "キャンセル", style: "cancel" },
+          { text: "アカウント登録", onPress: () => router.push('/auth/link-account') }
+        ]
+      );
+      return;
+    }
+
     try {
       setPurchasing(true);
       await restorePurchases();
@@ -146,6 +173,29 @@ export default function SubscriptionScreen() {
       }
     } finally {
       setPurchasing(false);
+    }
+  };
+
+  const handleManageSubscription = () => {
+    if (isAnonymous) {
+      Alert.alert(
+        "アカウント登録が必要です",
+        "契約管理を行うにはアカウント登録が必要です。",
+        [
+          { text: "キャンセル", style: "cancel" },
+          { text: "アカウント登録", onPress: () => router.push('/auth/link-account') }
+        ]
+      );
+      return;
+    }
+
+    const url = Platform.select({
+      ios: 'https://apps.apple.com/account/subscriptions',
+      android: 'https://play.google.com/store/account/subscriptions'
+    });
+
+    if (url) {
+      Linking.openURL(url);
     }
   };
 
@@ -441,6 +491,12 @@ export default function SubscriptionScreen() {
     );
   }
 
+  // 匿名ユーザーの場合は自動的にホーム画面にリダイレクト
+  if (isAnonymous) {
+    router.replace('/');
+    return null;
+  }
+
   return (
     <>
       <Stack.Screen
@@ -664,6 +720,13 @@ export default function SubscriptionScreen() {
           </View>
         </View>
 
+        <TouchableOpacity
+          style={styles.restoreButton}
+          onPress={handleManageSubscription}
+          disabled={purchasing}
+        >
+          <Text style={styles.restoreButtonText}>契約管理を行う</Text>
+        </TouchableOpacity>
 
       </ScrollView>
     </>

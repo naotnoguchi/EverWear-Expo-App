@@ -7,12 +7,23 @@ import { useTheme } from '../../contexts/ThemeContext';
 export default function VerifyCodeScreen() {
   const params = useLocalSearchParams<{ email?: string; type?: string }>();
   const email = params.email as string | undefined;
-  const type = params.type as 'signup' | 'recovery' | undefined;
+  const type = params.type as 'signup' | 'recovery' | 'link' | undefined;
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const { verifyOtp, resendConfirmation, resetPassword } = useAuth();
+  const { verifyOtp, resendConfirmation, resetPassword, updatePassword, isAnonymous, tempLinkPassword, setTempLinkPassword, setPasswordForLinkedAccount } = useAuth();
   const theme = useTheme();
+  
+  // 自動フォーカス用のref
+  const codeInputRef = React.useRef<TextInput>(null);
+
+  // 画面表示時に自動フォーカス（改善案4）
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      codeInputRef.current?.focus();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleVerify = async () => {
     if (!email || !type) {
@@ -25,7 +36,7 @@ export default function VerifyCodeScreen() {
     }
     try {
       setLoading(true);
-      
+
       // AuthContextのverifyOtp関数を使用
       await verifyOtp(email, code, type);
 
@@ -38,11 +49,36 @@ export default function VerifyCodeScreen() {
         Alert.alert('成功', 'コードが確認されました。新しいパスワードを設定してください。', [
           { text: 'OK', onPress: () => router.replace({ pathname: '/auth/reset-password', params: { email, token: code } }) },
         ]);
+      } else if (type === 'link') {
+        // 匿名→メール紐付け: OTP検証成功後、保存していたパスワードを設定
+        if (tempLinkPassword) {
+          try {
+            await setPasswordForLinkedAccount(tempLinkPassword);
+          } catch (err: any) {
+            Alert.alert('エラー', err.message || 'パスワード設定に失敗しました');
+            return;
+          } finally {
+            setTempLinkPassword(null);
+          }
+        }
+
+        Alert.alert(
+          'アカウント登録完了',
+          'メールアドレスとパスワードの設定が完了しました。',
+          [
+            { text: 'OK', onPress: () => router.replace('/') }
+          ]
+        );
+        return;
       }
     } catch (e: any) {
       Alert.alert('認証エラー', e.message || 'コードの検証に失敗しました。');
     } finally {
       setLoading(false);
+      if (type === 'link') {
+        // 失敗・成功問わず一時パスワードを破棄
+        setTempLinkPassword(null);
+      }
     }
   };
 
@@ -59,9 +95,13 @@ export default function VerifyCodeScreen() {
         // パスワードリセット用のコードを再送
         await resetPassword(email);
         Alert.alert('送信完了', 'リセットコードを再送信しました。メールをご確認ください。');
+      } else if (type === 'link') {
+        // 匿名ユーザーのメール紐付け用再送信
+        await resendConfirmation(email, 'link');
+        Alert.alert('送信完了', '確認コードを再送信しました。メールをご確認ください。');
       } else {
         // サインアップ確認用のコードを再送
-        await resendConfirmation(email);
+        await resendConfirmation(email, 'signup');
         Alert.alert('送信完了', '確認コードを再送信しました。メールをご確認ください。');
       }
     } catch (e: any) {
@@ -75,8 +115,11 @@ export default function VerifyCodeScreen() {
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <Text style={[styles.title, { color: theme.text }]}>確認コード入力</Text>
+        
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>メールに送信された 6 桁コードを入力してください</Text>
+        
         <TextInput
+          ref={codeInputRef}
           style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
           value={code}
           onChangeText={setCode}

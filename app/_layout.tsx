@@ -18,7 +18,7 @@ import { TabResetProvider } from '../contexts/TabResetContext';
 // Main app component with navigation and auth flow
 function MainApp() {
   const { isOnboardingComplete } = useOnboarding();
-  const { user, loading, isFirstLaunch, setFirstLaunchComplete, handleDeepLink } = useAuth();
+  const { user, loading, isFirstLaunch, setFirstLaunchComplete, handleDeepLink, isAnonymous } = useAuth();
   const { badgeNotifications, clearBadgeNotification } = useStatistics();
   const segments = useSegments();
   const colorScheme = useColorScheme();
@@ -100,7 +100,24 @@ function MainApp() {
   }
 
   // If user is authenticated and on auth screen, redirect to main app
-  if (user && inAuthGroup && !loading) {
+  // ただし匿名ユーザーの場合は認証画面へのアクセスを許可（アカウント紐付けのため）
+  // verify画面は特別に許可（匿名ユーザーが非匿名になった後のOTP確認のため）
+  if (user && inAuthGroup && !loading && !isAnonymous) {
+    console.log('--- NAV DEBUG ---');
+    console.log('segments:', segments);
+    console.log('user:', !!user, 'isAnonymous:', isAnonymous);
+    console.log('user email:', user?.email);
+    console.log('current route segment[1]:', segments[1]);
+    console.log('inAuthGroup:', inAuthGroup, 'loading:', loading);
+    console.log('------------------');
+    
+    const currentSegment = segments[1]; // 2階層目を取得
+    // OTP 検証（匿名→メール紐付け）画面は許可
+    if (currentSegment === 'verify') {
+      console.log('Allowing access to auth screen:', currentSegment);
+      return null;
+    }
+    console.log('Redirecting to home from auth screen');
     return <Redirect href="/" />;
   }
 
@@ -187,6 +204,7 @@ function MainApp() {
         <Stack.Screen name="item/stats/[id]" options={{ title: "アイテム詳細分析", headerBackTitle: "戻る" }} />
         <Stack.Screen name="subscription" options={{ title: "プレミアムプラン", headerBackTitle: "戻る" }} />
         <Stack.Screen name="account" options={{ title: "アカウント管理", headerBackTitle: "戻る" }} />
+        <Stack.Screen name="auth/link-account" options={{ title: "アカウント登録", headerBackTitle: "戻る" }} />
         <Stack.Screen name="webview" options={{ headerBackTitle: "戻る" }} />
       </Stack>
       <BadgeNotificationManager 

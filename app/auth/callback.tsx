@@ -120,6 +120,22 @@ export default function CallbackScreen() {
               setTimeout(() => {
                 router.replace('/');
               }, 3000);
+            } else if (type === 'link' && access_token) {
+              // 匿名ユーザーの紐付け完了処理
+              console.log('Fallback: Processing anonymous user identity linking');
+              const { error } = await auth.setSession({
+                access_token: access_token,
+                refresh_token: refresh_token || ''
+              });
+
+              if (error) throw error;
+              
+              setStatus('success');
+              setMessage('Google紐付け完了！\n\nGoogleアカウントとの紐付けが完了しました。\n既存のデータは引き続き利用できます。\n\nアプリにリダイレクトします...');
+              
+              setTimeout(() => {
+                router.replace('/');
+              }, 3000);
             } else if (type === 'recovery') {
               // パスワードリセットの処理
               if (!recoveryToken) {

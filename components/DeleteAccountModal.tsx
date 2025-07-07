@@ -1,20 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { auth } from '../lib/authClient';
+import GoogleAuthButton from './GoogleAuthButton';
 
 interface DeleteAccountModalProps {
   visible: boolean;
@@ -254,23 +255,12 @@ export default function DeleteAccountModal({
 
       {authProvider === 'google' && (
         <View style={styles.authContainer}>
-          <TouchableOpacity
-            style={[styles.socialButton, styles.googleButton]}
+          <GoogleAuthButton
             onPress={handleGoogleAuth}
             disabled={isAuthenticating}
-          >
-            {isAuthenticating ? (
-              <ActivityIndicator color="#4285F4" />
-            ) : (
-              <>
-                <Ionicons name="logo-google" size={24} color="#4285F4" />
-                <Text style={[styles.socialButtonText, { color: '#4285F4' }]}>
-                  Googleで再認証
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-          
+            loading={isAuthenticating}
+            text="Googleで再認証"
+          />
           {authError ? (
             <Text style={[styles.errorText, { color: theme.error }]}>
               {authError}
@@ -455,6 +445,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     marginLeft: 12,
+    letterSpacing: 0,
   },
   errorText: {
     fontSize: 12,
@@ -474,9 +465,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-  },
-  googleButton: {
-    backgroundColor: '#FFFFFF',
   },
   appleButton: {
     borderWidth: 0,
@@ -527,5 +515,6 @@ const styles = StyleSheet.create({
   },
   textButtonText: {
     fontSize: 14,
+    marginBottom: 10,
   },
 }); 

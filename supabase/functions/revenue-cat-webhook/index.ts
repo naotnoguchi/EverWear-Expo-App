@@ -46,7 +46,7 @@ function validatePayload(payload: any): payload is RevenueCatWebhookPayload {
 
 serve(async (req) => {
   const startTime = Date.now();
-  
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -235,6 +235,23 @@ serve(async (req) => {
 
     if (error) {
       console.error(`Database error for user ${userId}:`, error);
+
+      // 外部キー制約違反の場合は正常処理としてスキップ
+      if (error.code === '23503') {
+        console.warn(`User ${userId} not found in users table. Skipping webhook processing.`);
+        return new Response(JSON.stringify({ 
+          received: true,
+          skipped: true,
+          reason: 'User not found in users table',
+          user_id: userId,
+          event_type: type
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200, // RevenueCatには成功として返す
+        });
+      }
+
+      // その他のデータベースエラーは従来通り500エラー
       return new Response(JSON.stringify({ 
         error: 'Database operation failed',
         details: error.message 
@@ -260,7 +277,7 @@ serve(async (req) => {
   } catch (error) {
     const processingTime = Date.now() - startTime;
     console.error(`Webhook processing error after ${processingTime}ms:`, error);
-    
+
     return new Response(JSON.stringify({ 
       error: 'Internal server error',
       timestamp: new Date().toISOString()

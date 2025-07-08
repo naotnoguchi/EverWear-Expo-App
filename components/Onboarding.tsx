@@ -18,10 +18,12 @@ const { width, height } = Dimensions.get('window');
 // Placeholder component for images
 const PlaceholderImage = ({ iconName, color }: { iconName: keyof typeof Ionicons.glyphMap, color: string }) => {
   const theme = useTheme();
+  const isSmallScreen = height < 700; // iPhone SE等の小さい画面を判定
+
   return (
     <View style={{
       width: width * 0.8,
-      height: height * 0.3,
+      height: height * (isSmallScreen ? 0.25 : 0.3), // 小さい画面では高さを縮小
       backgroundColor: theme.card,
       borderRadius: 10,
       justifyContent: 'center',
@@ -29,7 +31,7 @@ const PlaceholderImage = ({ iconName, color }: { iconName: keyof typeof Ionicons
       borderWidth: 1,
       borderColor: theme.border,
     }}>
-      <Ionicons name={iconName} size={80} color={color} />
+      <Ionicons name={iconName} size={isSmallScreen ? 60 : 80} color={color} />
     </View>
   );
 };
@@ -111,6 +113,7 @@ export default function Onboarding() {
   const { completeOnboarding } = useOnboarding();
   const theme = useTheme();
   const flatListRef = useRef<FlatList>(null);
+  const isSmallScreen = height < 700; // iPhone SE等の小さい画面を判定
 
   const styles = StyleSheet.create({
     container: {
@@ -136,13 +139,13 @@ export default function Onboarding() {
       width,
       flex: 1,
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'space-between', // centerからspace-betweenに変更
       padding: 20,
       paddingTop: Platform.OS === 'android' ? 30 : 20, // Add extra padding for Android
       paddingBottom: Platform.OS === 'android' ? 30 : 20, // Add extra padding for Android
     },
     imageContainer: {
-      flex: 2,
+      flex: isSmallScreen ? 1.5 : 2, // 小さい画面では画像領域を縮小
       justifyContent: 'center',
       alignItems: 'center',
       width: '100%',
@@ -152,31 +155,31 @@ export default function Onboarding() {
       height: height * 0.3,
     },
     textContainer: {
-      flex: 1,
+      flex: isSmallScreen ? 1.5 : 1, // 小さい画面ではテキスト領域を拡大
       alignItems: 'center',
       justifyContent: 'center',
       width: '100%',
       paddingHorizontal: 20,
     },
     title: {
-      fontSize: 24,
+      fontSize: isSmallScreen ? 20 : 24, // 小さい画面では文字サイズを縮小
       fontWeight: 'bold',
-      marginBottom: 20,
+      marginBottom: isSmallScreen ? 15 : 20,
       textAlign: 'center',
       color: theme.text,
     },
     description: {
-      fontSize: 16,
+      fontSize: isSmallScreen ? 14 : 16,
       textAlign: 'center',
       color: theme.text + "99", // with transparency
-      marginBottom: 8,
-      lineHeight: 24,
+      marginBottom: 6,
+      lineHeight: isSmallScreen ? 20 : 24,
     },
     descriptionBullet: {
-      fontSize: 16,
+      fontSize: isSmallScreen ? 14 : 16,
       textAlign: 'left',
       color: theme.text + "99", // with transparency
-      marginBottom: 8,
+      marginBottom: 6,
       alignSelf: 'flex-start',
     },
     footer: {

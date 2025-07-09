@@ -34,7 +34,10 @@ CREATE TABLE wear_history (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   clothing_item_id UUID REFERENCES clothing_items(id) ON DELETE CASCADE,
   wear_date DATE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+  -- Unique constraint to prevent duplicate wear records for the same item on the same date
+  UNIQUE (clothing_item_id, wear_date)
 );
 
 -- Wash history table
@@ -42,7 +45,10 @@ CREATE TABLE wash_history (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   clothing_item_id UUID REFERENCES clothing_items(id) ON DELETE CASCADE,
   wash_date DATE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+  -- Unique constraint to prevent duplicate wash records for the same item on the same date
+  UNIQUE (clothing_item_id, wash_date)
 );
 
 -- Brands table (optional)
@@ -80,7 +86,7 @@ CREATE TABLE user_subscriptions (
   revenue_cat_entitlements JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
+
   UNIQUE(user_id)
 );
 
@@ -303,6 +309,7 @@ DECLARE
   latest_wash_date DATE;
   new_wear_count INTEGER;
   new_last_worn DATE;
+  rows_affected INTEGER;
 BEGIN
   -- Check if the authenticated user matches the user_id parameter
   IF auth.uid() != user_id_param THEN
@@ -318,9 +325,16 @@ BEGIN
     RAISE EXCEPTION 'Item not found or does not belong to the user';
   END IF;
 
-  -- Add wear record
+  -- Add wear record with duplicate prevention
   INSERT INTO wear_history (clothing_item_id, wear_date)
-  VALUES (item_id_param, wear_date_param);
+  VALUES (item_id_param, wear_date_param)
+  ON CONFLICT (clothing_item_id, wear_date) DO NOTHING;
+
+  -- Check if the insertion was successful
+  GET DIAGNOSTICS rows_affected = ROW_COUNT;
+  IF rows_affected = 0 THEN
+    RAISE EXCEPTION 'この日付の着用記録は既に存在します';
+  END IF;
 
   -- Get the latest wash date
   SELECT MAX(wash_date) INTO latest_wash_date
@@ -553,6 +567,7 @@ DECLARE
   new_wear_count INTEGER;
   new_last_worn DATE;
   new_last_washed DATE;
+  rows_affected INTEGER;
 BEGIN
   -- Check if the authenticated user matches the user_id parameter
   IF auth.uid() != user_id_param THEN
@@ -568,9 +583,16 @@ BEGIN
     RAISE EXCEPTION 'Item not found or does not belong to the user';
   END IF;
 
-  -- Add wash record
+  -- Add wash record with duplicate prevention
   INSERT INTO wash_history (clothing_item_id, wash_date)
-  VALUES (item_id_param, wash_date_param);
+  VALUES (item_id_param, wash_date_param)
+  ON CONFLICT (clothing_item_id, wash_date) DO NOTHING;
+
+  -- Check if the insertion was successful
+  GET DIAGNOSTICS rows_affected = ROW_COUNT;
+  IF rows_affected = 0 THEN
+    RAISE EXCEPTION 'この日付の洗濯記録は既に存在します';
+  END IF;
 
   -- Get the latest wash date from history (after insertion)
   SELECT MAX(wash_date) INTO new_last_washed

@@ -71,7 +71,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
         // 一括で署名付きURLを取得（高解像度サイズで取得）
         const imagePaths = itemsNeedingUrls.map(item => item.image);
         const urls = await getPrivateUrls(imagePaths, 320, 320);
-        
+
         // 取得したURLをマッピング
         const newImageUrls: Record<string, string> = {};
         itemsNeedingUrls.forEach((item, index) => {
@@ -83,7 +83,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
         // 既存のキャッシュと新しいURLをマージ（変更された画像は上書き）
         setImageUrls(prev => {
           const updated = { ...prev };
-          
+
           // 現在のアイテムリストにないアイテムのキャッシュを削除
           const currentItemIds = new Set(clothingItems.map(item => item.id));
           Object.keys(updated).forEach(itemId => {
@@ -91,7 +91,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
               delete updated[itemId];
             }
           });
-          
+
           // 新しいURLを追加/更新
           return {
             ...updated,
@@ -138,7 +138,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
   // 日付選択の変更ハンドラー
   const onDateChange = async (event: any, selectedDate?: Date) => {
     if (!selectedDate) return;
-    
+
     // 現在の日付を更新
     const currentDate = selectedDate;
     setSelectedDate(currentDate);
@@ -161,26 +161,44 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
         try {
           const formattedDate = formatDateToLocalISOString(currentDate);
           const japaneseDate = formatDateJapanese(currentDate);
-          
+
           await wearItem(selectedItemId, formattedDate);
           Alert.alert("着用記録", `${japaneseDate}に着用記録を追加しました`);
           onRefresh?.();
-        } catch (error) {
+        } catch (error: any) {
           const japaneseDate = formatDateJapanese(currentDate);
-          Alert.alert("エラー", `${japaneseDate}の着用記録は既に存在します`);
+          console.error('Error adding wear record:', error);
+          console.error('Error code:', error?.code);
+          console.error('Error message:', error?.message);
+
+          // Check if the error is about duplicate records
+          if (error?.message && error.message.includes('着用記録は既に存在します')) {
+            Alert.alert("重複エラー", `${japaneseDate}の着用記録は既に存在します`);
+          } else {
+            Alert.alert("エラー", `${japaneseDate}の着用記録の追加に失敗しました`);
+          }
         }
         setSelectedItemId(null);
       } else if (showWashDatePicker && selectedDate && selectedItemId) {
         try {
           const formattedDate = formatDateToLocalISOString(currentDate);
           const japaneseDate = formatDateJapanese(currentDate);
-          
+
           await washItem(selectedItemId, formattedDate);
           Alert.alert("洗濯記録", `${japaneseDate}に洗濯記録を追加しました`);
           onRefresh?.();
-        } catch (error) {
+        } catch (error: any) {
           const japaneseDate = formatDateJapanese(currentDate);
-          Alert.alert("エラー", `${japaneseDate}の洗濯記録は既に存在します`);
+          console.error('Error adding wash record:', error);
+          console.error('Error code:', error?.code);
+          console.error('Error message:', error?.message);
+
+          // Check if the error is about duplicate records
+          if (error?.message && error.message.includes('洗濯記録は既に存在します')) {
+            Alert.alert("重複エラー", `${japaneseDate}の洗濯記録は既に存在します`);
+          } else {
+            Alert.alert("エラー", `${japaneseDate}の洗濯記録の追加に失敗しました`);
+          }
         }
         setSelectedItemId(null);
       }
@@ -220,42 +238,68 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
   // iOS用の着用記録確定ハンドラー
   const confirmWearDate = async () => {
     if (!selectedItemId) return;
-    
+
     try {
       const formattedDate = formatDateToLocalISOString(selectedDate);
       const japaneseDate = formatDateJapanese(selectedDate);
-      
+
       await wearItem(selectedItemId, formattedDate);
       Alert.alert("着用記録", `${japaneseDate}に着用記録を追加しました`);
-      
+
       setShowWearModal(false);
       setSelectedItemId(null);
       // 親コンポーネントに更新を通知
       onRefresh?.();
-    } catch (error) {
+    } catch (error: any) {
       const japaneseDate = formatDateJapanese(selectedDate);
-      Alert.alert("エラー", `${japaneseDate}の着用記録は既に存在します`);
+      console.error('Error adding wear record:', error);
+      console.error('Error code:', error?.code);
+      console.error('Error message:', error?.message);
+
+      // Check if the error is about duplicate records
+      if (error?.message && error.message.includes('着用記録は既に存在します')) {
+        Alert.alert("重複エラー", `${japaneseDate}の着用記録は既に存在します`);
+      } else {
+        Alert.alert("エラー", `${japaneseDate}の着用記録の追加に失敗しました`);
+      }
+
+      // エラー時もモーダルを閉じる
+      setShowWearModal(false);
+      setSelectedItemId(null);
     }
   };
 
   // iOS用の洗濯記録確定ハンドラー
   const confirmWashDate = async () => {
     if (!selectedItemId) return;
-    
+
     try {
       const formattedDate = formatDateToLocalISOString(selectedDate);
       const japaneseDate = formatDateJapanese(selectedDate);
-      
+
       await washItem(selectedItemId, formattedDate);
       Alert.alert("洗濯記録", `${japaneseDate}に洗濯記録を追加しました`);
-      
+
       setShowWashModal(false);
       setSelectedItemId(null);
       // 親コンポーネントに更新を通知
       onRefresh?.();
-    } catch (error) {
+    } catch (error: any) {
       const japaneseDate = formatDateJapanese(selectedDate);
-      Alert.alert("エラー", `${japaneseDate}の洗濯記録は既に存在します`);
+      console.error('Error adding wash record:', error);
+      console.error('Error code:', error?.code);
+      console.error('Error message:', error?.message);
+
+      // Check if the error is about duplicate records
+      if (error?.message && error.message.includes('洗濯記録は既に存在します')) {
+        Alert.alert("重複エラー", `${japaneseDate}の洗濯記録は既に存在します`);
+      } else {
+        Alert.alert("エラー", `${japaneseDate}の洗濯記録の追加に失敗しました`);
+      }
+
+      // エラー時もモーダルを閉じる
+      setShowWashModal(false);
+      setSelectedItemId(null);
     }
   };
 

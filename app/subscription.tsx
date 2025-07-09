@@ -68,7 +68,7 @@ export default function SubscriptionScreen() {
   //   style: 'currency',
   //   currency: localeCurrencyCode,
   // }).format(0);
-  
+
   // 暫定対応：日本国内のみ配信のため無料プランの価格を固定表示
   const freePlanPriceString = '¥0';
 
@@ -440,6 +440,13 @@ export default function SubscriptionScreen() {
       color: theme.text + "99",
       textAlign: "center",
     },
+    agreementText: {
+      textAlign: "center",
+      marginBottom: 12,
+      marginHorizontal: 16,
+      fontSize: 12,
+      lineHeight: 16,
+    },
   });
 
   if (loading) {
@@ -687,6 +694,27 @@ export default function SubscriptionScreen() {
             </View>
           )}
         </View>
+
+        {/* 規約同意注釈 */}
+        {!isPremium && (
+          <Text style={[styles.agreementText, { color: theme.text + "99" }]} selectable={false}>
+            プレミアムプランを購入することで、
+            <Text
+              style={{ color: theme.primary, textDecorationLine: 'underline' }}
+              onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/terms.html', title: '利用規約' } })}
+            >
+              利用規約
+            </Text>
+            と
+            <Text
+              style={{ color: theme.primary, textDecorationLine: 'underline' }}
+              onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/privacy.html', title: 'プライバシーポリシー' } })}
+            >
+              プライバシーポリシー
+            </Text>
+            に同意したものとみなします。
+          </Text>
+        )}
 
         {/* 購入履歴復元ボタン */}
         <TouchableOpacity 

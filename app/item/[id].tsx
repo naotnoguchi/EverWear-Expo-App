@@ -2,38 +2,20 @@ import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import ItemCalendar from "../../components/ItemCalendar";
 import { useClothing } from "../../contexts/ClothingContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { formatDateJapanese, formatDateToLocalISOString } from '../../lib/dateUtils';
 import { getImageUrl } from '../../lib/storageClient';
-
-// インターフェース定義
-interface ClothingItem {
-  id: string;
-  name: string;
-  category: string;
-  brand: string; // ブランド情報
-  image: string;
-  wearCount: number;
-  washThreshold: number;
-  lastWorn: string;
-  lastWashed?: string; // 最終洗濯日を追加
-  memo: string;
-  condition: string;
-  purchasePrice: number | null;
-  wearHistory: string[];
-  washHistory: string[];
-}
-
+import { AppClothingItem } from '../../types/database';
 
 export default function ItemDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { clothingItems, wearItem, washItem, deleteItem, deleteWearHistory, deleteWashHistory } = useClothing();
-  const [item, setItem] = useState<ClothingItem | null>(null);
+  const [item, setItem] = useState<AppClothingItem | null>(null);
   const colorScheme = useColorScheme(); // 現在のカラースキーム（ライト/ダーク）を取得
   const theme = useTheme(); // テーマの取得
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -71,9 +53,8 @@ export default function ItemDetail() {
     loadImageUrl();
   }, [item]);
 
-
   // 日付選択の変更ハンドラー
-  const onDateChange = (event: any, selectedDate?: Date) => {
+  const onDateChange = async (event: any, selectedDate?: Date) => {
     // キャンセルされた場合は何もせずに日付ピッカーを閉じる
     if (event.type === 'dismissed') {
       setShowWearDatePicker(false);
@@ -90,24 +71,42 @@ export default function ItemDetail() {
 
       // Androidの場合は日付選択後に直接アクションを実行
       if (showWearDatePicker && selectedDate) {
-        const formattedDate = formatDateToLocalISOString(currentDate);
-        const japaneseDate = formatDateJapanese(currentDate);
-        const success = wearItem(item!.id, formattedDate);
-
-        if (success) {
+        try {
+          const formattedDate = formatDateToLocalISOString(currentDate);
+          const japaneseDate = formatDateJapanese(currentDate);
+          await wearItem(item!.id, formattedDate);
           Alert.alert("着用記録", `${japaneseDate}に着用記録を追加しました`);
-        } else {
-          Alert.alert("エラー", `${japaneseDate}の着用記録は既に存在します`);
+        } catch (error: any) {
+          const japaneseDate = formatDateJapanese(currentDate);
+          console.error('Error adding wear record:', error);
+          console.error('Error code:', error?.code);
+          console.error('Error message:', error?.message);
+
+          // Check if the error is about duplicate records
+          if (error?.message && error.message.includes('着用記録は既に存在します')) {
+            Alert.alert("重複エラー", `${japaneseDate}の着用記録は既に存在します`);
+          } else {
+            Alert.alert("エラー", `${japaneseDate}の着用記録の追加に失敗しました`);
+          }
         }
       } else if (showWashDatePicker && selectedDate) {
-        const formattedDate = formatDateToLocalISOString(currentDate);
-        const japaneseDate = formatDateJapanese(currentDate);
-        const success = washItem(item!.id, formattedDate);
-
-        if (success) {
+        try {
+          const formattedDate = formatDateToLocalISOString(currentDate);
+          const japaneseDate = formatDateJapanese(currentDate);
+          await washItem(item!.id, formattedDate);
           Alert.alert("洗濯記録", `${japaneseDate}に洗濯記録を追加しました`);
-        } else {
-          Alert.alert("エラー", `${japaneseDate}の洗濯記録は既に存在します`);
+        } catch (error: any) {
+          const japaneseDate = formatDateJapanese(currentDate);
+          console.error('Error adding wash record:', error);
+          console.error('Error code:', error?.code);
+          console.error('Error message:', error?.message);
+
+          // Check if the error is about duplicate records
+          if (error?.message && error.message.includes('洗濯記録は既に存在します')) {
+            Alert.alert("重複エラー", `${japaneseDate}の洗濯記録は既に存在します`);
+          } else {
+            Alert.alert("エラー", `${japaneseDate}の洗濯記録の追加に失敗しました`);
+          }
         }
       }
     }
@@ -146,17 +145,26 @@ export default function ItemDetail() {
   };
 
   // iOS用の着用記録確定ハンドラー
-  const confirmWearDate = () => {
+  const confirmWearDate = async () => {
     if (item) {
-      const formattedDate = formatDateToLocalISOString(selectedDate);
-      const japaneseDate = formatDateJapanese(selectedDate);
-      const success = wearItem(item.id, formattedDate);
-
-      if (success) {
+      try {
+        const formattedDate = formatDateToLocalISOString(selectedDate);
+        const japaneseDate = formatDateJapanese(selectedDate);
+        await wearItem(item.id, formattedDate);
         Alert.alert("着用記録", `${japaneseDate}に着用記録を追加しました`);
         setShowWearModal(false);
-      } else {
-        Alert.alert("エラー", `${japaneseDate}の着用記録は既に存在します`);
+      } catch (error: any) {
+        const japaneseDate = formatDateJapanese(selectedDate);
+        console.error('Error adding wear record:', error);
+        console.error('Error code:', error?.code);
+        console.error('Error message:', error?.message);
+
+        // Check if the error is about duplicate records
+        if (error?.message && error.message.includes('着用記録は既に存在します')) {
+          Alert.alert("重複エラー", `${japaneseDate}の着用記録は既に存在します`);
+        } else {
+          Alert.alert("エラー", `${japaneseDate}の着用記録の追加に失敗しました`);
+        }
         // エラーの場合でもモーダルは閉じる
         setShowWearModal(false);
       }
@@ -164,17 +172,26 @@ export default function ItemDetail() {
   };
 
   // iOS用の洗濯記録確定ハンドラー
-  const confirmWashDate = () => {
+  const confirmWashDate = async () => {
     if (item) {
-      const formattedDate = formatDateToLocalISOString(selectedDate);
-      const japaneseDate = formatDateJapanese(selectedDate);
-      const success = washItem(item.id, formattedDate);
-
-      if (success) {
+      try {
+        const formattedDate = formatDateToLocalISOString(selectedDate);
+        const japaneseDate = formatDateJapanese(selectedDate);
+        await washItem(item.id, formattedDate);
         Alert.alert("洗濯記録", `${japaneseDate}に洗濯記録を追加しました`);
         setShowWashModal(false);
-      } else {
-        Alert.alert("エラー", `${japaneseDate}の洗濯記録は既に存在します`);
+      } catch (error: any) {
+        const japaneseDate = formatDateJapanese(selectedDate);
+        console.error('Error adding wash record:', error);
+        console.error('Error code:', error?.code);
+        console.error('Error message:', error?.message);
+
+        // Check if the error is about duplicate records
+        if (error?.message && error.message.includes('洗濯記録は既に存在します')) {
+          Alert.alert("重複エラー", `${japaneseDate}の洗濯記録は既に存在します`);
+        } else {
+          Alert.alert("エラー", `${japaneseDate}の洗濯記録の追加に失敗しました`);
+        }
         // エラーの場合でもモーダルは閉じる
         setShowWashModal(false);
       }
@@ -508,7 +525,7 @@ export default function ItemDetail() {
           onChange={onDateChange}
           maximumDate={new Date()} // 未来の日付は選択できないように
           locale="ja-JP"
-          themeVariant={colorScheme}
+          themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
         />
       )}
 
@@ -530,7 +547,7 @@ export default function ItemDetail() {
               maximumDate={new Date()} // 未来の日付は選択できないように
               style={styles.datePicker}
               locale="ja-JP"
-              themeVariant={colorScheme}
+              themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -568,7 +585,7 @@ export default function ItemDetail() {
               maximumDate={new Date()} // 未来の日付は選択できないように
               style={styles.datePicker}
               locale="ja-JP"
-              themeVariant={colorScheme}
+              themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -616,7 +633,7 @@ export default function ItemDetail() {
         </View>
         <View style={styles.categoryContainer}>
           <Text style={styles.categoryLabel}>カテゴリ:</Text>
-          <Text style={styles.categoryValue}>{item.category}</Text>
+          <Text style={styles.categoryValue}>{item.category || 'なし'}</Text>
         </View>
 
         {/* ブランド情報 */}
@@ -633,9 +650,9 @@ export default function ItemDetail() {
             <Text style={styles.categoryLabel}>状態:</Text>
             <Text style={styles.categoryValue}>
               {item.condition === "新品" ? (
-                <><Ionicons name="star" size={16} color={theme.text} style={{marginRight: 4}} /> 新品</>
+                <React.Fragment><Ionicons name="star" size={16} color={theme.text} style={{marginRight: 4}} /> 新品</React.Fragment>
               ) : (
-                <><Ionicons name="repeat" size={16} color={theme.text} style={{marginRight: 4}} /> 中古</>
+                <React.Fragment><Ionicons name="repeat" size={16} color={theme.text} style={{marginRight: 4}} /> 中古</React.Fragment>
               )}
             </Text>
           </View>
@@ -693,13 +710,13 @@ export default function ItemDetail() {
         <View style={styles.wearInfoContainer}>
           <Text style={styles.wearInfoLabel}>
             {needsWash ? (
-              <>
+              <React.Fragment>
                 洗濯しましょう <Text style={styles.parenthesisText}>({item.wearCount}回着用)</Text>
-              </>
+              </React.Fragment>
             ) : (
-              <>
+              <React.Fragment>
                 あと{remainingWears}回で洗濯 <Text style={styles.parenthesisText}>({item.wearCount}回着用)</Text>
-              </>
+              </React.Fragment>
             )}
           </Text>
           <View style={styles.progressContainer}>

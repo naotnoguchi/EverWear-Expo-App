@@ -82,8 +82,51 @@ export const deleteClothingItem = async (id: string): Promise<void> => {
 };
 
 
+// Add a wear record
+export const addWearRecord = async (clothingItemId: string, wearDate: string): Promise<AppClothingItem> => {
+  await simulateNetworkDelay();
+
+  const index = clothingItems.findIndex(item => item.id === clothingItemId);
+  if (index === -1) {
+    throw new Error(`Clothing item with ID ${clothingItemId} not found`);
+  }
+
+  // Check if the wear date already exists
+  if (clothingItems[index].wearHistory.includes(wearDate)) {
+    throw new Error('この日付の着用記録は既に存在します');
+  }
+
+  // Add wear record
+  const updatedWearHistory = [...clothingItems[index].wearHistory, wearDate].sort();
+
+  // 最新の洗濯日を取得
+  const latestWashDate = clothingItems[index].washHistory.length > 0 
+    ? clothingItems[index].washHistory.sort().slice(-1)[0] 
+    : '';
+
+  // 最新の洗濯日以降の着用回数を再計算
+  const updatedWearCount = latestWashDate 
+    ? updatedWearHistory.filter(date => date > latestWashDate).length 
+    : updatedWearHistory.length;
+
+  // Update last worn date
+  const updatedLastWorn = updatedWearHistory.length > 0 
+    ? updatedWearHistory.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
+    : '';
+
+  // Update the item
+  clothingItems[index] = {
+    ...clothingItems[index],
+    wearCount: updatedWearCount,
+    lastWorn: updatedLastWorn,
+    wearHistory: updatedWearHistory,
+  };
+
+  return { ...clothingItems[index] };
+};
+
 // Delete a wear record
-export const deleteWearRecord = async (clothingItemId: string, wearDate: string): Promise<boolean> => {
+export const deleteWearRecord = async (clothingItemId: string, wearDate: string): Promise<AppClothingItem> => {
   await simulateNetworkDelay();
 
   const index = clothingItems.findIndex(item => item.id === clothingItemId);
@@ -93,7 +136,7 @@ export const deleteWearRecord = async (clothingItemId: string, wearDate: string)
 
   // Check if the wear date exists
   if (!clothingItems[index].wearHistory.includes(wearDate)) {
-    return false; // Date doesn't exist
+    throw new Error('Wear record not found for the given clothing item ID and date');
   }
 
   // Remove wear record
@@ -126,11 +169,11 @@ export const deleteWearRecord = async (clothingItemId: string, wearDate: string)
     wearHistory: updatedWearHistory,
   };
 
-  return true;
+  return { ...clothingItems[index] };
 };
 
 // Add a wash record
-export const addWashRecord = async (clothingItemId: string, washDate: string): Promise<boolean> => {
+export const addWashRecord = async (clothingItemId: string, washDate: string): Promise<AppClothingItem> => {
   await simulateNetworkDelay();
 
   const index = clothingItems.findIndex(item => item.id === clothingItemId);
@@ -140,7 +183,7 @@ export const addWashRecord = async (clothingItemId: string, washDate: string): P
 
   // Check if the wash date already exists
   if (clothingItems[index].washHistory.includes(washDate)) {
-    return false; // Date already exists
+    throw new Error('この日付の洗濯記録は既に存在します');
   }
 
   // Add wash record
@@ -151,17 +194,23 @@ export const addWashRecord = async (clothingItemId: string, washDate: string): P
     .filter(date => date > washDate)
     .length;
 
+  // Update last washed date
+  const updatedLastWashed = updatedWashHistory.length > 0 
+    ? updatedWashHistory.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
+    : '';
+
   clothingItems[index] = {
     ...clothingItems[index],
     wearCount: updatedWearCount,
+    lastWashed: updatedLastWashed,
     washHistory: updatedWashHistory,
   };
 
-  return true;
+  return { ...clothingItems[index] };
 };
 
 // Delete a wash record
-export const deleteWashRecord = async (clothingItemId: string, washDate: string): Promise<boolean> => {
+export const deleteWashRecord = async (clothingItemId: string, washDate: string): Promise<AppClothingItem> => {
   await simulateNetworkDelay();
 
   const index = clothingItems.findIndex(item => item.id === clothingItemId);
@@ -171,7 +220,7 @@ export const deleteWashRecord = async (clothingItemId: string, washDate: string)
 
   // Check if the wash date exists
   if (!clothingItems[index].washHistory.includes(washDate)) {
-    return false; // Date doesn't exist
+    throw new Error('Wash record not found for the given clothing item ID and date');
   }
 
   // Remove wash record
@@ -187,14 +236,20 @@ export const deleteWashRecord = async (clothingItemId: string, washDate: string)
     ? clothingItems[index].wearHistory.filter(date => date > latestWashDate).length 
     : clothingItems[index].wearHistory.length;
 
+  // Update last washed date
+  const updatedLastWashed = updatedWashHistory.length > 0 
+    ? updatedWashHistory.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
+    : '';
+
   // Update the item
   clothingItems[index] = {
     ...clothingItems[index],
     wearCount: updatedWearCount,
+    lastWashed: updatedLastWashed,
     washHistory: updatedWashHistory,
   };
 
-  return true;
+  return { ...clothingItems[index] };
 };
 
 // Get all brands (simple alias for compatibility)

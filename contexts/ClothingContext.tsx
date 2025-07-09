@@ -34,7 +34,7 @@ interface ClothingContextType {
   getBrandSuggestions: (query: string) => string[]; // 検索クエリに基づくブランド候補を取得
   loadBrands: () => Promise<void>; // ブランド情報を読み込む関数
   refreshData: () => Promise<void>; // データを再読み込みする関数
-  
+
   // プレミアム制限関連
   hiddenItemsCount: number; // 制限により非表示になっているアイテム数
 }
@@ -64,13 +64,13 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     if (isPremium) {
       return allClothingItems;
     }
-    
+
     // 無課金ユーザーは5件まで表示（登録が古い順）
     const sortedItems = [...allClothingItems].sort((a, b) => {
       // created_atで登録が古い順にソート
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
-    
+
     return sortedItems.slice(0, 5);
   }, [allClothingItems, isPremium]);
 
@@ -198,10 +198,17 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       );
 
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to record wear:', err);
+
+      // 重複エラーの場合は例外を再スロー
+      if (err?.message?.includes('この日付の着用記録は既に存在します')) {
+        throw new Error('この日付の着用記録は既に存在します');
+      }
+
+      // その他のエラーも例外を再スロー
       setError('着用記録の追加に失敗しました');
-      return false;
+      throw new Error('着用記録の追加に失敗しました');
     }
   };
 
@@ -221,10 +228,17 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       );
 
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to record wash:', err);
+
+      // 重複エラーの場合は例外を再スロー
+      if (err?.message?.includes('この日付の洗濯記録は既に存在します')) {
+        throw new Error('この日付の洗濯記録は既に存在します');
+      }
+
+      // その他のエラーも例外を再スロー
       setError('洗濯記録の追加に失敗しました');
-      return false;
+      throw new Error('洗濯記録の追加に失敗しました');
     }
   };
 
@@ -249,14 +263,14 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       // 更新前のアイテムを取得して画像変更をチェック
       const currentItem = allClothingItems.find(item => item.id === updatedItem.id);
       const imageChanged = currentItem && currentItem.image !== updatedItem.image;
-      
+
       // APIを呼び出してアイテムを更新し、更新されたアイテムデータを取得
       const updatedItemData = await clothingService.updateClothingItem(updatedItem.id, updatedItem, imageUri);
 
       // 画像が変更された場合、キャッシュをクリア
       if (imageChanged) {
         console.log('Image changed, clearing cache for updated item');
-        
+
         // 新旧両方の画像のキャッシュをクリア
         if (currentItem?.image) {
           await clearSpecificImageCache(currentItem.image);

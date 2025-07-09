@@ -265,8 +265,8 @@ export default function Settings() {
       flexDirection: 'row',
       alignItems: 'center',
       padding: 12,
-      backgroundColor: '#FFF5F5',
       borderRadius: 8,
+      borderWidth: 1,
       marginBottom: 12,
     },
     anonymousNoticeText: {
@@ -325,8 +325,11 @@ export default function Settings() {
       {isAnonymous && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>アカウント</Text>
-          <View style={styles.anonymousNotice}>
-            <Ionicons name="information-circle" size={24} color="#FF6B6B" />
+          <View style={[styles.anonymousNotice, { 
+            backgroundColor: theme.background === '#000000' ? '#2d1b1b' : '#FFF0F0',
+            borderColor: '#e74c3c' 
+          }]}>
+            <Ionicons name="information-circle" size={24} color="#e74c3c" />
             <Text style={styles.anonymousNoticeText}>
               現在ゲストとして利用中です
             </Text>

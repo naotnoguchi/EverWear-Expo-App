@@ -42,6 +42,7 @@ interface AuthContextType {
   startEmailLinking: (email: string) => Promise<void>;
   setPasswordForLinkedAccount: (password: string) => Promise<void>;
   linkGoogleIdentity: () => Promise<void>;
+  linkAppleIdentity: () => Promise<void>;
   resetAnonymousData: () => Promise<void>;
   // 一時パスワード保持（匿名→メール紐付け用）
   setTempLinkPassword: (pwd: string | null) => void;
@@ -841,6 +842,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Appleアカウントを匿名ユーザーにリンク
+  const linkAppleIdentity = async () => {
+    try {
+      if (!isAnonymous) throw new Error('匿名ユーザーではありません');
+
+      if (Platform.OS !== 'ios') {
+        throw new Error('Apple Sign In is only available on iOS devices');
+      }
+
+      // Supabase からリンク用 URL を取得
+      const redirectTo = 'clothesmanagerapp://auth/callback?type=link';
+      const { data, error } = await auth.linkIdentity({
+        provider: 'apple',
+        options: { redirectTo },
+      });
+
+      if (error) throw error;
+      if (!data?.url) throw new Error('linkIdentity から URL を取得できませんでした');
+
+      // ブラウザで OAuth フローを開始
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+
+      if (result.type === 'dismiss') {
+        throw new Error('Apple認証がキャンセルされました');
+      }
+
+      // Deep-link URL を手動で処理する
+      if (result.type === 'success' && result.url) {
+        await handleDeepLink(result.url);
+      } else {
+        throw new Error('Apple認証フローが正常に完了しませんでした');
+      }
+    } catch (err: any) {
+      // ユーザーキャンセルは無視（複数のパターンをチェック）
+      const isUserCanceled = 
+        err.code === 'ERR_CANCELED' || 
+        err.message?.includes('user canceled') ||
+        err.message?.includes('The user canceled') ||
+        err.message?.includes('Apple認証がキャンセルされました');
+
+      if (!isUserCanceled) {
+        console.error('Error linking Apple identity:', err);
+        throw err;
+      }
+    }
+  };
+
   // 匿名ユーザーのメール紐付け完了後のパスワード設定
   const setPasswordForLinkedAccount = async (password: string) => {
     try {
@@ -965,6 +1013,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         startEmailLinking,
         setPasswordForLinkedAccount,
         linkGoogleIdentity,
+        linkAppleIdentity,
         resetAnonymousData,
         // 一時パスワード
         setTempLinkPassword,

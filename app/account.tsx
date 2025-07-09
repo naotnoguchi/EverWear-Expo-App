@@ -21,6 +21,25 @@ export default function Account() {
 
   const userInfo = getUserInfo();
 
+  // Apple Private Relay メールアドレスを検出する関数
+  const isApplePrivateRelayEmail = (email: string | null): boolean => {
+    if (!email || typeof email !== 'string') return false;
+
+    // Apple Private Relay の既知のパターン
+    const applePrivateRelayPatterns = [
+      /@privaterelay\.appleid\.com$/i,
+      // 将来的な拡張に備えて他のパターンも追加可能
+    ];
+
+    return applePrivateRelayPatterns.some(pattern => pattern.test(email));
+  };
+
+  // 表示用のメールアドレスを取得する関数
+  const getDisplayEmail = (email: string | null): string | null => {
+    if (!email) return null;
+    return isApplePrivateRelayEmail(email) ? '非公開' : email;
+  };
+
   // アカウント削除処理
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -172,7 +191,7 @@ export default function Account() {
         {/* アカウント情報セクション */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>アカウント情報</Text>
-          
+
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>認証方法</Text>
             <Text style={styles.infoValue}>{userInfo.provider}</Text>
@@ -181,7 +200,7 @@ export default function Account() {
           {userInfo.email && (
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>メールアドレス</Text>
-              <Text style={styles.infoValue}>{userInfo.email}</Text>
+              <Text style={styles.infoValue}>{getDisplayEmail(userInfo.email)}</Text>
             </View>
           )}
 
@@ -199,7 +218,7 @@ export default function Account() {
           <Text style={styles.dangerDescription}>
             アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消すことができません。
           </Text>
-          
+
           <TouchableOpacity
             style={styles.deleteButton}
             onPress={handleDeleteAccount}

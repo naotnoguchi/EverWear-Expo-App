@@ -180,13 +180,13 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
   // アイテム追加ボタンのハンドラー
   const handleAddItem = () => {
     const currentItemCount = getCategoryItemCount(CategoryId.ALL);
-    
+
     // プレミアムユーザーは制限なし
     if (isPremium) {
       router.push("/add");
       return;
     }
-    
+
     // 5件制限に達した場合の処理
     if (currentItemCount >= 5) {
       if (isAnonymous) {
@@ -350,8 +350,6 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
       marginTop: 16,
     },
     anonymousBanner: {
-      backgroundColor: '#FFF5F5',
-      borderColor: '#FF6B6B',
       borderWidth: 1,
       borderRadius: 8,
       marginHorizontal: 16,
@@ -364,7 +362,6 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
       marginRight: 8,
       fontSize: 13,
       fontWeight: '500',
-      color: '#FF6B6B',
       lineHeight: 18,
     },
   });
@@ -434,15 +431,18 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
       {/* 匿名ユーザー向けバナー */}
       {isAnonymous && (
         <TouchableOpacity 
-          style={styles.anonymousBanner}
+          style={[styles.anonymousBanner, {
+            backgroundColor: theme.background === '#000000' ? '#2d1b1b' : '#FFF0F0',
+            borderColor: '#e74c3c'
+          }]}
           onPress={() => router.push('/auth/link-account')}
         >
           <View style={styles.bannerContent}>
-            <Ionicons name="person-outline" size={20} color="#FF6B6B" />
-            <Text style={styles.anonymousBannerText}>
+            <Ionicons name="person-outline" size={20} color="#e74c3c" />
+            <Text style={[styles.anonymousBannerText, { color: theme.text }]}>
               ゲスト利用中 - 長期間経過するとデータが失われる可能性があります。アカウント登録をお願いします。
             </Text>
-            <Ionicons name="chevron-forward" size={16} color="#FF6B6B" />
+            <Ionicons name="chevron-forward" size={16} color="#e74c3c" />
           </View>
         </TouchableOpacity>
       )}

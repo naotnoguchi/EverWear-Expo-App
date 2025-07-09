@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { Alert, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Platform } from 'react-native';
+import AppleAuthButton from '../../components/AppleAuthButton';
 import GoogleAuthButton from '../../components/GoogleAuthButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -12,7 +13,7 @@ export default function LinkAccountScreen() {
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const { isAnonymous, startEmailLinking, linkGoogleIdentity, setTempLinkPassword } = useAuth();
+  const { isAnonymous, startEmailLinking, linkGoogleIdentity, linkAppleIdentity, setTempLinkPassword } = useAuth();
   const theme = useTheme();
 
   // 自動フォーカス用のref
@@ -109,6 +110,25 @@ export default function LinkAccountScreen() {
     }
   };
 
+  const handleAppleLink = async () => {
+    try {
+      setIsLoading(true);
+      await linkAppleIdentity();
+      // 成功時のフィードバック
+      Alert.alert(
+        'アカウント登録完了！',
+        'Appleアカウントの登録が完了しました。\n\nデータは引き続き安全に利用できます。',
+        [
+          { text: 'OK', onPress: () => router.replace('/') },
+        ]
+      );
+    } catch (error: any) {
+      Alert.alert('アカウント登録エラー', error.message || 'Apple認証に失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleBack = () => {
     router.back();
   };
@@ -119,8 +139,11 @@ export default function LinkAccountScreen() {
         <Text style={[styles.title, { color: theme.text }]}>アカウント登録</Text>
 
         {/* 案内メッセージ */}
-        <View style={styles.notice}>
-          <Ionicons name="information-circle" size={20} color="#3498db" />
+        <View style={[styles.notice, {
+          backgroundColor: theme.background === '#000000' ? '#1a2332' : '#EBF3FD',
+          borderColor: theme.primary
+        }]}>
+          <Ionicons name="information-circle" size={20} color={theme.primary} />
           <Text style={[styles.noticeText, { color: theme.text }]}>
             アカウント登録すると、現在のデータを引き続き安全に利用できます
           </Text>
@@ -209,6 +232,16 @@ export default function LinkAccountScreen() {
               text={isLoading ? "Google認証中..." : "Googleアカウントで登録"}
               style={{ marginBottom: 15 }}
             />
+
+            {/* Apple紐付けオプション (iOS only) */}
+            {Platform.OS === 'ios' && (
+              <AppleAuthButton
+                onPress={handleAppleLink}
+                disabled={isLoading}
+                loading={isLoading}
+                style={{ marginBottom: 15 }}
+              />
+            )}
           </>
         )}
 
@@ -250,12 +283,10 @@ const styles = StyleSheet.create({
   notice: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EBF3FD',
     padding: 12,
     marginBottom: 20,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#3498db',
   },
   noticeText: {
     marginLeft: 8,

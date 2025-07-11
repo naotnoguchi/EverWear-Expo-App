@@ -18,7 +18,7 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    cp .env.example .env
    ```
 
-   By default, the app uses mock data for development. When you're ready to connect to a real Supabase backend, update the `.env` file with your Supabase credentials and set `EXPO_PUBLIC_USE_MOCK_DATA` to `false`.
+   Update the `.env` file with your Supabase credentials to connect to your backend.
 
 3. Start the app
 
@@ -47,7 +47,7 @@ This command will move the starter code to the **app-example** directory and cre
 
 ## Supabase Integration
 
-This app is designed to work with [Supabase](https://supabase.com/) as the backend database. During development, it uses mock data by default, but you can connect it to a real Supabase backend when you're ready.
+This app is designed to work with [Supabase](https://supabase.com/) as the backend database.
 
 ### Database Schema
 
@@ -68,11 +68,6 @@ The database schema is defined in the `db/schema.sql` file. It includes the foll
 2. Run the SQL commands in `db/schema.sql` in the Supabase SQL editor
 3. Get your Supabase URL and anon key from the project settings
 4. Update your `.env` file with these values
-5. Set `EXPO_PUBLIC_USE_MOCK_DATA` to `false` in your `.env` file
-
-### Development with Mock Data
-
-During development, the app uses mock data by default. This allows you to develop without setting up a Supabase backend. The mock data is defined in `services/mockData.ts` and the mock services are in `services/mockClothingService.ts`.
 
 ## Learn more
 

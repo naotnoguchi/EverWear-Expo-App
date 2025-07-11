@@ -24,15 +24,15 @@ const saveCacheTimestamp = async (): Promise<void> => {
 const isCacheStale = async (): Promise<boolean> => {
   try {
     const timestampStr = await AsyncStorage.getItem(CACHE_TIMESTAMP_KEY);
-    
+
     if (!timestampStr) {
       // タイムスタンプがない場合は古いとみなす
       return true;
     }
-    
+
     const timestamp = parseInt(timestampStr, 10);
     const now = Date.now();
-    
+
     return (now - timestamp) > CACHE_MAX_AGE;
   } catch (error) {
     console.error('Error checking cache staleness:', error);
@@ -49,16 +49,14 @@ const isCacheStale = async (): Promise<boolean> => {
 export const clearSpecificImageCache = async (imagePath: string): Promise<boolean> => {
   try {
     console.log(`Clearing cache for specific image: ${imagePath}`);
-    
-    // expo-imageの場合、特定の画像だけをキャッシュから削除する直接的な方法がないため、
-    // 代替手段として該当画像のメモリキャッシュをクリアし、
-    // その後でディスクキャッシュの一部クリアを行う
-    
-    // メモリキャッシュをクリア（全体だが軽量）
+
+    // メモリキャッシュとディスクキャッシュの両方をクリア
     const memoryCleared = await Image.clearMemoryCache();
-    console.log(`Memory cache cleared: ${memoryCleared}`);
-    
-    return memoryCleared;
+    const diskCleared = await Image.clearDiskCache();
+
+    console.log(`Memory cache cleared: ${memoryCleared}, Disk cache cleared: ${diskCleared}`);
+
+    return memoryCleared && diskCleared;
   } catch (error) {
     console.error('Error clearing specific image cache:', error);
     return false;
@@ -75,10 +73,10 @@ export const clearImageCache = async (): Promise<boolean> => {
     const memoryCleared = await Image.clearMemoryCache();
     const diskCleared = await Image.clearDiskCache();
     console.log(`Memory cache cleared: ${memoryCleared}, Disk cache cleared: ${diskCleared}`);
-    
+
     // 新しいタイムスタンプを保存
     await saveCacheTimestamp();
-    
+
     return memoryCleared && diskCleared;
   } catch (error) {
     console.error('Error clearing image cache:', error);
@@ -92,7 +90,7 @@ export const clearImageCache = async (): Promise<boolean> => {
 export const checkAndClearCacheIfNeeded = async (): Promise<void> => {
   try {
     const isStale = await isCacheStale();
-    
+
     if (isStale) {
       console.log('Cache is stale, clearing...');
       await clearImageCache();

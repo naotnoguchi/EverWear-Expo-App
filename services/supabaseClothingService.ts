@@ -197,7 +197,7 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
   if (imageUri && imageUri !== currentItem.image && !imageUri.startsWith('http')) {
     try {
       uploadedImageUrl = await uploadImage(imageUri, userId);
-      
+
       if (uploadedImageUrl) {
         imageUrl = uploadedImageUrl;
       } else {
@@ -265,7 +265,7 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
     }
 
     // If we got here, the update was successful, so we can delete the old image if needed
-    if (uploadedImageUrl && currentItem.image && currentItem.image.includes('supabase')) {
+    if (uploadedImageUrl && currentItem.image && currentItem.image.trim() !== '') {
       await deleteImage(currentItem.image).catch(deleteError => {
         console.error('Error deleting old image:', deleteError);
         // We don't throw here because the update was successful
@@ -280,11 +280,11 @@ export const updateClothingItem = async (id: string, updates: Partial<AppClothin
     const washHistoryObjects = currentItem.washHistory.map(date => ({ 
       id: '', clothing_item_id: id, wash_date: date, created_at: '' 
     }));
-    
+
     return toAppClothingItem(data, wearHistoryObjects, washHistoryObjects, updatedItem.brand);
   } catch (error) {
     // If there was an error and we uploaded a new image, delete it
-    if (uploadedImageUrl && uploadedImageUrl.includes('supabase')) {
+    if (uploadedImageUrl && uploadedImageUrl.trim() !== '') {
       await deleteImage(uploadedImageUrl).catch(deleteError => {
         console.error('Error deleting image during rollback:', deleteError);
       });
@@ -366,7 +366,7 @@ export const addWearRecord = async (clothingItemId: string, date: string): Promi
   if (!data || data.length === 0) {
     throw new Error('No data returned from database');
   }
-  
+
   // RPCレスポンスをAppClothingItemに変換して返却
   return convertRpcResponseToAppItem(data[0]);
 };
@@ -398,7 +398,7 @@ export const deleteWearRecord = async (clothingItemId: string, wearDate: string)
   if (!data || data.length === 0) {
     throw new Error('No data returned from database');
   }
-  
+
   // RPCレスポンスをAppClothingItemに変換して返却
   return convertRpcResponseToAppItem(data[0]);
 };
@@ -430,7 +430,7 @@ export const addWashRecord = async (clothingItemId: string, date: string): Promi
   if (!data || data.length === 0) {
     throw new Error('No data returned from database');
   }
-  
+
   // RPCレスポンスをAppClothingItemに変換して返却
   return convertRpcResponseToAppItem(data[0]);
 };
@@ -462,7 +462,7 @@ export const deleteWashRecord = async (clothingItemId: string, washDate: string)
   if (!data || data.length === 0) {
     throw new Error('No data returned from database');
   }
-  
+
   // RPCレスポンスをAppClothingItemに変換して返却
   return convertRpcResponseToAppItem(data[0]);
 };

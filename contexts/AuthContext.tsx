@@ -7,7 +7,6 @@ import * as WebBrowser from 'expo-web-browser';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { auth } from '../lib/authClient';
-import { getAuthenticatedClient } from '../lib/dbClient';
 import { deleteImage } from '../lib/imageUtils';
 
 // AsyncStorageのキー
@@ -751,7 +750,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // 画像ファイルを削除
       for (const imagePath of deletedImagePaths) {
-        if (imagePath && imagePath.includes('supabase')) {
+        if (imagePath && imagePath.trim() !== '') {
           try {
             await deleteImage(imagePath);
           } catch (imageError) {
@@ -916,13 +915,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('匿名ユーザーではありません');
       }
 
-      // 1. ユーザーのデータを削除
-      if (user?.id) {
-        const authClient = await getAuthenticatedClient();
-        const { error: deleteError } = await authClient
-          .rpc('delete_user_account', { user_id_param: user.id });
+      // 1. Edge Functionを経由してユーザーのデータを削除
+      if (user?.id && session?.access_token) {
+        try {
+          const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+          const response = await fetch(`${supabaseUrl}/functions/v1/delete-user-account`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          });
 
-        if (deleteError) {
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Edge Function error:', errorText);
+            // データ削除に失敗してもセッションはクリアする
+          } else {
+            // レスポンスから削除された画像パスを取得
+            const json = await response.json();
+            if (json.success) {
+              const deletedImagePaths: string[] = json.detail?.[0]?.deleted_image_paths || [];
+
+              // 画像ファイルを削除
+              for (const imagePath of deletedImagePaths) {
+                if (imagePath && imagePath.trim() !== '') {
+                  try {
+                    await deleteImage(imagePath);
+                  } catch (imageError) {
+                    console.error('Error deleting image:', imagePath, imageError);
+                  }
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error calling Edge Function:', error);
           // データ削除に失敗してもセッションはクリアする
         }
       }

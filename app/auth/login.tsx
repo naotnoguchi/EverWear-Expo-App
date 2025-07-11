@@ -289,9 +289,6 @@ export default function LoginScreen() {
               </Text>
             </TouchableOpacity>
 
-            <Text style={[styles.notice, { color: theme.textSecondary }]}>
-              ※ ゲスト利用の場合、後から Apple アカウントで登録はできません。
-            </Text>
 
             {/* 規約同意注釈 */}
             <Text style={[styles.agreementText, { color: theme.textSecondary }]} selectable={false}>
@@ -472,12 +469,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     textDecorationLine: 'underline',
-  },
-  notice: {
-    fontSize: 12,
-    textAlign: 'center',
-    marginBottom: 28,
-    lineHeight: 16,
-    paddingHorizontal: 16,
   },
 });

@@ -9,6 +9,15 @@ import { usePurchase } from './PurchaseContext';
 // Use AppClothingItem from our database types
 type ClothingItem = AppClothingItem;
 
+interface BatchResult {
+  successful: string[];
+  failed: Array<{
+    itemId: string;
+    itemName: string;
+    error: string;
+  }>;
+}
+
 interface ClothingContextType {
   clothingItems: ClothingItem[]; // 表示制限適用済みのアイテム（プレミアム状態に応じて5件制限）
   allClothingItems: ClothingItem[]; // 全てのアイテム（制限なし、内部使用）
@@ -21,6 +30,11 @@ interface ClothingContextType {
   deleteItem: (id: string) => Promise<void>;
   deleteWearHistory: (itemId: string, date: string) => Promise<void>; // 例外で処理、着用・洗濯記録と統一
   deleteWashHistory: (itemId: string, date: string) => Promise<void>; // 例外で処理、着用・洗濯記録と統一
+
+  // 一括処理機能
+  batchWearItems: (itemIds: string[], date: string) => Promise<BatchResult>;
+  batchWashItems: (itemIds: string[], date: string) => Promise<BatchResult>;
+
   // ソート関連の状態を追加
   sortConfig: {
     sortBy: string;
@@ -242,6 +256,48 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // 一括着用記録の処理
+  const batchWearItems = async (itemIds: string[], date: string): Promise<BatchResult> => {
+    const result: BatchResult = { successful: [], failed: [] };
+
+    for (const itemId of itemIds) {
+      try {
+        await wearItem(itemId, date);
+        result.successful.push(itemId);
+      } catch (error: any) {
+        const item = allClothingItems.find(i => i.id === itemId);
+        result.failed.push({
+          itemId,
+          itemName: item?.name || '不明',
+          error: error.message || 'エラーが発生しました'
+        });
+      }
+    }
+
+    return result;
+  };
+
+  // 一括洗濯記録の処理
+  const batchWashItems = async (itemIds: string[], date: string): Promise<BatchResult> => {
+    const result: BatchResult = { successful: [], failed: [] };
+
+    for (const itemId of itemIds) {
+      try {
+        await washItem(itemId, date);
+        result.successful.push(itemId);
+      } catch (error: any) {
+        const item = allClothingItems.find(i => i.id === itemId);
+        result.failed.push({
+          itemId,
+          itemName: item?.name || '不明',
+          error: error.message || 'エラーが発生しました'
+        });
+      }
+    }
+
+    return result;
+  };
+
   const addItem = async (item: Omit<ClothingItem, 'id'>, imageUri?: string): Promise<void> => {
     try {
       // APIを呼び出してアイテムを追加し、新規アイテムデータを取得
@@ -366,6 +422,9 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
         deleteItem,
         deleteWearHistory,
         deleteWashHistory,
+        // 一括処理機能
+        batchWearItems,
+        batchWashItems,
         sortConfig,
         updateSortConfig,
         // ブランド管理機能

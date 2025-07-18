@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { Platform, StyleSheet, useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BadgeNotificationManager } from '../components/BadgeNotification';
 import Onboarding from '../components/Onboarding';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
@@ -23,7 +24,7 @@ function MainApp() {
   const segments = useSegments();
   const colorScheme = useColorScheme();
   const theme = useTheme();
-  
+
   const adaptedBadgeNotifications = React.useMemo(() =>
     badgeNotifications.map((n: any) => ({
       id: n.id,
@@ -77,7 +78,7 @@ function MainApp() {
   if (loading) {
     return null; // または適切なローディングインジケーター
   }
-  
+
   // If onboarding is not complete, show the onboarding screen
   if (!isOnboardingComplete) {
     return (
@@ -103,21 +104,14 @@ function MainApp() {
   // ただし匿名ユーザーの場合は認証画面へのアクセスを許可（アカウント紐付けのため）
   // verify画面は特別に許可（匿名ユーザーが非匿名になった後のOTP確認のため）
   if (user && inAuthGroup && !loading && !isAnonymous) {
-    console.log('--- NAV DEBUG ---');
-    console.log('segments:', segments);
-    console.log('user:', !!user, 'isAnonymous:', isAnonymous);
-    console.log('user email:', user?.email);
-    console.log('current route segment[1]:', segments[1]);
-    console.log('inAuthGroup:', inAuthGroup, 'loading:', loading);
-    console.log('------------------');
-    
     const currentSegment = segments[1]; // 2階層目を取得
+    
     // OTP 検証（匿名→メール紐付け）画面は許可
     if (currentSegment === 'verify') {
-      console.log('Allowing access to auth screen:', currentSegment);
       return null;
     }
-    console.log('Redirecting to home from auth screen');
+    
+    // その他の認証画面からはホームにリダイレクト
     return <Redirect href="/" />;
   }
 
@@ -196,6 +190,22 @@ function MainApp() {
             }),
           }}
         />
+        <Stack.Screen
+          name="batch-record"
+          options={{
+            title: "一括記録",
+            animation: "slide_from_bottom",
+            presentation: "modal",
+            gestureEnabled: false,
+            headerLeft: () => null,
+            headerShown: true,
+            ...Platform.select({
+              android: {
+                headerBackVisible: false,
+              },
+            }),
+          }}
+        />
         <Stack.Screen name="ranking" options={{ title: "着用回数ランキング", headerBackTitle: "戻る" }} />
         <Stack.Screen name="efficiency" options={{ title: "洗濯効率分析", headerBackTitle: "戻る" }} />
         <Stack.Screen name="impact" options={{ title: "環境影響・節約効果", headerBackTitle: "戻る" }} />
@@ -217,23 +227,25 @@ function MainApp() {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <AuthProvider>
-        <PurchaseProvider>
-          <OnboardingProvider>
-            <ClothingProvider>
-              <ThemeProvider>
-                <TabResetProvider>
-                  <StatisticsProvider>
-                    <MainApp />
-                  </StatisticsProvider>
-                </TabResetProvider>
-              </ThemeProvider>
-            </ClothingProvider>
-          </OnboardingProvider>
-        </PurchaseProvider>
-      </AuthProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={styles.container}>
+        <AuthProvider>
+          <PurchaseProvider>
+            <OnboardingProvider>
+              <ClothingProvider>
+                <ThemeProvider>
+                  <TabResetProvider>
+                    <StatisticsProvider>
+                      <MainApp />
+                    </StatisticsProvider>
+                  </TabResetProvider>
+                </ThemeProvider>
+              </ClothingProvider>
+            </OnboardingProvider>
+          </PurchaseProvider>
+        </AuthProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 

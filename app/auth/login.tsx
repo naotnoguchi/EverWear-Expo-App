@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 20,
     flexDirection: 'row',
     borderWidth: 1,
   },
@@ -442,7 +442,6 @@ const styles = StyleSheet.create({
   appleButton: {
     height: 50,
     width: '100%',
-    marginBottom: 15,
     borderRadius: 8,
   },
   footer: {
@@ -463,7 +462,6 @@ const styles = StyleSheet.create({
   },
   agreementText: {
     textAlign: 'center',
-    marginBottom: 12,
   },
   onboardingLinkText: {
     fontSize: 14,

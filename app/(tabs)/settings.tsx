@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
@@ -104,6 +105,8 @@ export default function Settings() {
   };
 
   // 匿名ユーザーのデータリセット処理
+  const [isResetting, setIsResetting] = useState(false);
+
   const handleResetAnonymousData = async () => {
     Alert.alert(
       "データリセット",
@@ -117,11 +120,18 @@ export default function Settings() {
           text: "リセット",
           style: "destructive",
           onPress: async () => {
+            setIsResetting(true);
             try {
               await resetAnonymousData();
-            } catch (error) {
-              Alert.alert("エラー", "データリセットに失敗しました");
+            } catch (error: any) {
               console.error("Reset error:", error);
+              Alert.alert(
+                "エラー", 
+                `データリセットに失敗しました。\n\n${error.message || 'ネットワークエラーが発生しました'}\n\n再度お試しください。`,
+                [{ text: "OK" }]
+              );
+            } finally {
+              setIsResetting(false);
             }
           },
         },
@@ -467,11 +477,21 @@ export default function Settings() {
       {/* ログアウト/リセットボタン */}
       {isAnonymous ? (
         <TouchableOpacity
-          style={styles.resetButton}
+          style={[styles.resetButton, isResetting && { opacity: 0.6 }]}
           onPress={handleResetAnonymousData}
+          disabled={isResetting}
         >
-          <Ionicons name="refresh" size={20} color="#d9534f" />
-          <Text style={styles.resetButtonText}>データをリセット</Text>
+          {isResetting ? (
+            <>
+              <ActivityIndicator size="small" color="#d9534f" />
+              <Text style={styles.resetButtonText}>リセット中...</Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="refresh" size={20} color="#d9534f" />
+              <Text style={styles.resetButtonText}>データをリセット</Text>
+            </>
+          )}
         </TouchableOpacity>
       ) : (
         <TouchableOpacity

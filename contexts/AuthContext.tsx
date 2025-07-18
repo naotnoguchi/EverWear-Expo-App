@@ -917,45 +917,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // 1. Edge Functionを経由してユーザーのデータを削除
       if (user?.id && session?.access_token) {
-        try {
-          const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-          const response = await fetch(`${supabaseUrl}/functions/v1/delete-user-account`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json',
-            },
-          });
+        const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+        const response = await fetch(`${supabaseUrl}/functions/v1/delete-user-account`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Edge Function error:', errorText);
-            // データ削除に失敗してもセッションはクリアする
-          } else {
-            // レスポンスから削除された画像パスを取得
-            const json = await response.json();
-            if (json.success) {
-              const deletedImagePaths: string[] = json.detail?.[0]?.deleted_image_paths || [];
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Edge Function error:', errorText);
+          throw new Error(`データ削除に失敗しました: ${errorText}`);
+        }
 
-              // 画像ファイルを削除
-              for (const imagePath of deletedImagePaths) {
-                if (imagePath && imagePath.trim() !== '') {
-                  try {
-                    await deleteImage(imagePath);
-                  } catch (imageError) {
-                    console.error('Error deleting image:', imagePath, imageError);
-                  }
-                }
-              }
+        // レスポンスから削除された画像パスを取得
+        const json = await response.json();
+        if (!json.success) {
+          throw new Error('データ削除に失敗しました');
+        }
+
+        const deletedImagePaths: string[] = json.detail?.[0]?.deleted_image_paths || [];
+
+        // 画像ファイルを削除
+        for (const imagePath of deletedImagePaths) {
+          if (imagePath && imagePath.trim() !== '') {
+            try {
+              await deleteImage(imagePath);
+            } catch (imageError) {
+              console.error('Error deleting image:', imagePath, imageError);
             }
           }
-        } catch (error) {
-          console.error('Error calling Edge Function:', error);
-          // データ削除に失敗してもセッションはクリアする
         }
       }
 
-      // 2. セッションをクリア
+      // 2. データ削除が成功した場合のみセッションをクリア
       await signOut();
     } catch (error) {
       console.error('Error resetting anonymous data:', error);

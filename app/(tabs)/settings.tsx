@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import Constants from 'expo-constants';
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from 'react-i18next';
@@ -19,6 +20,10 @@ import { formatDateLocalized } from "../../lib/dateUtils";
 import { getContactUrl, getPrivacyUrl, getTermsUrl } from "../../lib/i18n";
 
 export default function Settings() {
+  // Expo Constantsのデバッグ出力を削除
+  // バージョン情報をexpoConfigから取得
+  const appVersion = Constants.expoConfig?.version ?? 'バージョン不明';
+  
   // Get router
   const router = useRouter();
   
@@ -455,7 +460,7 @@ export default function Settings() {
         <Text style={styles.sectionTitle}>{t('settings.appInfo.title')}</Text>
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>{t('settings.appInfo.version')}</Text>
-          <Text style={styles.infoValue}>1.0.0</Text>
+          <Text style={styles.infoValue}>{appVersion}</Text>
         </View>
 
         <TouchableOpacity style={styles.actionButton} onPress={handleTermsOfService}>

@@ -1,5 +1,6 @@
 // contexts/ClothingContext.tsx
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { clearSpecificImageCache } from '../lib/cacheManager';
 import { formatDateToLocalISOString } from '../lib/dateUtils';
 import { AppClothingItem, clothingService } from '../services/clothingServiceFactory';
@@ -58,6 +59,7 @@ const ClothingContext = createContext<ClothingContextType | undefined>(undefined
 // No longer need hardcoded initial data as we'll load from the service
 
 export function ClothingProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const { isPremium, loading: purchaseLoading } = usePurchase();
   const [allClothingItems, setAllClothingItems] = useState<ClothingItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -216,13 +218,13 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       console.error('Failed to record wear:', err);
 
       // 重複エラーの場合は例外を再スロー
-      if (err?.message?.includes('この日付の着用記録は既に存在します')) {
-        throw new Error('この日付の着用記録は既に存在します');
+      if (err?.message?.includes(t('itemDetail.alerts.wearDuplicate'))) {
+        throw new Error(t('itemDetail.alerts.wearDuplicate'));
       }
 
       // その他のエラーも例外を再スロー
-      setError('着用記録の追加に失敗しました');
-      throw new Error('着用記録の追加に失敗しました');
+      setError(t('itemDetail.alerts.wearError'));
+      throw new Error(t('itemDetail.alerts.wearError'));
     }
   };
 
@@ -246,13 +248,13 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
       console.error('Failed to record wash:', err);
 
       // 重複エラーの場合は例外を再スロー
-      if (err?.message?.includes('この日付の洗濯記録は既に存在します')) {
-        throw new Error('この日付の洗濯記録は既に存在します');
+      if (err?.message?.includes(t('itemDetail.alerts.washDuplicate'))) {
+        throw new Error(t('itemDetail.alerts.washDuplicate'));
       }
 
       // その他のエラーも例外を再スロー
-      setError('洗濯記録の追加に失敗しました');
-      throw new Error('洗濯記録の追加に失敗しました');
+      setError(t('itemDetail.alerts.washError'));
+      throw new Error(t('itemDetail.alerts.washError'));
     }
   };
 
@@ -308,7 +310,7 @@ export function ClothingProvider({ children }: { children: ReactNode }) {
 
     } catch (err) {
       console.error('Failed to add item:', err);
-      setError('アイテムの追加に失敗しました');
+      setError(t('itemDetail.alerts.deleteError'));
       // エラーを再スローして呼び出し元でキャッチできるようにする
       throw err;
     }

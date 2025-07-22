@@ -1,0 +1,1338 @@
+{
+  "common": {
+    "loading": {
+      "processing": "処理中...",
+      "calculating": "計算中...",
+      "loggingIn": "ログイン中...",
+      "sending": "送信中...",
+      "verifying": "確認中...",
+      "loadingStats": "統計データを読み込み中...",
+      "registering": "登録中...",
+      "authenticating": "認証中...",
+      "guestLoggingIn": "ゲストログイン中..."
+    },
+    "error": "エラー",
+    "success": "成功",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "delete": "削除",
+    "edit": "編集",
+    "add": "追加",
+    "back": "戻る",
+    "close": "閉じる",
+    "ok": "OK",
+    "yes": "はい",
+    "no": "いいえ",
+    "confirm": "確認",
+    "required": "必須",
+    "optional": "任意",
+    "period": "期間",
+    "tip": "ヒント",
+    "noItems": "該当するアイテムがありません",
+    "changeFilter": "フィルター条件を変更してお試しください",
+    "or": "または",
+    "and": "と",
+    "all": "すべて",
+    "placeholder": {
+      "email": "メールアドレス",
+      "password": "パスワード"
+    }
+  },
+  "screen": {
+    "login": { "title": "ログイン" },
+    "signup": { "title": "アカウント作成" },
+    "verify": { "title": "確認コード入力" },
+    "resetPassword": { "title": "パスワードリセット" },
+    "itemDetail": { "title": "アイテム詳細" },
+    "itemAdd": { "title": "アイテム追加" },
+    "batchRecord": { "title": "一括記録" },
+    "ranking": { "title": "着用回数ランキング" },
+    "efficiency": { "title": "洗濯効率分析" },
+    "impact": { "title": "環境影響・節約効果" },
+    "badges": { "title": "バッジ・アチーブメント" },
+    "badgesOverview": { "title": "バッジコレクション" },
+    "itemStats": { "title": "アイテム詳細分析" },
+    "subscription": { "title": "プレミアムプラン" },
+    "account": { "title": "アカウント管理" },
+    "linkAccount": { "title": "アカウント登録" }
+  },
+  "itemDetail": {
+    "notFound": "アイテムが見つかりません",
+    "dataNotFound": "アイテムデータが見つかりませんでした。",
+    "fetchError": "アイテム詳細データの取得に失敗しました。後でもう一度お試しください。",
+    "stats": {
+      "lastWorn": "最終着用日:",
+      "lastWashed": "最終洗濯日:",
+      "none": "なし",
+      "wearCount": "着用回数:",
+      "washThreshold": "洗濯閾値:"
+    },
+    "washStatus": {
+      "needsWash": "洗濯しましょう",
+      "remainingWears": "あと{{count}}回で洗濯",
+      "wearCount": "({{count}}回着用)"
+    },
+    "memo": {
+      "title": "メモ"
+    },
+    "labels": {
+      "category": "カテゴリ:",
+      "brand": "ブランド:",
+      "condition": "状態:",
+      "purchasePrice": "購入価格:",
+      "new": "新品",
+      "used": "中古"
+    },
+    "actions": {
+      "edit": "編集",
+      "recordWear": "着用記録",
+      "recordWash": "洗濯記録",
+      "deleteItem": "このアイテムを削除"
+    },
+    "alerts": {
+      "wearRecorded": "{{date}}に着用記録を追加しました",
+      "wearDuplicate": "{{date}}の着用記録は既に存在します",
+      "wearError": "{{date}}の着用記録の追加に失敗しました",
+      "washRecorded": "{{date}}に洗濯記録を追加しました",
+      "washDuplicate": "{{date}}の洗濯記録は既に存在します",
+      "washError": "{{date}}の洗濯記録の追加に失敗しました",
+      "deleteConfirm": "このアイテムを削除しますか？",
+      "deleteMessage": "削除したアイテムは復元できません。",
+      "deleteSuccess": "アイテムを削除しました",
+      "deleteError": "アイテムの削除に失敗しました",
+      "wearHistoryDeleted": "{{date}}の着用履歴を削除しました",
+      "washHistoryDeleted": "{{date}}の洗濯履歴を削除しました"
+    }
+  },
+  "itemStats": {
+    "title": "アイテム詳細分析",
+    "loading": "アイテム詳細データを読み込み中...",
+    "retry": "再試行",
+    "stats": {
+      "wearCount": "着用回数",
+      "washCount": "洗濯回数",
+      "wearPerWash": "着用/洗濯",
+      "efficiency": "効率"
+    },
+    "categories": {
+      "tops": "トップス",
+      "bottoms": "ボトムス",
+      "dress": "ワンピース",
+      "outerwear": "アウター",
+      "jacket": "ジャケット",
+      "shoes": "シューズ",
+      "bag": "バッグ",
+      "accessories": "アクセサリー",
+      "setup": "セットアップ",
+      "others": "その他"
+    },
+    "days": {
+      "monday": "月曜日",
+      "tuesday": "火曜日",
+      "wednesday": "水曜日",
+      "thursday": "木曜日",
+      "friday": "金曜日",
+      "saturday": "土曜日",
+      "sunday": "日曜日"
+    },
+    "months": {
+      "january": "1月",
+      "february": "2月",
+      "march": "3月",
+      "april": "4月",
+      "may": "5月",
+      "june": "6月",
+      "july": "7月",
+      "august": "8月",
+      "september": "9月",
+      "october": "10月",
+      "november": "11月",
+      "december": "12月"
+    },
+    "units": {
+      "days": "日"
+    },
+    "efficiency": {
+      "title": "洗濯効率",
+      "noData": "データなし",
+      "noHistory": "履歴なし",
+      "good": "良好",
+      "underwashed": "洗濯不足",
+      "overwashed": "洗いすぎ",
+      "optimal": "このアイテムは最適な頻度で洗濯されています。このまま続けましょう！",
+      "overwashedDesc": "洗濯頻度が高すぎる可能性があります。洗濯の間にもっと着用することで、衣類の寿命を延ばし、環境への影響を減らせます。",
+      "underwashedDesc": "洗濯頻度が低すぎる可能性があります。衣類の清潔さを保つため、もう少し頻繁に洗濯することを検討してください。",
+      "noWearWashHistory": "このアイテムはまだ着用・洗濯の記録がありません。着用と洗濯を記録すると、洗濯効率の分析が表示されます。",
+      "noWashHistory": "このアイテムはまだ洗濯の記録がありません。洗濯を記録すると、洗濯効率の分析が表示されます。",
+      "tip": {
+        "bottoms": "ボトムスは5-10回着用ごとに洗濯するのが理想的です。洗いすぎも洗わなさすぎも避けましょう。",
+        "outerwear": "アウターは汚れた場合を除き、シーズンに1-2回の洗濯で十分です。ただし、汚れが目立つ場合は適宜洗濯しましょう。",
+        "default": "一般的な衣類は2-3回着用ごとに洗濯するのが理想的です。衣類の種類や着用状況に応じて調整しましょう。"
+      }
+    },
+    "patterns": {
+      "title": "着用パターン",
+      "mostWornDay": "最も着用する曜日",
+      "mostWornMonth": "最も着用する月",
+      "avgWearInterval": "平均着用間隔",
+      "lastWornDate": "最終着用日",
+      "noData": "データなし",
+      "times": "回"
+    },
+    "monthlyChart": {
+      "title": "月別着用回数",
+      "noData": "着用データがありません",
+      "noDataDesc": "このアイテムを着用すると、月別の着用回数データが表示されます。"
+    },
+    "environmental": {
+      "title": "環境への影響",
+      "waterSaved": "節水量",
+      "energySaved": "節電量",
+      "co2Reduced": "CO2削減量",
+      "description": "このアイテムの適切な洗濯頻度により、上記の資源を節約し、環境への影響を軽減しています。"
+    },
+    "modals": {
+      "washInfo": {
+        "title": "洗濯回数削減の計算方法について",
+        "description1": "環境影響の計算は、「着用するたびに洗濯する」場合と比較して、実際の洗濯回数の差に基づいています。",
+        "description2": "ただし、実際には複数のアイテムを一度に洗濯することが一般的です。そのため、削減された洗濯回数は平均的な洗濯機1回あたりのアイテム数（5アイテム）で割って計算しています。",
+        "example": "例：10回着用して2回洗濯した場合、理論上は8回の洗濯を削減したことになりますが、1回の洗濯で平均5アイテムを洗うと考えると、実際の削減効果は8÷5=1.6回分となります。"
+      },
+      "waterInfo": {
+        "title": "水量（料金）の計算方法について",
+        "description1": "水量の節約効果は、削減された洗濯回数に1回の洗濯で使用される平均的な水量（約65リットル）を掛けて計算しています。",
+        "description2": "料金は地域によって異なりますが、一般的な水道料金（1000リットルあたり約300円）に基づいて計算しています。",
+        "example": "例：洗濯回数を10回削減した場合、65リットル×10回=650リットルの水を節約したことになり、料金に換算すると約195円の節約となります。"
+      },
+      "energyInfo": {
+        "title": "電気量（料金）の計算方法について",
+        "description1": "電気量の節約効果は、削減された洗濯回数に1回の洗濯で使用される平均的な電力量（約0.9kWh）を掛けて計算しています。",
+        "description2": "料金は電力会社や契約プランによって異なりますが、一般的な電気料金（1kWhあたり約25円）に基づいて計算しています。",
+        "example": "例：洗濯回数を10回削減した場合、0.9kWh×10回=9kWhの電力を節約したことになり、料金に換算すると約225円の節約となります。"
+      },
+      "co2Info": {
+        "title": "CO2削減量の計算方法について",
+        "description1": "CO2削減量は、節約された電力量に電力のCO2排出係数（1kWhあたり約0.6kg）を掛けて計算しています。",
+        "description2": "洗濯機の使用だけでなく、水の供給や処理に関連するCO2排出も考慮しています。",
+        "example": "例：電力を9kWh節約した場合、9kWh×0.6kg/kWh=5.4kgのCO2排出を削減したことになります。"
+      }
+    }
+  },
+  "login": {
+    "title": "EverWearにログイン",
+    "alertEmptyFields": "メールアドレスとパスワードを入力してください",
+    "loginErrorTitle": "ログインエラー",
+    "loginFailed": "ログインに失敗しました",
+    "googleErrorTitle": "Googleログインエラー",
+    "googleFailed": "Googleログインに失敗しました。\n\n・インターネット接続を確認してください\n・Google認証設定を確認してください",
+    "appleFailed": "Appleログインに失敗しました",
+    "guestErrorTitle": "ゲストログインエラー",
+    "guestFailed": "ゲストログインに失敗しました",
+    "onboardingFailed": "オンボーディングの表示に失敗しました",
+    "reset": {
+      "title": "パスワードリセット",
+      "formTitle": "パスワードをリセット",
+      "emailRequired": "メールアドレスを入力してください",
+      "sent": "メールに 6 桁のリセットコードを送信しました。コードを入力してください。",
+      "failed": "パスワードリセットに失敗しました"
+    },
+    "button": {
+      "login": "ログイン",
+      "google": "Googleでログイン",
+      "guest": "ゲストとして利用",
+      "signup": "新規登録",
+      "sendResetCode": "リセットコードを送信"
+    },
+    "link": {
+      "forgotPassword": "パスワードをお忘れですか？",
+      "viewOnboarding": "アプリの使い方を見る"
+    },
+    "agreement": {
+      "prefix": "いずれかのログイン方法を選択すると、",
+      "terms": "利用規約",
+      "privacy": "プライバシーポリシー",
+      "suffix": "に同意したものとみなします。"
+    }
+  },
+  "signup": {
+    "title": "アカウント作成",
+    "alert": {
+      "emptyFields": "全ての項目を入力してください",
+      "passwordMismatch": "パスワードが一致しません"
+    },
+    "codeSentTitle": "確認コード送信",
+    "codeSentMessage": "メールに 6 桁の確認コードを送信しました。コードを入力してください。",
+    "registerErrorTitle": "登録エラー",
+    "registerFailed": "アカウント登録に失敗しました",
+    "placeholder": {
+      "passwordConfirm": "パスワード（確認）"
+    },
+    "button": {
+      "create": "アカウント作成"
+    },
+    "agreement": {
+      "prefix": "\u300cアカウント作成\u300dをタップすると、",
+      "terms": "利用規約",
+      "privacy": "プライバシーポリシー",
+      "suffix": "に同意したものとみなします。"
+    },
+    "footer": {
+      "already": "すでにアカウントをお持ちの場合は",
+      "login": "ログイン"
+    }
+  },
+  "resetPassword": {
+    "title": "新しいパスワードを設定",
+    "alert": {
+      "emptyFields": "全ての項目を入力してください",
+      "passwordMismatch": "パスワードが一致しません",
+      "tokenMissing": "認証トークンが見つかりません。パスワードリセットを再度実行してください。",
+      "failed": "パスワードの変更に失敗しました"
+    },
+    "successTitle": "パスワード変更完了",
+    "successMessage": "セキュリティのため、新しいパスワードで再度ログインしてください。",
+    "placeholder": {
+      "newPassword": "新しいパスワード",
+      "newPasswordConfirm": "新しいパスワード（確認）"
+    },
+    "button": {
+      "change": "パスワードを変更"
+    }
+  },
+  "verify": {
+    "subtitle": "メールに送信された6桁のコードを入力してください",
+    "placeholder": {
+      "code": "123456"
+    },
+    "button": {
+      "verify": "確認する",
+      "resendCode": "確認コードを再送信",
+      "resendReset": "リセットコードを再送信"
+    },
+    "alert": {
+      "invalidLink": "無効なリンクです。",
+      "codeRequired": "6 桁のコードを入力してください。",
+      "emailVerified": "メールアドレスが確認されました。",
+      "codeVerified": "コードが確認されました。新しいパスワードを設定してください。",
+      "passwordSetupFailed": "パスワード設定に失敗しました",
+      "accountLinkedTitle": "アカウント登録完了",
+      "accountLinkedMessage": "メールアドレスとパスワードの設定が完了しました。",
+      "verificationErrorTitle": "認証エラー",
+      "verificationFailed": "コードの検証に失敗しました。",
+      "emailUnknown": "メールアドレスが不明です。やり直してください。",
+      "sentTitle": "送信完了",
+      "resetResent": "リセットコードを再送信しました。メールをご確認ください。",
+      "codeResent": "確認コードを再送信しました。メールをご確認ください。",
+      "resendFailed": "コードの再送信に失敗しました。"
+    }
+  },
+  "linkAccount": {
+    "title": "アカウント登録",
+    "notice": "アカウント登録すると、現在のデータを引き続き安全に利用できます",
+    "description": {
+      "main": "データを引き続き安全に利用するため、アカウント登録をお願いします。",
+      "emailForm": "メールアドレスとパスワードを入力してください"
+    },
+    "options": {
+      "email": "メール/パスワードで登録",
+      "google": "Googleアカウントで登録",
+      "googleLoading": "Google認証中..."
+    },
+    "form": {
+      "placeholder": {
+        "email": "メールアドレス",
+        "password": "パスワード (8文字以上)",
+        "confirmPassword": "パスワード (確認)"
+      },
+      "button": {
+        "sendCode": "確認コードを送信",
+        "sending": "送信中...",
+        "back": "戻る"
+      }
+    },
+    "alerts": {
+      "validation": {
+        "emailRequired": "メールアドレスを入力してください",
+        "emailInvalid": "有効なメールアドレスを入力してください",
+        "passwordRequired": "パスワードを入力してください",
+        "passwordMismatch": "パスワードが一致しません",
+        "passwordTooShort": "パスワードは8文字以上で入力してください"
+      },
+      "codeSent": {
+        "title": "確認コード送信",
+        "message": "メールに 6 桁の確認コードを送信しました。\n\nコードを入力してメールアドレスを確認してください。"
+      },
+      "success": {
+        "title": "アカウント登録完了！",
+        "googleMessage": "Googleアカウントの登録が完了しました。\n\nデータは引き続き安全に利用できます。",
+        "appleMessage": "Appleアカウントの登録が完了しました。\n\nデータは引き続き安全に利用できます。"
+      },
+      "error": {
+        "title": "アカウント登録エラー",
+        "linkingTitle": "紐付けエラー",
+        "linkingFailed": "アカウント紐付けに失敗しました",
+        "googleFailed": "Google認証に失敗しました",
+        "appleFailed": "Apple認証に失敗しました"
+      }
+    },
+    "agreement": {
+      "prefix": "いずれかの登録方法を選択すると、",
+      "terms": "利用規約",
+      "privacy": "プライバシーポリシー",
+      "suffix": "に同意したものとみなします。"
+    }
+  },
+  "home": {
+    "anonymousBanner": {
+      "message": "ゲスト利用中 - 長期間経過するとデータが失われる可能性があります。アカウント登録をお願いします。"
+    },
+    "premiumBanner": {
+      "message": "{{count}}件のアイテムが非表示になっています"
+    },
+    "itemLimit": {
+      "title": "アイテム登録制限",
+      "messageAnonymous": "現在{{count}}件のアイテムが登録されています。\n\n無料プランでは最大5件まで登録可能です。\n\nアカウント登録してプレミアムプランにアップグレードすると、無制限にアイテムを登録できます。",
+      "messageFree": "現在{{count}}件のアイテムが登録されています。\n\n無料プランでは最大5件まで登録可能です。\n\nプレミアムプランにアップグレードすると、無制限にアイテムを登録できます。",
+      "register": "アカウント登録",
+      "viewPremium": "プレミアムプランを見る"
+    }
+  },
+  "stats": {
+    "period": {
+      "1month": "1ヶ月",
+      "3months": "3ヶ月",
+      "6months": "6ヶ月",
+      "1year": "1年",
+      "all": "すべて"
+    },
+    "periodText": {
+      "1month": "過去1ヶ月間",
+      "3months": "過去3ヶ月間",
+      "6months": "過去6ヶ月間",
+      "1year": "過去1年間",
+      "all": "すべての期間"
+    },
+    "periodDescription": "{{period}}のデータに基づく分析",
+    "basicStats": {
+      "totalItems": "アイテム数",
+      "totalWears": "総着用回数",
+      "totalWashes": "総洗濯回数",
+      "averageWears": "平均着用回数/洗濯",
+      "noData": "データなし",
+      "needWashHistory": "洗濯履歴が必要です"
+    },
+    "ranking": {
+      "title": "着用回数ランキング",
+      "viewAll": "すべて見る",
+      "wearCount": "{{count}}回着用",
+      "noCategory": "カテゴリなし",
+      "noData": "データがありません"
+    },
+    "laundryEfficiency": {
+      "title": "洗濯効率",
+      "noHistory": "着用・洗濯履歴がありません",
+      "noHistoryDescription": "アイテムの着用と洗濯を記録すると、洗濯効率の分析情報が表示されます。",
+      "noData": "洗濯効率データがありません",
+      "noDataDescription": "アイテムを登録して着用・洗濯履歴を記録すると、洗濯効率の分析情報が表示されます。",
+      "status": {
+        "good": "良好",
+        "overwashing": "洗いすぎ",
+        "underwashing": "洗濯不足"
+      },
+      "statusText": "あなたの洗濯効率は{{status}}です。平均して{{count}}回着用ごとに洗濯しています。",
+      "tip": "ヒント: 最適な洗濯頻度は衣類の種類によって異なります。洗いすぎも洗わなさすぎも避けましょう。"
+    },
+    "environment": {
+      "title": "環境影響・節約効果",
+      "washesReduced": "洗濯回数削減",
+      "co2Reduced": "CO2削減量",
+      "savings": "節約金額",
+      "description": "「着用するたびに洗濯する」場合と比較して、あなたは{{washesReduced}}回の洗濯を削減しました。これは約{{trees}}本の木を植えるのと同等のCO2削減効果があります。"
+    },
+    "badges": {
+      "title": "バッジ・アチーブメント",
+      "newBadge": "NEW",
+      "moreBadges": "バッジをもっと見る",
+      "noBadges": "獲得したバッジはありません",
+      "startCollection": "バッジコレクションを始めよう！",
+      "noBadgesDescription": "アプリを使い続けて、様々な条件を達成するとバッジが獲得できます。チャレンジしてみましょう！",
+      "startDescription": "アイテムを登録して着用・洗濯を記録すると、様々なバッジを獲得できます。最初のアイテムを登録して、バッジ収集を始めましょう！",
+      "viewBadges": "バッジ一覧を見る",
+      "viewBadgeTypes": "バッジの種類を見る",
+      "unknownDate": "不明"
+    },
+    "error": {
+      "retry": "再試行"
+    },
+    "viewAll": "詳細を見る",
+    "viewAllBadges": "すべて見る"
+  },
+  "settings": {
+    "account": {
+      "title": "アカウント",
+      "guest": {
+        "status": "現在ゲストとして利用中です",
+        "register": "アカウント登録",
+        "benefits": "アカウント登録すると：\n• 長期間経過してもデータが安全に保存されます\n• 複数端末でデータを同期できます\n• プレミアム機能(無制限のアイテム登録)を購入できます"
+      },
+      "manage": "アカウント管理"
+    },
+    "premium": {
+      "title": "プレミアムプラン",
+      "viewPlan": "プレミアムプランを見る",
+      "description": "プレミアムプランでは、アイテム登録数の制限解除（無料プランは5件まで）などの特典があります。",
+      "active": {
+        "member": "プレミアム会員",
+        "status": "有効",
+        "plan": "契約プラン",
+        "yearlyPlan": "年額プラン",
+        "monthlyPlan": "月額プラン",
+        "originalPurchase": "初回契約開始日",
+        "currentPurchase": "現在の契約開始日",
+        "nextRenewal": "次回更新日",
+        "manage": "契約管理"
+      }
+    },
+    "appInfo": {
+      "title": "アプリ情報",
+      "version": "バージョン",
+      "terms": "利用規約",
+      "privacy": "プライバシーポリシー"
+    },
+    "support": {
+      "title": "サポート",
+      "contact": "お問い合わせ"
+    },
+    "actions": {
+      "logout": {
+        "button": "ログアウト",
+        "title": "ログアウト",
+        "message": "本当にログアウトしますか？",
+        "confirm": "ログアウト",
+        "error": "ログアウトに失敗しました"
+      },
+      "resetData": {
+        "button": "データをリセット",
+        "processing": "リセット中...",
+        "title": "データリセット",
+        "message": "全てのデータが削除され、ログイン画面に戻ります。\n\nこの操作は取り消すことができません。",
+        "confirm": "リセット",
+        "error": "データリセットに失敗しました。\n\n{{error}}\n\n再度お試しください。"
+      }
+    },
+    "footer": "© 2025 EverWear All Rights Reserved"
+  },
+  "badges": {
+    "earned": "獲得済み",
+    "unearned": "未獲得",
+    "achieved": "達成",
+    "earnedDate": "獲得日",
+    "loading": "バッジデータを読み込み中...",
+    "retry": "再試行",
+    "title": "バッジ・アチーブメント",
+    "collection": "バッジコレクション",
+    "showOverview": "一覧を表示",
+    "earnedBadges": "獲得バッジ",
+    "categoryFilter": "カテゴリ",
+    "statusFilter": "獲得状況",
+    "noMatchingBadges": "該当するバッジがありません",
+    "changeFilters": "フィルター条件を変更してお試しください",
+    "loadingBadges": "バッジデータを読み込み中です",
+    "pleaseWait": "しばらくお待ちください",
+    "overview": {
+      "title": "バッジコレクション",
+      "earnedCount": "獲得済み: {{earned}}/{{total}} ({{percentage}}%)",
+      "showDates": "獲得日を表示",
+      "hideDates": "獲得日を非表示",
+      "shareButton": "バッジコレクションをシェアする",
+      "shareTitle": "バッジコレクション",
+      "shareMessage": "私のバッジコレクション: {{earned}}/{{total}}個獲得しました！"
+    },
+    "categories": {
+      "usage": "使用実績",
+      "efficiency": "効率化",
+      "milestone": "マイルストーン",
+      "achievement": "実績",
+      "special": "特別",
+      "other": "その他"
+    },
+    "names": {
+      "firstItem": "初めてのアイテム",
+      "firstWear": "初めての着用",
+      "firstWash": "初めての洗濯",
+      "itemCollector5": "アイテムコレクター",
+      "itemCollector15": "ファッション愛好家",
+      "itemCollector30": "ワードローブマスター",
+      "wearAchieverItem10": "お気に入り発見",
+      "wearAchieverItem30": "ヘビロテアイテム",
+      "wearAchieverItem50": "運命の一着",
+      "wearMaster10": "着用記録ルーキー",
+      "wearMaster50": "着用記録エキスパート",
+      "wearMaster100": "着用記録マスター",
+      "washMaster10": "洗濯記録ルーキー",
+      "washMaster30": "洗濯記録エキスパート",
+      "washMaster50": "洗濯マスター",
+      "washSaver10": "洗濯削減ルーキー",
+      "washSaver50": "洗濯削減エキスパート",
+      "washSaver100": "洗濯削減マスター",
+      "categoryMaster": "カテゴリマスター",
+      "premiumUnlocked": "プレミアムユーザー",
+      "consistentTracker": "継続は力なり"
+    },
+    "descriptions": {
+      "firstItem": "最初のアイテムを登録しました",
+      "firstWear": "最初の着用記録を追加しました",
+      "firstWash": "最初の洗濯記録を追加しました",
+      "itemCollector5": "5個のアイテムを登録しました",
+      "itemCollector15": "15個のアイテムを登録しました",
+      "itemCollector30": "30個のアイテムを登録しました",
+      "wearAchieverItem10": "同じアイテムを10回着用しました",
+      "wearAchieverItem30": "同じアイテムを30回着用しました",
+      "wearAchieverItem50": "同じアイテムを50回着用しました",
+      "wearMaster10": "累計10回着用しました",
+      "wearMaster50": "累計50回着用しました",
+      "wearMaster100": "累計100回着用しました",
+      "washMaster10": "累計10回洗濯記録をつけました",
+      "washMaster30": "累計30回洗濯記録をつけました",
+      "washMaster50": "累計50回洗濯記録をつけました",
+      "washSaver10": "10回分の洗濯を削減しました",
+      "washSaver50": "50回分の洗濯を削減しました",
+      "washSaver100": "100回分の洗濯を削減しました",
+      "categoryMaster": "7種類のカテゴリのアイテムを登録しました",
+      "premiumUnlocked": "プレミアムプランを利用中です",
+      "consistentTracker": "100日連続で記録をつけました"
+    }
+  },
+  "itemCalendar": {
+    "title": "着用・洗濯履歴",
+    "returnToThisMonth": "今月に戻る",
+    "months": {
+      "january": "1月",
+      "february": "2月", 
+      "march": "3月",
+      "april": "4月",
+      "may": "5月",
+      "june": "6月",
+      "july": "7月",
+      "august": "8月",
+      "september": "9月",
+      "october": "10月",
+      "november": "11月",
+      "december": "12月"
+    },
+    "days": {
+      "sunday": "日",
+      "monday": "月",
+      "tuesday": "火",
+      "wednesday": "水",
+      "thursday": "木",
+      "friday": "金",
+      "saturday": "土"
+    },
+    "legend": {
+      "wear": "着用",
+      "wash": "洗濯"
+    },
+    "alerts": {
+      "deleteTitle": "履歴の削除",
+      "deleteMessage": "{{date}}の履歴を削除しますか？",
+      "deleteWearHistory": "着用履歴を削除",
+      "deleteWashHistory": "洗濯履歴を削除"
+    }
+  },
+  "addItem": {
+    "title": "アイテム追加",
+    "form": {
+      "required": "（必須）",
+      "optional": "（任意）",
+      "category": {
+        "label": "カテゴリ",
+        "placeholder": "カテゴリを選択してください"
+      },
+      "brand": {
+        "label": "ブランド",
+        "placeholder": "ブランドを選択してください（任意）",
+        "helpTitle": "ブランドが見つからない場合",
+        "helpMessage": "設定タブの「お問い合わせ」からブランド追加のご要望をお送りください",
+        "notFound": "ブランドが見つからない場合",
+        "notFoundMessage": "設定タブの「お問い合わせ」からブランド追加のご要望をお送りください"
+      },
+      "name": {
+        "label": "アイテム名",
+        "placeholder": "アイテム名を入力してください（任意）"
+      },
+      "washThreshold": {
+        "label": "洗濯目安",
+        "description": "何回着たら洗濯するかの目安",
+        "unit": "回",
+        "suffix": "回"
+      },
+      "image": {
+        "label": "画像",
+        "placeholder": "画像を選択してください",
+        "selected": "画像が選択されました",
+        "error": "画像の選択に失敗しました"
+      },
+      "memo": {
+        "label": "メモ",
+        "placeholder": "メモを入力してください（任意）"
+      },
+      "condition": {
+        "label": "状態",
+        "placeholder": "アイテムの状態を入力してください（任意）",
+        "new": "新品",
+        "used": "中古"
+      },
+      "purchasePrice": {
+        "label": "購入価格",
+        "placeholder": "購入価格を入力してください（任意）",
+        "currency": "円"
+      }
+    },
+    "categories": {
+      "tops": "トップス",
+      "bottoms": "ボトムス",
+      "jacket": "ジャケット",
+      "outerwear": "アウター",
+      "setup": "セットアップ",
+      "dress": "ワンピース",
+      "shoes": "シューズ",
+      "bag": "バッグ",
+      "accessories": "小物",
+      "others": "その他"
+    },
+    "actions": {
+      "save": "保存",
+      "cancel": "キャンセル",
+      "discard": "破棄する",
+      "add": "追加",
+      "adding": "追加中..."
+    },
+    "alerts": {
+      "discardTitle": "変更を破棄しますか？",
+      "discardMessage": "入力した内容が失われます。",
+      "saveSuccess": "アイテムを保存しました",
+      "saveError": "アイテムの保存に失敗しました",
+      "categoryRequired": "カテゴリを選択してください",
+      "imageRequired": "画像を選択してください",
+      "invalidWashThreshold": "有効な洗濯閾値を入力してください",
+      "addSuccess": "アイテムを追加しました",
+      "addError": "アイテムの追加に失敗しました",
+      "washThresholdInvalid": "有効な洗濯閾値を入力してください"
+    }
+  },
+  "brandSelector": {
+    "placeholder": "ブランドを選択してください",
+    "searchPlaceholder": "ブランドを検索...",
+    "noResults": "検索結果がありません",
+    "close": "閉じる"
+  },
+  "imagePicker": {
+    "title": "画像を選択",
+    "message": "画像の取得方法を選択してください",
+    "camera": "カメラで撮影",
+    "gallery": "アルバムから選択",
+    "cancel": "キャンセル",
+    "errors": {
+      "cameraPermission": "写真を撮影するには、カメラへのアクセス許可が必要です。",
+      "galleryPermission": "画像を選択するには、写真へのアクセス許可が必要です。",
+      "cameraError": "カメラでの撮影中にエラーが発生しました",
+      "galleryError": "アルバムからの画像選択中にエラーが発生しました"
+    }
+  },
+  "efficiency": {
+    "title": "洗濯効率分析",
+    "period": {
+      "1month": "1ヶ月",
+      "3months": "3ヶ月", 
+      "6months": "6ヶ月",
+      "1year": "1年",
+      "all": "全期間"
+    },
+    "status": {
+      "good": "良好",
+      "underwashed": "洗濯不足", 
+      "overwashed": "洗いすぎ",
+      "noHistory": "履歴なし",
+      "noData": "データなし",
+      "unknown": "不明"
+    },
+    "messages": {
+      "noHistory": "このアイテムはまだ着用・洗濯の記録がありません。着用と洗濯を記録すると、洗濯効率の分析が表示されます。",
+      "noWashData": "このアイテムはまだ洗濯の記録がありません。洗濯を記録すると、洗濯効率の分析が表示されます。",
+      "good": "最適な洗濯頻度で使用されています。このまま続けましょう！",
+      "underwashed": "洗濯頻度が低すぎる可能性があります。衣類の清潔さを保つため、もう少し頻繁に洗濯することを検討してください。",
+      "overwashed": "洗濯頻度が高すぎる可能性があります。洗濯の間にもっと着用することで、衣類の寿命を延ばし、環境への影響を減らせます。",
+      "insufficient": "洗濯データが不足しています。"
+    },
+    "loading": "効率データを計算中...",
+    "error": {
+      "title": "データの読み込みに失敗しました",
+      "retry": "再試行"
+    },
+    "noData": {
+      "title": "効率データがありません",
+      "message": "アイテムの着用と洗濯を記録すると、洗濯効率の分析が表示されます。"
+    },
+    "stats": {
+      "wearCount": "着用回数",
+      "washCount": "洗濯回数",
+      "wearCountWithNum": "{{count}}回着用",
+      "washCountWithNum": "{{count}}回洗濯",
+      "threshold": "閾値",
+      "efficiency": "効率"
+    },
+    "summary": {
+      "title": "洗濯効率サマリー"
+    },
+    "tip": "洗濯効率を高めるには、設定した閾値に近い頻度で洗濯しましょう。洗いすぎも洗わなさすぎも避けることが大切です。"
+  },
+  "impact": {
+    "title": "環境への影響",
+    "loading": "環境影響データを計算中...",
+    "period": {
+      "1month": "1ヶ月",
+      "3months": "3ヶ月",
+      "6months": "6ヶ月",
+      "1year": "1年",
+      "all": "全期間"
+    },
+    "metrics": {
+      "co2Reduced": "CO2削減量",
+      "treeEquivalent": "植樹相当効果",
+      "waterSaved": "節水量",
+      "electricitySaved": "節電量",
+      "detergentSaved": "洗剤節約量",
+      "totalSavings": "総節約金額",
+      "washReduction": "洗濯削減効果",
+      "washesReduced": "洗濯回数削減",
+      "resourceSavings": "資源節約効果",
+      "lifespanExtension": "洋服寿命延長効果",
+      "monthlyReduction": "月別削減効果",
+      "environmentalContribution": "環境貢献度"
+    },
+    "description": "「着用するたびに洗濯する」場合と比較して、あなたは{{washesReduced}}回の洗濯を削減しました。これは約{{treeEquivalent}}本の木を植えるのと同等のCO2削減効果があります。",
+    "lifespanDescription": "洗濯回数を{{washesReduced}}回削減したことで、あなたの洋服の寿命が延びています。洗濯による繊維へのダメージが軽減され、お気に入りの服をより長く着ることができます。",
+    "lifespanValue": "洋服の寿命 約{{multiplier}}倍に延長",
+    "units": {
+      "kg": "kg",
+      "trees": "本の木",
+      "liters": "L",
+      "kwh": "kWh",
+      "ml": "ml",
+      "yen": "円",
+      "equivalent": "相当"
+    },
+    "share": {
+      "button": "環境貢献度をシェアする",
+      "title": "私の環境貢献度",
+      "message": "🌱 私の環境貢献度 🌱\n\n🌍 CO2削減量: {{co2}}kg\n🌳 植樹相当効果: {{trees}}本の木\n\n💧 節水: {{water}}L ({{waterCost}}円相当)\n⚡ 節電: {{electricity}}kWh ({{electricityCost}}円相当)\n🧴 洗剤節約: {{detergent}}ml ({{detergentCost}}円相当)\n\n総節約金額: {{totalSavings}}円\n\nEverWearで洋服の寿命を延ばしながら環境にも貢献しよう！"
+    },
+    "environmentalText": "あなたの洗濯習慣の改善により、{{co2}}kgのCO2排出を削減しました。これは約{{treeEquivalent}}本の木が1年間に吸収するCO2量に相当します。",
+    "info": {
+      "washInfo": {
+        "title": "洗濯回数削減の計算方法について",
+        "content1": "環境影響の計算は、「着用するたびに洗濯する」場合と比較して、実際の洗濯回数の差に基づいています。",
+        "content2": "ただし、実際には複数のアイテムを一度に洗濯することが一般的です。そのため、削減された洗濯回数は平均的な洗濯機1回あたりのアイテム数（5アイテム）で割って計算しています。",
+        "content3": "例：10回着用して2回洗濯した場合、理論上は8回の洗濯を削減したことになりますが、1回の洗濯で平均5アイテムを洗うと考えると、実際の削減効果は8÷5=1.6回分となります。"
+      },
+      "waterInfo": {
+        "title": "水量（料金）の計算方法について",
+        "content1": "水量の節約効果は、削減された洗濯回数に1回の洗濯で使用される平均的な水量（約50リットル）を掛けて計算しています。",
+        "content2": "料金は地域によって異なりますが、一般的な水道料金（1000リットルあたり約300円）に基づいて計算しています。",
+        "content3": "例：洗濯回数を10回削減した場合、50リットル×10回=500リットルの水を節約したことになり、料金に換算すると約150円の節約となります。"
+      },
+      "energyInfo": {
+        "title": "電気量（料金）の計算方法について",
+        "content1": "電気量の節約効果は、削減された洗濯回数に1回の洗濯で使用される平均的な電力量（約0.5kWh）を掛けて計算しています。",
+        "content2": "料金は電力会社や契約プランによって異なりますが、一般的な電気料金（1kWhあたり約25円）に基づいて計算しています。",
+        "content3": "例：洗濯回数を10回削減した場合、0.5kWh×10回=5kWhの電力を節約したことになり、料金に換算すると約125円の節約となります。"
+      },
+      "co2Info": {
+        "title": "CO2削減量の計算方法について",
+        "content1": "CO2削減量は、節約された電力量に電力のCO2排出係数（1kWhあたり約0.5kg）を掛けて計算しています。",
+        "content2": "洗濯機の使用だけでなく、水の供給や処理に関連するCO2排出も考慮しています。",
+        "content3": "例：電力を5kWh節約した場合、5kWh×0.5kg/kWh=2.5kgのCO2排出を削減したことになります。"
+      },
+      "treeInfo": {
+        "title": "植樹相当効果の計算方法について",
+        "content1": "植樹相当効果は、削減されたCO2排出量を、1本の木が1年間に吸収するCO2量（約20kg）で割って計算しています。",
+        "content2": "この値は、あなたの洗濯習慣の改善が、どれだけの数の木を植えるのと同等のCO2吸収効果があるかを示しています。",
+        "content3": "例：CO2排出を10kg削減した場合、10kg÷20kg/本=0.5本の木を植えるのと同等の効果があります。"
+      },
+      "detergentInfo": {
+        "title": "洗剤消費量（料金）の計算方法について",
+        "content1": "洗剤の節約効果は、削減された洗濯回数に1回の洗濯で使用される平均的な洗剤量（約30ml）を掛けて計算しています。",
+        "content2": "料金は洗剤の種類によって異なりますが、一般的な洗剤の価格（800mlボトルで約400円）に基づいて計算しています。",
+        "content3": "例：洗濯回数を10回削減した場合、30ml×10回=300mlの洗剤を節約したことになり、料金に換算すると約150円の節約となります。"
+      },
+      "lifespanInfo": {
+        "title": "洋服寿命延長効果の計算方法について",
+        "content1": "洋服の寿命延長効果は、洗濯回数の削減に基づいて計算しています。一般的に、洗濯は衣類の繊維を傷め、色落ちや形崩れの原因となります。",
+        "content2": "研究によると、洗濯回数が20%減少すると、衣類の寿命は約1.5倍に延びるとされています。このデータに基づき、削減された洗濯回数から寿命延長効果を推定しています。",
+        "content3": "例：洗濯回数を20回から16回に20%削減した場合、衣類の寿命は約1.5倍に延びると推定されます。"
+      }
+    },
+    "loading": "環境影響データを計算中...",
+    "error": {
+      "title": "データの読み込みに失敗しました",
+      "retry": "再試行"
+    },
+    "noData": {
+      "title": "環境影響データがありません",
+      "message": "アイテムの着用と洗濯を記録すると、環境への影響が表示されます。"
+    }
+  },
+  "ranking": {
+    "title": "着用回数ランキング",
+    "loading": "ランキングデータを読み込み中...",
+    "retry": "再試行",
+    "noCategory": "カテゴリなし",
+    "wearCount": "{{count}}回着用",
+    "noItems": "該当するアイテムがありません",
+    "changeFilters": "フィルター条件を変更してお試しください",
+    "period": {
+      "1month": "1ヶ月",
+      "3months": "3ヶ月",
+      "6months": "6ヶ月",
+      "1year": "1年",
+      "all": "すべて"
+    },
+    "categories": {
+      "all": "すべて"
+    },
+    "filters": {
+      "period": "期間",
+      "sortOrder": "並び順",
+      "category": "カテゴリ"
+    },
+    "sortOrder": {
+      "mostWorn": "着用回数 多い順",
+      "leastWorn": "着用回数 少ない順"
+    }
+  },
+  "batchRecord": {
+    "title": "一括記録",
+    "loading": "アイテムを読み込み中...",
+    "noName": "名前なし",
+    "fields": {
+      "date": "日付",
+      "action": "アクション",
+      "itemSelection": "アイテム選択 ({{selected}}/{{total}})"
+    },
+    "actions": {
+      "wear": "着用",
+      "wash": "洗濯",
+      "wearRecord": "着用記録",
+      "washRecord": "洗濯記録",
+      "selectAll": "全選択",
+      "deselectAll": "全解除"
+    },
+    "executeButton": "{{action}}を追加",
+    "alerts": {
+      "discardTitle": "編集内容の破棄",
+      "discardMessage": "選択した内容は保存されません。よろしいですか？",
+      "discard": "破棄",
+      "selectItems": "アイテムを選択してください",
+      "batchFailed": "一括記録に失敗しました"
+    },
+    "results": {
+      "allSuccess": "{{count}}件の{{action}}を記録しました。",
+      "allFailedDuplicate": "{{count}}件の{{action}}記録に失敗しました。\n\n同一日付で{{action}}記録が既に存在するアイテムがありました。",
+      "allFailedError": "{{count}}件の{{action}}記録に失敗しました。\n\n記録処理中にエラーが発生しました。",
+      "partialSuccessDuplicate": "{{successCount}}件の{{action}}を記録しました。\n{{failCount}}件の記録に失敗しました。\n\n同一日付で{{action}}記録が既に存在するアイテムがありました。",
+      "partialSuccessMixed": "{{successCount}}件の{{action}}を記録しました。\n{{failCount}}件の記録に失敗しました。\n\n同一日付で{{action}}記録が既に存在するアイテムや、その他のエラーが発生しました。",
+      "partialSuccessError": "{{successCount}}件の{{action}}を記録しました。\n{{failCount}}件の記録に失敗しました。\n\n記録処理中にエラーが発生しました。"
+    },
+    "emptyStates": {
+      "noItems": "アイテムがありません",
+      "noWashableItems": "洗濯が必要なアイテムがありません。\n（前回洗濯してから1回以上着用したアイテムのみ表示されます）"
+    },
+    "dateModal": {
+      "title": "日付を選択",
+      "confirm": "確定"
+    },
+    "categories": {
+      "others": "その他"
+    }
+  },
+  "account": {
+    "sections": {
+      "accountInfo": "アカウント情報",
+      "dangerZone": "危険な操作"
+    },
+    "info": {
+      "authMethod": "認証方法",
+      "email": "メールアドレス",
+      "createdDate": "アカウント作成日",
+      "privateEmail": "非公開",
+      "unknown": "不明"
+    },
+    "authMethods": {
+      "email": "メール/パスワード",
+      "google": "Google",
+      "apple": "Apple",
+      "anonymous": "ゲスト",
+      "unknown": "不明"
+    },
+    "deleteAccount": {
+      "title": "アカウント削除",
+      "message": "この操作は取り消すことができません。本当にアカウントを削除しますか？",
+      "description": "アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消すことができません。",
+      "button": "アカウントを削除",
+      "delete": "削除"
+    }
+  },
+  "deleteAccount": {
+    "warning": {
+      "title": "アカウントを削除しますか？",
+      "description": "アカウントを削除すると、以下のデータがすべて完全に削除されます：",
+      "data": {
+        "clothing": "すべての衣類データ",
+        "history": "着用履歴と洗濯履歴",
+        "badges": "獲得したバッジ",
+        "images": "アップロードした画像",
+        "subscription": "サブスクリプション情報"
+      },
+      "irreversible": "この操作は取り消すことができません",
+      "continue": "削除を続行"
+    },
+    "auth": {
+      "title": "本人確認",
+      "subtitle": "アカウントを削除するには、再度認証が必要です",
+      "passwordPlaceholder": "パスワードを入力",
+      "confirm": "確認",
+      "googleReauth": "Googleで再認証",
+      "appleReauth": "Apple IDで再認証",
+      "passwordError": "パスワードが正しくありません",
+      "authError": "認証に失敗しました",
+      "googleError": "Google認証に失敗しました",
+      "appleError": "Apple認証に失敗しました",
+      "googleFlowError": "Google認証フローが正常に完了しませんでした",
+      "appleFlowError": "Apple認証フローが正常に完了しませんでした",
+      "googleCanceled": "Google認証がキャンセルされました",
+      "appleCanceled": "Apple認証がキャンセルされました",
+      "googleConfigError": "Google認証の設定が不完全です。環境変数を確認してください。",
+      "tokenNotFound": "認証トークンが見つかりません。パスワードリセットリンクを再度クリックしてください。",
+      "tokenExpired": "パスワードリセットリンクの有効期限が切れています。新しいリセットリンクを取得してください。",
+      "sessionSetupError": "セッションの設定に失敗しました: {{message}}",
+      "passwordUpdateError": "パスワードの更新に失敗しました: {{message}}",
+      "userNotAuthenticated": "ユーザーが認証されていません",
+      "tokenFetchError": "トークン取得に失敗しました",
+      "accountDeleteError": "アカウント削除に失敗しました: {{message}}",
+      "accountDeleteFailed": "アカウント削除に失敗しました",
+      "notAnonymousUser": "匿名ユーザーではありません",
+      "linkIdentityUrlError": "linkIdentity から URL を取得できませんでした",
+      "dataDeleteError": "データ削除に失敗しました: {{message}}",
+      "dataDeleteFailed": "データ削除に失敗しました"
+    },
+    "final": {
+      "title": "最終確認",
+      "question": "本当にアカウントを削除しますか？",
+      "warning": "この操作は取り消すことができません。\nすべてのデータが完全に削除されます。",
+      "delete": "削除する"
+    },
+    "success": {
+      "title": "アカウント削除完了",
+      "message": "アカウントが正常に削除されました。"
+    },
+    "error": {
+      "message": "アカウント削除中にエラーが発生しました。"
+    }
+  },
+  "subscription": {
+    "title": "プレミアムプラン",
+    "header": {
+      "title": "プレミアムプランで無制限に管理",
+      "subtitle": "大切な洋服をすべて登録して、より充実したワードローブ管理を",
+      "premiumBadge": "プレミアム会員"
+    },
+    "loading": "読み込み中...",
+    "error": {
+      "back": "戻る"
+    },
+    "plans": {
+      "sectionTitle": "プラン比較",
+      "free": {
+        "title": "無料プラン",
+        "features": {
+          "itemLimit": "大切な洋服5件まで登録可能",
+          "recording": "日々の着用・洗濯を簡単記録",
+          "history": "着用履歴でスタイリングを振り返り",
+          "statistics": "詳細統計でワードローブの全体像を把握",
+          "analysis": "洗濯効率分析・環境影響・節約効果の可視化"
+        }
+      },
+      "monthly": {
+        "title": "月額プラン",
+        "features": {
+          "allFree": "無料プランのすべての機能",
+          "unlimited": "お気に入りアイテムを無制限登録"
+        },
+        "purchaseButton": "月額プランを購入"
+      },
+      "yearly": {
+        "title": "年額プラン",
+        "monthlyEquivalent": "月額換算: {{price}}",
+        "features": {
+          "allFree": "無料プランのすべての機能",
+          "unlimited": "お気に入りアイテムを無制限登録"
+        },
+        "purchaseButton": "年額プランを購入"
+      }
+    },
+    "subscription": {
+      "sectionTitle": "契約詳細",
+      "activeTitle": "アクティブなプレミアムプラン",
+      "activeBadge": "有効",
+      "plan": "契約プラン",
+      "yearlyPlan": "年額プラン",
+      "monthlyPlan": "月額プラン",
+      "originalPurchase": "初回契約開始日",
+      "currentPurchase": "現在の契約開始日",
+      "nextRenewal": "次回更新日",
+      "note": "サブスクリプションの解約や変更は、App Store（iOS）またはGoogle Play（Android）から行ってください。"
+    },
+    "actions": {
+      "restorePurchases": "購入履歴を復元",
+      "manageSubscription": "契約管理を行う"
+    },
+    "alerts": {
+      "accountRequired": {
+        "title": "アカウント登録が必要です",
+        "premium": "プレミアム機能を利用するにはアカウント登録が必要です。",
+        "restore": "購入の復元機能を利用するにはアカウント登録が必要です。",
+        "manage": "契約管理を行うにはアカウント登録が必要です。",
+        "cancel": "キャンセル",
+        "register": "アカウント登録"
+      },
+      "purchase": {
+        "successTitle": "購入完了",
+        "successMessage": "プレミアムプランにアップグレードしました！",
+        "errorTitle": "購入エラー",
+        "errorMessage": "購入処理中にエラーが発生しました。もう一度お試しください。"
+      },
+      "restore": {
+        "successTitle": "購入履歴の復元",
+        "successMessage": "購入履歴を確認しました。",
+        "errorTitle": "復元エラー",
+        "errorMessage": "購入履歴の復元中にエラーが発生しました。"
+      }
+    },
+    "agreement": {
+      "prefix": "プレミアムプランを購入することで、",
+      "terms": "利用規約",
+      "privacy": "プライバシーポリシー",
+      "suffix": "に同意したものとみなします。"
+    },
+    "dataRetention": {
+      "sectionTitle": "データ保持について",
+      "preserved": "プレミアム登録中に作成したアイテムは、サブスクリプションをキャンセルした後も安全に保持されます。",
+      "freeLimit": "無料プランでは最新の5件のアイテムのみ表示されますが、6件目以降のデータは削除されません。",
+      "reupgrade": "プレミアムプランに再度アップグレードすると、保存されている全てのアイテムが再び表示されます。"
+    }
+  },
+  "itemList": {
+    "needsWash": "洗濯しましょう",
+    "wearCount": "{{count}}回着用",
+    "remainingWears": "あと{{count}}回で洗濯",
+    "lastWorn": "最終着用日",
+    "none": "なし",
+    "actions": {
+      "wear": "着用",
+      "wash": "洗濯"
+    },
+    "modal": {
+      "selectWearDate": "着用日を選択",
+      "selectWashDate": "洗濯日を選択"
+    },
+    "empty": {
+      "all": "アイテムはありません",
+      "category": "{{category}}カテゴリのアイテムはありません"
+    },
+    "alerts": {
+      "wearRecorded": "着用記録",
+      "wearRecordedMessage": "{{date}}に着用記録を追加しました",
+      "washRecorded": "洗濯記録",
+      "washRecordedMessage": "{{date}}に洗濯記録を追加しました",
+      "duplicateError": "重複エラー",
+      "wearDuplicateMessage": "{{date}}の着用記録は既に存在します",
+      "washDuplicateMessage": "{{date}}の洗濯記録は既に存在します",
+      "wearError": "{{date}}の着用記録の追加に失敗しました",
+      "washError": "{{date}}の洗濯記録の追加に失敗しました"
+    }
+  },
+  "history": {
+    "wear": "着用",
+    "wash": "洗濯",
+    "empty": "履歴がありません",
+    "showCalendar": "カレンダーを表示",
+    "hint": {
+      "longPress": "履歴を長押しすると削除できます"
+    },
+    "actions": {
+      "wore": "着用しました",
+      "washed": "洗濯しました"
+    },
+    "deleteHistory": {
+      "title": "{{eventType}}履歴を削除",
+      "message": "{{itemName}}の{{date}}の履歴を削除しますか？",
+      "successTitle": "削除完了",
+      "successMessage": "{{itemName}}の{{date}}の{{eventType}}履歴を削除しました",
+      "errorTitle": "削除エラー",
+      "errorMessage": "{{eventType}}履歴の削除に失敗しました。もう一度お試しください。"
+    }
+  },
+  "months": {
+    "january": "1月",
+    "february": "2月",
+    "march": "3月",
+    "april": "4月",
+    "may": "5月",
+    "june": "6月",
+    "july": "7月",
+    "august": "8月",
+    "september": "9月",
+    "october": "10月",
+    "november": "11月",
+    "december": "12月"
+  },
+  "days": {
+    "sunday": "日",
+    "monday": "月",
+    "tuesday": "火",
+    "wednesday": "水",
+    "thursday": "木",
+    "friday": "金",
+    "saturday": "土"
+  },
+  "wear": "着用",
+  "wash": "洗濯",
+  "reset_display": "表示をリセット",
+  "onboarding": {
+    "skip": "スキップ",
+    "next": "次へ",
+    "start": "始める",
+    "steps": {
+      "1": {
+        "title": "お気に入りを、一生ものに",
+        "titleShort": "お気に入りを一生ものに",
+        "description": [
+          "適切な洗濯頻度で衣類の寿命を延ばす",
+          "お財布にも環境にもやさしい衣類管理",
+          "データで効果を実感できる"
+        ],
+        "footer": "データは安全に管理されます"
+      },
+      "2": {
+        "title": "写真を撮って、簡単登録",
+        "description": [
+          "お気に入りのアイテムをスマホで撮影",
+          "「何回着たら洗濯するか」を設定",
+          "ブランドや購入価格、メモも残せる"
+        ]
+      },
+      "3": {
+        "title": "着用・洗濯をタップで記録",
+        "description": [
+          "着るたびに1タップで記録完了",
+          "洗濯するときも1タップ",
+          "適切な洗濯タイミングがひと目でわかる"
+        ]
+      },
+      "4": {
+        "title": "履歴でコーディネートを振り返り",
+        "description": [
+          "カレンダー表示で過去の着用履歴を確認",
+          "アイテムごとの使用状況もひと目でわかる",
+          "コーディネートの振り返りに活用"
+        ]
+      },
+      "5": {
+        "title": "データで可視化、効果を実感",
+        "description": [
+          "洗濯効率や環境への影響、節約効果を可視化",
+          "あなたのファッション傾向も分析",
+          "衣類の寿命を延ばせるようにサポート"
+        ],
+        "footer": "衣類にも地球にも、お財布にもやさしいファッションライフを実現しましょう！"
+      }
+    }
+  },
+  "tabs": {
+    "home": "ホーム",
+    "homeHeader": "クローゼット",
+    "history": "履歴",
+    "stats": "統計",
+    "settings": "設定",
+    "batchRecord": "一括記録"
+  },
+  "categories": {
+    "all": "すべて",
+    "tops": "トップス",
+    "bottoms": "ボトムス",
+    "jacket": "ジャケット",
+    "outerwear": "アウター",
+    "setup": "セットアップ",
+    "dress": "ワンピース",
+    "shoes": "シューズ",
+    "bag": "バッグ",
+    "accessories": "小物",
+    "others": "その他"
+  },
+  "editItem": {
+    "title": "アイテム編集",
+    "saveButton": "変更を保存",
+    "form": {
+      "image": {
+        "select": "タップして画像を選択",
+        "change": "タップして画像を変更",
+        "error": "画像の選択に失敗しました"
+      },
+      "category": {
+        "label": "カテゴリ"
+      },
+      "brand": {
+        "label": "ブランド",
+        "helpTitle": "ブランドが見つからない場合",
+        "helpMessage": "ブランドが一覧にない場合は「その他」を選択し、メモ欄にブランド名を記載してください。"
+      },
+      "name": {
+        "label": "アイテム名",
+        "placeholder": "例: お気に入りの白シャツ"
+      },
+      "washThreshold": {
+        "label": "洗濯閾値",
+        "description": "何回着用したら洗濯するか設定します",
+        "unit": "回"
+      },
+      "condition": {
+        "label": "状態",
+        "description": "新品で購入したか中古で購入したかを選択します",
+        "new": "新品",
+        "used": "中古"
+      },
+      "purchasePrice": {
+        "label": "購入価格",
+        "description": "アイテムの購入価格を入力します",
+        "placeholder": "例: 5000"
+      },
+      "memo": {
+        "label": "メモ",
+        "description": "アイテムに関するメモを入力します",
+        "placeholder": "例: お気に入りのシャツ。冬はインナーとして着用。"
+      },
+      "required": "*必須",
+      "optional": "（任意）"
+    },
+    "alerts": {
+      "discardTitle": "編集内容の破棄",
+      "discardMessage": "変更した内容は保存されません。よろしいですか？",
+      "discard": "破棄",
+      "successTitle": "成功",
+      "successMessage": "アイテムが更新されました",
+      "errorMessage": "アイテムの更新に失敗しました",
+      "retry": "再試行"
+    }
+  }
+} 

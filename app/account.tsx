@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
+import { useTranslation } from 'react-i18next';
 import {
     Alert,
     ScrollView,
@@ -17,9 +18,46 @@ export default function Account() {
   const router = useRouter();
   const theme = useTheme();
   const { getUserInfo } = useAuth();
+  const { t, i18n } = useTranslation();
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
   const userInfo = getUserInfo();
+
+  // 認証方法を翻訳する関数
+  const getAuthMethodText = (provider: string) => {
+    // 正規化してから比較
+    const normalizedProvider = provider?.toLowerCase().trim();
+    
+    // 日本語のハードコーディングされた値をチェック
+    if (provider === 'メール/パスワード' || 
+        provider === 'メール / パスワード' ||
+        normalizedProvider === 'email') {
+      return t('account.authMethods.email');
+    }
+    
+    if (provider === 'Google' || 
+        normalizedProvider === 'google') {
+      return t('account.authMethods.google');
+    }
+    
+    if (provider === 'Apple' || 
+        normalizedProvider === 'apple') {
+      return t('account.authMethods.apple');
+    }
+    
+    if (provider === 'ゲスト' || 
+        normalizedProvider === 'anonymous') {
+      return t('account.authMethods.anonymous');
+    }
+    
+    if (provider === '不明' || 
+        normalizedProvider === 'unknown') {
+      return t('account.authMethods.unknown');
+    }
+    
+    // デフォルトはそのまま返す
+    return provider;
+  };
 
   // Apple Private Relay メールアドレスを検出する関数
   const isApplePrivateRelayEmail = (email: string | null): boolean => {
@@ -37,21 +75,21 @@ export default function Account() {
   // 表示用のメールアドレスを取得する関数
   const getDisplayEmail = (email: string | null): string | null => {
     if (!email) return null;
-    return isApplePrivateRelayEmail(email) ? '非公開' : email;
+    return isApplePrivateRelayEmail(email) ? t('account.info.privateEmail') : email;
   };
 
   // アカウント削除処理
   const handleDeleteAccount = () => {
     Alert.alert(
-      "アカウント削除",
-      "この操作は取り消すことができません。本当にアカウントを削除しますか？",
+      t('account.deleteAccount.title'),
+      t('account.deleteAccount.message'),
       [
         {
-          text: "キャンセル",
+          text: t('common.cancel'),
           style: "cancel",
         },
         {
-          text: "削除",
+          text: t('account.deleteAccount.delete'),
           style: "destructive",
           onPress: () => setShowDeleteAccountModal(true),
         },
@@ -66,16 +104,22 @@ export default function Account() {
 
   // 作成日のフォーマット
   const formatCreatedAt = (createdAt: string | null) => {
-    if (!createdAt) return '不明';
+    if (!createdAt) return t('account.info.unknown');
     try {
       const date = new Date(createdAt);
-      return date.toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+      return i18n.language === 'ja' 
+        ? date.toLocaleDateString('ja-JP', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })
+        : date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
     } catch {
-      return '不明';
+      return t('account.info.unknown');
     }
   };
 
@@ -190,22 +234,22 @@ export default function Account() {
       <ScrollView contentContainerStyle={{ paddingTop: 16 }}>
         {/* アカウント情報セクション */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>アカウント情報</Text>
+          <Text style={styles.sectionTitle}>{t('account.sections.accountInfo')}</Text>
 
           <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>認証方法</Text>
-            <Text style={styles.infoValue}>{userInfo.provider}</Text>
+            <Text style={styles.infoLabel}>{t('account.info.authMethod')}</Text>
+            <Text style={styles.infoValue}>{getAuthMethodText(userInfo.provider)}</Text>
           </View>
 
           {userInfo.email && (
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>メールアドレス</Text>
+              <Text style={styles.infoLabel}>{t('account.info.email')}</Text>
               <Text style={styles.infoValue}>{getDisplayEmail(userInfo.email)}</Text>
             </View>
           )}
 
           <View style={[styles.infoItem, { borderBottomWidth: 0 }]}>
-            <Text style={styles.infoLabel}>アカウント作成日</Text>
+            <Text style={styles.infoLabel}>{t('account.info.createdDate')}</Text>
             <Text style={styles.infoValue}>
               {formatCreatedAt(userInfo.createdAt)}
             </Text>
@@ -214,9 +258,9 @@ export default function Account() {
 
         {/* 危険な操作セクション */}
         <View style={styles.dangerSection}>
-          <Text style={styles.dangerTitle}>危険な操作</Text>
+          <Text style={styles.dangerTitle}>{t('account.sections.dangerZone')}</Text>
           <Text style={styles.dangerDescription}>
-            アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消すことができません。
+            {t('account.deleteAccount.description')}
           </Text>
 
           <TouchableOpacity
@@ -224,7 +268,7 @@ export default function Account() {
             onPress={handleDeleteAccount}
           >
             <Ionicons name="trash-outline" size={20} color={theme.error} />
-            <Text style={styles.deleteButtonText}>アカウントを削除</Text>
+            <Text style={styles.deleteButtonText}>{t('account.deleteAccount.button')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

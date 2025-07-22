@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTheme } from '../contexts/ThemeContext';
@@ -55,6 +56,7 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
   const theme = useTheme();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState<Array<{ day: number; date: string } | null>>([]);
+  const { t, i18n } = useTranslation();
 
   // カレンダーを今日の日付にリセットする関数
   const resetCalendarToToday = () => {
@@ -78,14 +80,19 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
   // 現在表示中の月が今月かどうかをチェック
   const isCurrentMonthToday = currentYear === todayYear && currentMonth === todayMonth;
 
-  // 月の名前
-  const monthNames = [
-    '1月', '2月', '3月', '4月', '5月', '6月',
-    '7月', '8月', '9月', '10月', '11月', '12月'
+  // 月の名前を取得する関数（多言語対応）
+  const getMonthNames = () => [
+    t('months.january'), t('months.february'), t('months.march'),
+    t('months.april'), t('months.may'), t('months.june'),
+    t('months.july'), t('months.august'), t('months.september'),
+    t('months.october'), t('months.november'), t('months.december')
   ];
 
-  // 曜日の名前
-  const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+  // 曜日の名前を取得する関数（多言語対応）
+  const getDayNames = () => [
+    t('days.sunday'), t('days.monday'), t('days.tuesday'),
+    t('days.wednesday'), t('days.thursday'), t('days.friday'), t('days.saturday')
+  ];
 
   // 前の月に移動
   const goToPreviousMonth = useCallback(() => {
@@ -188,7 +195,7 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
     return (
       <View>
         <View style={styles.daysHeader}>
-          {dayNames.map((day, index) => (
+          {getDayNames().map((day, index) => (
             <Text key={index} style={[
               styles.dayName,
               index === 0 ? styles.sundayText : null,
@@ -429,11 +436,11 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
       <View style={[styles.legend, customStyle.legend]}>
         <View style={styles.legendItem}>
           <View style={styles.wearIndicator} />
-          <Text style={styles.legendText}>着用</Text>
+          <Text style={styles.legendText}>{t('wear')}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={styles.washIndicator} />
-          <Text style={styles.legendText}>洗濯</Text>
+          <Text style={styles.legendText}>{t('wash')}</Text>
         </View>
       </View>
     );
@@ -447,7 +454,9 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
-          <Text style={styles.monthText}>{currentYear}年 {monthNames[currentMonth]}</Text>
+          <Text style={styles.monthText}>
+            {i18n.language === 'ja' ? `${currentYear}年 ${getMonthNames()[currentMonth]}` : `${getMonthNames()[currentMonth]} ${currentYear}`}
+          </Text>
           {onResetToToday && (selectedDate || !isCurrentMonthToday) && (
             <TouchableOpacity
               style={styles.todayButton}
@@ -457,7 +466,7 @@ const HistoryCalendar = forwardRef<HistoryCalendarRefType, HistoryCalendarProps>
               }}
             >
               <Ionicons name="refresh-outline" size={16} color="#3498db" />
-              <Text style={styles.todayButtonText}>表示をリセット</Text>
+              <Text style={styles.todayButtonText}>{t('reset_display')}</Text>
             </TouchableOpacity>
           )}
         </View>

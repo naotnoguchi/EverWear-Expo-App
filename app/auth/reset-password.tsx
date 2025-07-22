@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -11,15 +12,16 @@ export default function ResetPasswordScreen() {
   const { updatePassword, recoveryToken, clearRecoveryToken, signOut } = useAuth();
   const theme = useTheme();
   const params = useLocalSearchParams<{ email?: string; token?: string }>();
+  const { t } = useTranslation();
 
   const handleResetPassword = async () => {
     if (!password || !confirmPassword) {
-      Alert.alert('エラー', '全ての項目を入力してください');
+      Alert.alert(t('common.error'), t('resetPassword.alert.emptyFields'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('エラー', 'パスワードが一致しません');
+      Alert.alert(t('common.error'), t('resetPassword.alert.passwordMismatch'));
       return;
     }
 
@@ -28,7 +30,7 @@ export default function ResetPasswordScreen() {
 
       // OTPベースのパスワードリセットではrecoveryTokenのみを使用
       if (!recoveryToken) {
-        Alert.alert('エラー', '認証トークンが見つかりません。パスワードリセットを再度実行してください。');
+        Alert.alert(t('common.error'), t('resetPassword.alert.tokenMissing'));
         return;
       }
 
@@ -43,17 +45,17 @@ export default function ResetPasswordScreen() {
       // ログアウト完了後にアラート表示
       setTimeout(() => {
         Alert.alert(
-          'パスワード変更完了',
-          'セキュリティのため、新しいパスワードで再度ログインしてください。',
+          t('resetPassword.successTitle'),
+          t('resetPassword.successMessage'),
           [{ 
-            text: 'OK', 
+            text: t('common.ok'), 
             onPress: () => router.replace('/auth/login')
           }]
         );
       }, 100); // 100ms待機してからアラート表示
     } catch (error: any) {
       console.error('Password reset error:', error);
-      Alert.alert('エラー', error.message || 'パスワードの変更に失敗しました');
+      Alert.alert(t('common.error'), error.message || t('resetPassword.alert.failed'));
     } finally {
       setIsLoading(false);
     }
@@ -62,11 +64,11 @@ export default function ResetPasswordScreen() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Text style={[styles.title, { color: theme.text }]}>新しいパスワードを設定</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{t('resetPassword.title')}</Text>
 
         <TextInput
           style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-          placeholder="新しいパスワード"
+          placeholder={t('resetPassword.placeholder.newPassword')}
           placeholderTextColor={theme.textSecondary}
           value={password}
           onChangeText={setPassword}
@@ -75,7 +77,7 @@ export default function ResetPasswordScreen() {
 
         <TextInput
           style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-          placeholder="新しいパスワード（確認）"
+          placeholder={t('resetPassword.placeholder.newPasswordConfirm')}
           placeholderTextColor={theme.textSecondary}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
@@ -88,7 +90,7 @@ export default function ResetPasswordScreen() {
           disabled={isLoading}
         >
           <Text style={styles.buttonText}>
-            {isLoading ? '処理中...' : 'パスワードを変更'}
+            {isLoading ? t('common.loading.processing') : t('resetPassword.button.change')}
           </Text>
         </TouchableOpacity>
       </View>

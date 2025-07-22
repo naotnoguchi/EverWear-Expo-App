@@ -1,11 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { Alert, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { Alert, Keyboard, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import AppleAuthButton from '../../components/AppleAuthButton';
 import GoogleAuthButton from '../../components/GoogleAuthButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { getPrivacyUrl, getTermsUrl } from '../../lib/i18n';
 
 export default function LinkAccountScreen() {
   const [email, setEmail] = useState('');
@@ -15,6 +17,7 @@ export default function LinkAccountScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const { isAnonymous, startEmailLinking, linkGoogleIdentity, linkAppleIdentity, setTempLinkPassword } = useAuth();
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
 
   // 自動フォーカス用のref
   const emailInputRef = useRef<TextInput>(null);
@@ -37,30 +40,30 @@ export default function LinkAccountScreen() {
 
   const handleEmailPasswordLink = async () => {
     if (!email) {
-      Alert.alert('エラー', 'メールアドレスを入力してください');
+      Alert.alert(t('common.error'), t('linkAccount.alerts.validation.emailRequired'));
       return;
     }
 
     // 簡単なメールアドレス形式チェック
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert('エラー', '有効なメールアドレスを入力してください');
+      Alert.alert(t('common.error'), t('linkAccount.alerts.validation.emailInvalid'));
       return;
     }
 
     // パスワードバリデーション
     if (!password || !confirmPassword) {
-      Alert.alert('エラー', 'パスワードを入力してください');
+      Alert.alert(t('common.error'), t('linkAccount.alerts.validation.passwordRequired'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('エラー', 'パスワードが一致しません');
+      Alert.alert(t('common.error'), t('linkAccount.alerts.validation.passwordMismatch'));
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert('エラー', 'パスワードは8文字以上で入力してください');
+      Alert.alert(t('common.error'), t('linkAccount.alerts.validation.passwordTooShort'));
       return;
     }
 
@@ -71,10 +74,10 @@ export default function LinkAccountScreen() {
       setTempLinkPassword(password);
       await startEmailLinking(email);
       Alert.alert(
-        '確認コード送信',
-        'メールに 6 桁の確認コードを送信しました。\n\nコードを入力してメールアドレスを確認してください。',
+        t('linkAccount.alerts.codeSent.title'),
+        t('linkAccount.alerts.codeSent.message'),
         [{ 
-          text: 'OK', 
+          text: t('common.ok'), 
           onPress: () => router.replace({ 
             pathname: '/auth/verify', 
             params: { 
@@ -85,7 +88,7 @@ export default function LinkAccountScreen() {
         }]
       );
     } catch (error: any) {
-      Alert.alert('紐付けエラー', error.message || 'アカウント紐付けに失敗しました');
+      Alert.alert(t('linkAccount.alerts.error.linkingTitle'), error.message || t('linkAccount.alerts.error.linkingFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -97,14 +100,14 @@ export default function LinkAccountScreen() {
       await linkGoogleIdentity();
       // 成功時のフィードバック
       Alert.alert(
-        'アカウント登録完了！',
-        'Googleアカウントの登録が完了しました。\n\nデータは引き続き安全に利用できます。',
+        t('linkAccount.alerts.success.title'),
+        t('linkAccount.alerts.success.googleMessage'),
         [
-          { text: 'OK', onPress: () => router.replace('/') },
+          { text: t('common.ok'), onPress: () => router.replace('/') },
         ]
       );
     } catch (error: any) {
-      Alert.alert('アカウント登録エラー', error.message || 'Google認証に失敗しました');
+      Alert.alert(t('linkAccount.alerts.error.title'), error.message || t('linkAccount.alerts.error.googleFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -116,14 +119,14 @@ export default function LinkAccountScreen() {
       await linkAppleIdentity();
       // 成功時のフィードバック
       Alert.alert(
-        'アカウント登録完了！',
-        'Appleアカウントの登録が完了しました。\n\nデータは引き続き安全に利用できます。',
+        t('linkAccount.alerts.success.title'),
+        t('linkAccount.alerts.success.appleMessage'),
         [
-          { text: 'OK', onPress: () => router.replace('/') },
+          { text: t('common.ok'), onPress: () => router.replace('/') },
         ]
       );
     } catch (error: any) {
-      Alert.alert('アカウント登録エラー', error.message || 'Apple認証に失敗しました');
+      Alert.alert(t('linkAccount.alerts.error.title'), error.message || t('linkAccount.alerts.error.appleFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -136,7 +139,7 @@ export default function LinkAccountScreen() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Text style={[styles.title, { color: theme.text }]}>アカウント登録</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{t('linkAccount.title')}</Text>
 
         {/* 案内メッセージ */}
         <View style={[styles.notice, {
@@ -145,7 +148,7 @@ export default function LinkAccountScreen() {
         }]}>
           <Ionicons name="information-circle" size={20} color={theme.primary} />
           <Text style={[styles.noticeText, { color: theme.text }]}>
-            アカウント登録すると、現在のデータを引き続き安全に利用できます
+            {t('linkAccount.notice')}
           </Text>
         </View>
 
@@ -153,12 +156,12 @@ export default function LinkAccountScreen() {
         {showEmailForm && (
           <>
             {/* メールアドレスを入力してください */}
-            <Text style={[styles.description, { color: theme.textSecondary, marginBottom: 10 }]}>メールアドレスとパスワードを入力してください</Text>
+            <Text style={[styles.description, { color: theme.textSecondary, marginBottom: 10 }]}>{t('linkAccount.description.emailForm')}</Text>
 
             <TextInput
               ref={emailInputRef}
               style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-              placeholder="メールアドレス"
+              placeholder={t('linkAccount.form.placeholder.email')}
               placeholderTextColor={theme.textSecondary}
               value={email}
               onChangeText={setEmail}
@@ -168,7 +171,7 @@ export default function LinkAccountScreen() {
 
             <TextInput
               style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-              placeholder="パスワード (8文字以上)"
+              placeholder={t('linkAccount.form.placeholder.password')}
               placeholderTextColor={theme.textSecondary}
               value={password}
               onChangeText={setPassword}
@@ -177,7 +180,7 @@ export default function LinkAccountScreen() {
 
             <TextInput
               style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-              placeholder="パスワード (確認)"
+              placeholder={t('linkAccount.form.placeholder.confirmPassword')}
               placeholderTextColor={theme.textSecondary}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
@@ -190,7 +193,7 @@ export default function LinkAccountScreen() {
               disabled={isLoading}
             >
               <Text style={[styles.buttonText, { color: '#ffffff' }]}>
-                {isLoading ? '送信中...' : '確認コードを送信'}
+                {isLoading ? t('linkAccount.form.button.sending') : t('linkAccount.form.button.sendCode')}
               </Text>
             </TouchableOpacity>
 
@@ -200,7 +203,7 @@ export default function LinkAccountScreen() {
               disabled={isLoading}
             >
               <Text style={[styles.backButtonText, { color: theme.primary }]}>
-                戻る
+                {t('linkAccount.form.button.back')}
               </Text>
             </TouchableOpacity>
           </>
@@ -210,7 +213,7 @@ export default function LinkAccountScreen() {
         {!showEmailForm && (
           <>
             <Text style={[styles.description, { color: theme.textSecondary }]}>
-              データを引き続き安全に利用するため、アカウント登録をお願いします。
+              {t('linkAccount.description.main')}
             </Text>
 
             {/* メール/パスワード紐付けオプション */}
@@ -220,7 +223,7 @@ export default function LinkAccountScreen() {
             >
               <Ionicons name="mail-outline" size={20} color={theme.text} />
               <Text style={[styles.linkingOptionText, { color: theme.text }]}>
-                メール/パスワードで登録
+                {t('linkAccount.options.email')}
               </Text>
             </TouchableOpacity>
 
@@ -229,7 +232,7 @@ export default function LinkAccountScreen() {
               onPress={handleGoogleLink}
               disabled={isLoading}
               loading={isLoading}
-              text={isLoading ? "Google認証中..." : "Googleアカウントで登録"}
+              text={isLoading ? t('linkAccount.options.googleLoading') : t('linkAccount.options.google')}
               style={{ marginBottom: 15 }}
             />
 
@@ -247,21 +250,21 @@ export default function LinkAccountScreen() {
 
         {/* 規約同意注釈 */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 12 }}>
-          <Text style={{ color: theme.textSecondary }}>いずれかの登録方法を選択すると、</Text>
+          <Text style={{ color: theme.textSecondary }}>{t('linkAccount.agreement.prefix')}</Text>
           <Text
             style={{ color: theme.primary, textDecorationLine: 'underline' }}
-            onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/terms.html', title: '利用規約' } })}
+            onPress={() => router.push({ pathname: '/webview', params: { url: getTermsUrl(), title: t('linkAccount.agreement.terms') } })}
           >
-            利用規約
+            {t('linkAccount.agreement.terms')}
           </Text>
-          <Text style={{ color: theme.textSecondary }}>と</Text>
+          <Text style={{ color: theme.textSecondary }}>{i18n.language === 'ja' ? 'と' : ' and '}</Text>
           <Text
             style={{ color: theme.primary, textDecorationLine: 'underline' }}
-            onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/privacy.html', title: 'プライバシーポリシー' } })}
+            onPress={() => router.push({ pathname: '/webview', params: { url: getPrivacyUrl(), title: t('linkAccount.agreement.privacy') } })}
           >
-            プライバシーポリシー
+            {t('linkAccount.agreement.privacy')}
           </Text>
-          <Text style={{ color: theme.textSecondary }}>に同意したものとみなします。</Text>
+          <Text style={{ color: theme.textSecondary }}>{t('linkAccount.agreement.suffix')}</Text>
         </View>
       </View>
     </TouchableWithoutFeedback>

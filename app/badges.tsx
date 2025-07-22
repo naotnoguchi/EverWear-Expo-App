@@ -1,13 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { formatDateLocalized } from "../lib/dateUtils";
 import type { BadgeWithStatus } from "../services/badgeService";
 
 export default function BadgesScreen() {
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
 
   // 統計コンテキストを使用
   const {
@@ -65,12 +68,12 @@ export default function BadgesScreen() {
   // Get badge category display name
   const getCategoryName = (category: string) => {
     switch (category) {
-      case 'usage': return '使用実績';
-      case 'efficiency': return '効率化';
-      case 'milestone': return 'マイルストーン';
-      case 'achievement': return '実績';
-      case 'special': return '特別';
-      default: return 'その他';
+      case 'usage': return t('badges.categories.usage', '使用実績');
+      case 'efficiency': return t('badges.categories.efficiency', '効率化');
+      case 'milestone': return t('badges.categories.milestone', 'マイルストーン');
+      case 'achievement': return t('badges.categories.achievement', '実績');
+      case 'special': return t('badges.categories.special', '特別');
+      default: return t('badges.categories.other', 'その他');
     }
   };
 
@@ -109,23 +112,23 @@ export default function BadgesScreen() {
       <View style={styles.badgeInfo}>
         <View style={styles.badgeHeader}>
           <Text style={[styles.badgeName, { color: theme.text }]}>
-            {item.name}
+            {t(item.nameKey)}
           </Text>
           {item.isEarned && (
             <View style={styles.earnedBadge}>
               <Ionicons name="checkmark" size={12} color="white" />
-              <Text style={styles.earnedText}>獲得済み</Text>
+              <Text style={styles.earnedText}>{t('badges.earned', '獲得済み')}</Text>
             </View>
           )}
         </View>
 
         <Text style={[styles.badgeDescription, { color: theme.text + 'CC' }]}>
-          {item.description}
+          {t(item.descKey)}
         </Text>
 
         {item.isEarned ? (
           <Text style={[styles.earnedDate, { color: theme.text + '99' }]}>
-            獲得日: {new Date(item.earnedDate || '').toLocaleDateString('ja-JP')}
+            {t('badges.earnedDate')}: {item.earnedDate ? formatDateLocalized(item.earnedDate, i18n.language) : t('badges.unknownDate')}
           </Text>
         ) : (
           <View style={styles.progressContainer}>
@@ -138,7 +141,7 @@ export default function BadgesScreen() {
               /> 
             </View>
             <Text style={[styles.progressText, { color: theme.text + '99' }]}>
-              {item.progress || 0}% 達成
+              {item.progress || 0}% {t('badges.achieved', '達成')}
             </Text>
           </View>
         )}
@@ -154,19 +157,19 @@ export default function BadgesScreen() {
 
   // Category filter options
   const categoryOptions: { label: string; value: string }[] = [
-    { label: 'すべて', value: 'all' },
-    { label: '使用実績', value: 'usage' },
-    { label: '効率化', value: 'efficiency' },
-    { label: 'マイルストーン', value: 'milestone' },
-    { label: '実績', value: 'achievement' },
-    { label: '特別', value: 'special' },
+    { label: t('common.all', 'すべて'), value: 'all' },
+    { label: t('badges.categories.usage', '使用実績'), value: 'usage' },
+    { label: t('badges.categories.efficiency', '効率化'), value: 'efficiency' },
+    { label: t('badges.categories.milestone', 'マイルストーン'), value: 'milestone' },
+    { label: t('badges.categories.achievement', '実績'), value: 'achievement' },
+    { label: t('badges.categories.special', '特別'), value: 'special' },
   ];
 
   // Earned status filter options
   const earnedOptions: { label: string; value: 'all' | 'earned' | 'unearned' }[] = [
-    { label: 'すべて', value: 'all' },
-    { label: '獲得済み', value: 'earned' },
-    { label: '未獲得', value: 'unearned' },
+    { label: t('common.all', 'すべて'), value: 'all' },
+    { label: t('badges.earned', '獲得済み'), value: 'earned' },
+    { label: t('badges.unearned', '未獲得'), value: 'unearned' },
   ];
 
   const styles = StyleSheet.create({
@@ -189,16 +192,23 @@ export default function BadgesScreen() {
       shadowOpacity: 0.1,
       shadowRadius: 2,
     },
-    statsHeader: {
+    statsHeaderContainer: {
       flexDirection: 'row',
-      alignItems: 'center',
       justifyContent: 'space-between',
+      alignItems: 'center',
       marginBottom: 16,
     },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      marginRight: 12,
+    },
     statsTitle: {
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: 'bold',
       marginLeft: 8,
+      flexShrink: 1,
     },
     statsContent: {
       flexDirection: 'row',
@@ -364,15 +374,18 @@ export default function BadgesScreen() {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 8,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 6,
+      flexShrink: 0,
+      maxWidth: 120,
     },
     overviewButtonText: {
       color: 'white',
       fontWeight: 'bold',
-      fontSize: 14,
-      marginLeft: 6,
+      fontSize: 12,
+      marginLeft: 4,
+      flexShrink: 1,
     },
   });
 
@@ -381,7 +394,7 @@ export default function BadgesScreen() {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={{ marginTop: 16, color: theme.text }}>バッジデータを読み込み中...</Text>
+        <Text style={{ marginTop: 16, color: theme.text }}>{t('badges.loading')}</Text>
       </View>
     );
   }
@@ -393,7 +406,7 @@ export default function BadgesScreen() {
         <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
         <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={fetchBadgesData}>
-          <Text style={styles.retryButtonText}>再試行</Text>
+          <Text style={styles.retryButtonText}>{t('badges.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -409,26 +422,28 @@ export default function BadgesScreen() {
     <>
       <Stack.Screen 
         options={{
-          title: "バッジ・アチーブメント",
-          headerBackTitle: "戻る",
+          title: t('badges.title'),
+          headerBackTitle: t('common.back'),
         }} 
       />
       <View style={styles.container}>
         {/* Badge statistics */}
         <View style={[styles.statsCard, { backgroundColor: theme.card }]}>
-          <View style={styles.statsHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={styles.statsHeaderContainer}>
+            <View style={styles.titleRow}>
               <Ionicons name="ribbon" size={24} color={theme.primary} />
               <Text style={[styles.statsTitle, { color: theme.text }]}>
-                バッジコレクション
+                {t('badges.collection')}
               </Text>
             </View>
             <TouchableOpacity 
               style={styles.overviewButton}
               onPress={() => router.push('/badges-overview')}
             >
-              <Ionicons name="grid" size={16} color="white" />
-              <Text style={styles.overviewButtonText}>一覧を表示</Text>
+              <Ionicons name="grid" size={14} color="white" />
+              <Text style={styles.overviewButtonText} numberOfLines={1}>
+                {t('badges.showOverview')}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -438,7 +453,7 @@ export default function BadgesScreen() {
                 {earnedBadges}/{totalBadges}
               </Text>
               <Text style={[styles.statLabel, { color: theme.text + '99' }]}>
-                獲得バッジ
+                {t('badges.earnedBadges')}
               </Text>
             </View>
 
@@ -452,7 +467,7 @@ export default function BadgesScreen() {
                 />
               </View>
               <Text style={[styles.progressText, { color: theme.text + '99' }]}> 
-                {earnedPercentage}% 達成
+                {earnedPercentage}% {t('badges.achieved')}
               </Text>
             </View>
           </View>
@@ -462,7 +477,7 @@ export default function BadgesScreen() {
         <View style={styles.filtersContainer}>
           {/* Category filter */}
           <View style={styles.filterSection}>
-            <Text style={[styles.filterLabel, { color: theme.text }]}>カテゴリ</Text>
+            <Text style={[styles.filterLabel, { color: theme.text }]}>{t('badges.categoryFilter')}</Text>
             <View style={styles.optionsRow}>
               {categoryOptions.map((option) => (
                 <TouchableOpacity
@@ -490,7 +505,7 @@ export default function BadgesScreen() {
 
           {/* Earned status filter */}
           <View style={styles.filterSection}>
-            <Text style={[styles.filterLabel, { color: theme.text }]}>獲得状況</Text>
+            <Text style={[styles.filterLabel, { color: theme.text }]}>{t('badges.statusFilter')}</Text>
             <View style={styles.optionsRow}>
               {earnedOptions.map((option) => (
                 <TouchableOpacity
@@ -531,10 +546,10 @@ export default function BadgesScreen() {
             <View style={styles.emptyContainer}>
               <Ionicons name="ribbon-outline" size={64} color={theme.text + "66"} />
               <Text style={[styles.emptyText, { color: theme.text }]}>
-                該当するバッジがありません
+                {t('badges.noMatchingBadges')}
               </Text>
               <Text style={[styles.emptySubtext, { color: theme.text + "99" }]}>
-                フィルター条件を変更してお試しください
+                {t('badges.changeFilters')}
               </Text>
             </View>
           )
@@ -542,10 +557,10 @@ export default function BadgesScreen() {
           <View style={styles.emptyContainer}>
             <Ionicons name="ribbon-outline" size={64} color={theme.text + "66"} />
             <Text style={[styles.emptyText, { color: theme.text }]}>
-              バッジデータを読み込み中です
+              {t('badges.loadingBadges')}
             </Text>
             <Text style={[styles.emptySubtext, { color: theme.text + "99" }]}>
-              しばらくお待ちください
+              {t('badges.pleaseWait')}
             </Text>
           </View>
         )}

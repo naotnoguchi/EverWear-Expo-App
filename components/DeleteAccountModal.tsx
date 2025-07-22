@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
@@ -30,6 +31,7 @@ export default function DeleteAccountModal({
 }: DeleteAccountModalProps) {
   const theme = useTheme();
   const { user, deleteAccount, getAuthProvider, signInWithGoogle, signInWithApple } = useAuth();
+  const { t } = useTranslation();
 
   const [step, setStep] = useState<'warning' | 'auth' | 'final'>('warning');
   const [password, setPassword] = useState('');
@@ -65,14 +67,14 @@ export default function DeleteAccountModal({
       });
 
       if (error) {
-        setAuthError('パスワードが正しくありません');
+        setAuthError(t('deleteAccount.auth.passwordError'));
         return;
       }
 
       // 認証成功、最終確認へ
       setStep('final');
     } catch (error) {
-      setAuthError('認証に失敗しました');
+      setAuthError(t('deleteAccount.auth.authError'));
     } finally {
       setIsAuthenticating(false);
     }
@@ -87,7 +89,7 @@ export default function DeleteAccountModal({
       // Google認証成功後、最終確認へ
       setStep('final');
     } catch (error) {
-      setAuthError('Google認証に失敗しました');
+      setAuthError(t('deleteAccount.auth.googleError'));
     } finally {
       setIsAuthenticating(false);
     }
@@ -109,7 +111,7 @@ export default function DeleteAccountModal({
         error.message?.includes('The user canceled');
 
       if (!isUserCanceled) {
-        setAuthError('Apple認証に失敗しました');
+        setAuthError(t('deleteAccount.auth.appleError'));
       }
     } finally {
       setIsAuthenticating(false);
@@ -123,11 +125,11 @@ export default function DeleteAccountModal({
       await deleteAccount();
 
       Alert.alert(
-        'アカウント削除完了',
-        'アカウントが正常に削除されました。',
+        t('deleteAccount.success.title'),
+        t('deleteAccount.success.message'),
         [
           {
-            text: 'OK',
+            text: t('common.ok'),
             onPress: () => {
               handleClose();
               onAccountDeleted();
@@ -137,9 +139,9 @@ export default function DeleteAccountModal({
       );
     } catch (error: any) {
       Alert.alert(
-        'エラー',
-        error.message || 'アカウント削除中にエラーが発生しました。',
-        [{ text: 'OK' }]
+        t('common.error'),
+        error.message || t('deleteAccount.error.message'),
+        [{ text: t('common.ok') }]
       );
     } finally {
       setIsLoading(false);
@@ -153,33 +155,33 @@ export default function DeleteAccountModal({
       </View>
 
       <Text style={[styles.title, { color: theme.text }]}>
-        アカウントを削除しますか？
+        {t('deleteAccount.warning.title')}
       </Text>
 
       <Text style={[styles.warningText, { color: theme.textSecondary }]}>
-        アカウントを削除すると、以下のデータがすべて完全に削除されます：
+        {t('deleteAccount.warning.description')}
       </Text>
 
       <View style={styles.dataList}>
         <Text style={[styles.dataItem, { color: theme.textSecondary }]}>
-          • すべての衣類データ
+          • {t('deleteAccount.warning.data.clothing')}
         </Text>
         <Text style={[styles.dataItem, { color: theme.textSecondary }]}>
-          • 着用履歴と洗濯履歴
+          • {t('deleteAccount.warning.data.history')}
         </Text>
         <Text style={[styles.dataItem, { color: theme.textSecondary }]}>
-          • 獲得したバッジ
+          • {t('deleteAccount.warning.data.badges')}
         </Text>
         <Text style={[styles.dataItem, { color: theme.textSecondary }]}>
-          • アップロードした画像
+          • {t('deleteAccount.warning.data.images')}
         </Text>
         <Text style={[styles.dataItem, { color: theme.textSecondary }]}>
-          • サブスクリプション情報
+          • {t('deleteAccount.warning.data.subscription')}
         </Text>
       </View>
 
       <Text style={[styles.warningNote, { color: theme.error }]}>
-        ⚠️ この操作は取り消すことができません
+        ⚠️ {t('deleteAccount.warning.irreversible')}
       </Text>
 
       <View style={styles.buttonContainer}>
@@ -188,7 +190,7 @@ export default function DeleteAccountModal({
           onPress={handleClose}
         >
           <Text style={[styles.buttonText, { color: theme.text }]}>
-            キャンセル
+            {t('common.cancel')}
           </Text>
         </TouchableOpacity>
 
@@ -197,7 +199,7 @@ export default function DeleteAccountModal({
           onPress={handleWarningContinue}
         >
           <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
-            削除を続行
+            {t('deleteAccount.warning.continue')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -210,11 +212,11 @@ export default function DeleteAccountModal({
       style={styles.contentContainer}
     >
       <Text style={[styles.title, { color: theme.text }]}>
-        本人確認
+        {t('deleteAccount.auth.title')}
       </Text>
 
       <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-        アカウントを削除するには、再度認証が必要です
+        {t('deleteAccount.auth.subtitle')}
       </Text>
 
       {authProvider === 'email' && (
@@ -223,7 +225,7 @@ export default function DeleteAccountModal({
             <Ionicons name="lock-closed-outline" size={20} color={theme.textSecondary} />
             <TextInput
               style={[styles.input, { color: theme.text }]}
-              placeholder="パスワードを入力"
+              placeholder={t('deleteAccount.auth.passwordPlaceholder')}
               placeholderTextColor={theme.textSecondary}
               value={password}
               onChangeText={setPassword}
@@ -252,7 +254,7 @@ export default function DeleteAccountModal({
               <ActivityIndicator color="#FFFFFF" />
             ) : (
               <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
-                確認
+                {t('deleteAccount.auth.confirm')}
               </Text>
             )}
           </TouchableOpacity>
@@ -265,7 +267,7 @@ export default function DeleteAccountModal({
             onPress={handleGoogleAuth}
             disabled={isAuthenticating}
             loading={isAuthenticating}
-            text="Googleで再認証"
+            text={t('deleteAccount.auth.googleReauth')}
           />
           {authError ? (
             <Text style={[styles.errorText, { color: theme.error }]}>
@@ -288,7 +290,7 @@ export default function DeleteAccountModal({
               <>
                 <Ionicons name="logo-apple" size={24} color={theme.background} />
                 <Text style={[styles.socialButtonText, { color: theme.background }]}>
-                  Apple IDで再認証
+                  {t('deleteAccount.auth.appleReauth')}
                 </Text>
               </>
             )}
@@ -307,7 +309,7 @@ export default function DeleteAccountModal({
         onPress={handleClose}
       >
         <Text style={[styles.textButtonText, { color: theme.primary }]}>
-          キャンセル
+          {t('common.cancel')}
         </Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
@@ -320,16 +322,15 @@ export default function DeleteAccountModal({
       </View>
 
       <Text style={[styles.title, { color: theme.text }]}>
-        最終確認
+        {t('deleteAccount.final.title')}
       </Text>
 
       <Text style={[styles.finalWarningText, { color: theme.text }]}>
-        本当にアカウントを削除しますか？
+        {t('deleteAccount.final.question')}
       </Text>
 
       <Text style={[styles.finalWarningSubtext, { color: theme.textSecondary }]}>
-        この操作は取り消すことができません。
-        すべてのデータが完全に削除されます。
+        {t('deleteAccount.final.warning')}
       </Text>
 
       <View style={styles.buttonContainer}>
@@ -339,7 +340,7 @@ export default function DeleteAccountModal({
           disabled={isLoading}
         >
           <Text style={[styles.buttonText, { color: theme.text }]}>
-            キャンセル
+            {t('common.cancel')}
           </Text>
         </TouchableOpacity>
 
@@ -352,7 +353,7 @@ export default function DeleteAccountModal({
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
-              削除する
+              {t('deleteAccount.final.delete')}
             </Text>
           )}
         </TouchableOpacity>

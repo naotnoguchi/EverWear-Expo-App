@@ -2,42 +2,44 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import BrandSelector from "../components/BrandSelector";
 import { useClothing } from "../contexts/ClothingContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { showImagePickerOptions } from "../lib/imageUtils";
 
-// カテゴリ定義
-const categories = [
-  { id: "tops", name: "トップス", icon: "shirt-outline" },
-  { id: "bottoms", name: "ボトムス", icon: "file-tray-outline" },
-  { id: "jacket", name: "ジャケット", icon: "library-outline" },
-  { id: "outerwear", name: "アウター", icon: "hand-left-outline" },
-  { id: "setup", name: "セットアップ", icon: "layers-outline" },
-  { id: "dress", name: "ワンピース", icon: "woman-outline" },
-  { id: "shoes", name: "シューズ", icon: "footsteps-outline" },
-  { id: "bag", name: "バッグ", icon: "bag-outline" },
-  { id: "accessories", name: "小物", icon: "glasses-outline" },
-  { id: "others", name: "その他", icon: "ellipsis-horizontal-circle-outline" },
-];
-
 export default function AddItem() {
   const router = useRouter();
   const { addItem, loadBrands } = useClothing();
   const theme = useTheme();
+  const { t } = useTranslation();
+
+  // カテゴリ定義を多言語化対応に
+  const getCategories = () => [
+    { id: "tops", nameKey: "addItem.categories.tops", icon: "shirt-outline" },
+    { id: "bottoms", nameKey: "addItem.categories.bottoms", icon: "file-tray-outline" },
+    { id: "jacket", nameKey: "addItem.categories.jacket", icon: "library-outline" },
+    { id: "outerwear", nameKey: "addItem.categories.outerwear", icon: "hand-left-outline" },
+    { id: "setup", nameKey: "addItem.categories.setup", icon: "layers-outline" },
+    { id: "dress", nameKey: "addItem.categories.dress", icon: "woman-outline" },
+    { id: "shoes", nameKey: "addItem.categories.shoes", icon: "footsteps-outline" },
+    { id: "bag", nameKey: "addItem.categories.bag", icon: "bag-outline" },
+    { id: "accessories", nameKey: "addItem.categories.accessories", icon: "glasses-outline" },
+    { id: "others", nameKey: "addItem.categories.others", icon: "ellipsis-horizontal-circle-outline" },
+  ];
 
   // ブランド情報を読み込む
   useEffect(() => {
@@ -65,12 +67,12 @@ export default function AddItem() {
     // 入力内容があれば確認ダイアログを表示
     if (name || selectedCategory !== "" || washThreshold !== "3" || imageSelected || memo || condition || purchasePrice) {
       Alert.alert(
-        "編集内容の破棄",
-        "入力した内容は保存されません。よろしいですか？",
+        t('addItem.alerts.discardTitle'),
+        t('addItem.alerts.discardMessage'),
         [
-          { text: "キャンセル", style: "cancel" },
+          { text: t('addItem.actions.cancel'), style: "cancel" },
           { 
-            text: "破棄", 
+            text: t('addItem.actions.discard'), 
             style: "destructive",
             onPress: () => {
               triggerHaptic();
@@ -89,94 +91,69 @@ export default function AddItem() {
   const handleAddItem = async () => {
     // 入力検証
     if (!selectedCategory) {
-      Alert.alert("エラー", "カテゴリを選択してください");
+      Alert.alert(t('common.error'), t('addItem.alerts.categoryRequired'));
       return;
     }
 
     if (!imageSelected) {
-      Alert.alert("エラー", "画像を選択してください");
+      Alert.alert(t('common.error'), t('addItem.alerts.imageRequired'));
       return;
     }
 
-    if (!washThreshold || isNaN(Number(washThreshold)) || Number(washThreshold) <= 0) {
-      Alert.alert("エラー", "有効な洗濯閾値を入力してください");
+    const threshold = parseInt(washThreshold);
+    if (isNaN(threshold) || threshold <= 0) {
+      Alert.alert(t('common.error'), t('addItem.alerts.invalidWashThreshold'));
       return;
     }
 
-    // アイテム名とブランド入力は必須ではない
-
-    // 新しいアイテムオブジェクトを作成
-    const newItem = {
-      name: name.trim() || "", // 空文字列も許可
-      category: selectedCategory as any, // TypeScript型の回避
-      brand: brand,
-      image: "", // 空の文字列を設定（アップロード後にパスが設定される）
-      washThreshold: Number(washThreshold),
-      lastWorn: "",
-      wearCount: 0,
-      memo: memo,
-      condition: condition,
-      purchasePrice: purchasePrice ? Number(purchasePrice) : null,
-      wearHistory: [],
-      washHistory: [],
-      createdAt: new Date().toISOString()
-    };
+    setIsLoading(true);
+    setIsButtonPressed(true);
 
     try {
-      // ローディング状態を開始
-      setIsLoading(true);
+      const newItem = {
+        name,
+        category: selectedCategory as any, // TypeScript型の回避
+        brand,
+        image: selectedImageUri || "",
+        washThreshold: threshold,
+        lastWorn: "",
+        lastWashed: "", // linterエラー修正: lastWashedプロパティを追加
+        wearCount: 0,
+        memo,
+        condition,
+        purchasePrice: purchasePrice ? parseInt(purchasePrice) : null,
+        wearHistory: [],
+        washHistory: [],
+        createdAt: new Date().toISOString(),
+      };
 
-      // アイテムをデータストアに追加
       await addItem(newItem, selectedImageUri ?? undefined);
-
-      // 成功通知
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      // ローディング状態を終了
-      setIsLoading(false);
-
+      
       Alert.alert(
-        "成功",
-        "新しいアイテムが追加されました",
+        t('addItem.alerts.addSuccess'),
+        undefined,
         [
           {
-            text: "OK",
+            text: t('common.ok'),
             onPress: () => {
-              // 追加後は画面を閉じる
+              triggerHaptic();
               router.back();
-            },
-          },
-        ]
-      );
-    } catch (error) {
-      // ローディング状態を終了
-      setIsLoading(false);
-
-      // エラー通知
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-
-      // エラーメッセージを表示
-      const errorMessage = error instanceof Error ? error.message : "アイテムの追加に失敗しました";
-      Alert.alert(
-        "エラー", 
-        errorMessage,
-        [
-          {
-            text: "再試行",
-            onPress: () => handleAddItem()
-          },
-          {
-            text: "キャンセル",
-            style: "cancel"
+            }
           }
         ]
       );
+    } catch (err) {
+      console.error('Error adding item:', err);
+      Alert.alert(t('common.error'), t('addItem.alerts.addError'));
+    } finally {
+      setIsLoading(false);
+      setIsButtonPressed(false);
     }
   };
 
   const handleSelectImage = async () => {
     try {
-      const uri = await showImagePickerOptions();
+      const uri = await showImagePickerOptions(t);
       if (uri) {
         setSelectedImageUri(uri);
         setImageSelected(true);
@@ -184,12 +161,14 @@ export default function AddItem() {
       }
     } catch (error) {
       console.error('Error selecting image:', error);
-      Alert.alert("エラー", "画像の選択中にエラーが発生しました");
+      Alert.alert(t('common.error'), t('addItem.form.image.error'));
     }
   };
 
-  const handleCategorySelect = (category: string) => {
-    setSelectedCategory(category);
+  const handleCategorySelect = (categoryKey: string) => {
+    // 翻訳キーから実際のカテゴリ名を取得
+    const categoryId = getCategories().find(cat => cat.nameKey === categoryKey)?.id || '';
+    setSelectedCategory(categoryId);
     triggerHaptic();
   };
 
@@ -448,13 +427,13 @@ export default function AddItem() {
                     )}
                     <View style={styles.blurContainer}>
                       <Ionicons name="camera" size={40} color="#fff" />
-                      <Text style={styles.imageSelectedText}>タップして画像を変更</Text>
+                      <Text style={styles.imageSelectedText}>{t('addItem.form.image.selected')}</Text>
                     </View>
                   </>
                 ) : (
                   <>
                     <Ionicons name="camera" size={40} color="#3498db" />
-                    <Text style={styles.imageText}>タップして画像を選択</Text>
+                    <Text style={styles.imageText}>{t('addItem.form.image.placeholder')}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -462,31 +441,31 @@ export default function AddItem() {
 
             {/* カテゴリ選択（必須） */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>カテゴリ <Text style={styles.requiredText}>*必須</Text></Text>
+              <Text style={styles.label}>{t('addItem.form.category.label')} <Text style={styles.requiredText}>{t('addItem.form.required')}</Text></Text>
               <View style={styles.categoryContainer}>
-                {categories.map((category) => (
+                {getCategories().map((category) => (
                   <TouchableOpacity
                     key={category.id}
                     style={[
                       styles.categoryButton,
-                      selectedCategory === category.name && styles.selectedCategory,
+                      selectedCategory === category.id && styles.selectedCategory,
                     ]}
-                    onPress={() => handleCategorySelect(category.name)}
+                    onPress={() => handleCategorySelect(category.nameKey)}
                     activeOpacity={0.7}
                   >
                     <Ionicons 
                       name={category.icon as any} 
                       size={20} 
-                      color={selectedCategory === category.name ? "#fff" : theme.text + "99"} 
+                      color={selectedCategory === category.id ? "#fff" : theme.text + "99"} 
                       style={styles.categoryIcon}
                     />
                     <Text
                       style={[
                         styles.categoryText,
-                        selectedCategory === category.name && styles.selectedCategoryText,
+                        selectedCategory === category.id && styles.selectedCategoryText,
                       ]}
                     >
-                      {category.name}
+                      {t(category.nameKey)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -495,9 +474,10 @@ export default function AddItem() {
 
             {/* ブランド選択（任意） */}
             <View style={styles.inputGroup}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                <Text style={styles.label}>ブランド <Text style={styles.optionalText}>（任意）</Text></Text>
-                <TouchableOpacity onPress={() => Alert.alert('ブランドが見つからない場合', '設定タブの「お問い合わせ」からブランド追加のご要望をお送りください')}
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.label}>{t('addItem.form.brand.label')}</Text>
+                <TouchableOpacity 
+                  onPress={() => Alert.alert(t('addItem.form.brand.notFound'), t('addItem.form.brand.notFoundMessage'))}
                   hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   style={{ marginLeft: 4, marginTop: -6 }}>
                   <Ionicons name="help-circle-outline" size={18} color={theme.text + '99'} />
@@ -511,14 +491,14 @@ export default function AddItem() {
 
             {/* アイテム名入力（任意） */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>アイテム名 <Text style={styles.optionalText}>（任意）</Text></Text>
+              <Text style={styles.label}>{t('addItem.form.name.label')} <Text style={styles.optionalText}>{t('addItem.form.optional')}</Text></Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="text-outline" size={20} color={theme.text + "99"} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   value={name}
                   onChangeText={setName}
-                  placeholder="例: お気に入りの白シャツ"
+                  placeholder={t('addItem.form.name.placeholder')}
                   placeholderTextColor={theme.text + "77"}
                 />
               </View>
@@ -526,8 +506,8 @@ export default function AddItem() {
 
             {/* 洗濯閾値設定 */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>洗濯閾値</Text>
-              <Text style={styles.sublabel}>何回着用したら洗濯するか設定します</Text>
+              <Text style={styles.label}>{t('addItem.form.washThreshold.label')}</Text>
+              <Text style={styles.sublabel}>{t('addItem.form.washThreshold.description')}</Text>
 
               <View style={styles.thresholdContainer}>
                 <TouchableOpacity
@@ -546,26 +526,25 @@ export default function AddItem() {
 
                 <View style={styles.thresholdValueContainer}>
                   <Text style={styles.thresholdValue}>{washThreshold}</Text>
-                  <Text style={styles.thresholdUnit}>回</Text>
+                  <Text style={styles.thresholdUnit}>{t('addItem.form.washThreshold.unit')}</Text>
                 </View>
 
                 <TouchableOpacity
                   style={styles.thresholdButton}
                   onPress={() => {
-                    triggerHaptic();
                     const currentValue = Number(washThreshold);
+                    triggerHaptic();
                     setWashThreshold(String(currentValue + 1));
                   }}
                 >
-                  <Ionicons name="add" size={24} color="#3498db" /* Keep blue for brand consistency */ />
+                  <Ionicons name="add" size={24} color="#3498db" />
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* 状態選択 (新品/中古) */}
+            {/* 状態選択 */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>状態 <Text style={styles.optionalText}>（任意）</Text></Text>
-              <Text style={styles.sublabel}>新品で購入したか中古で購入したかを選択します</Text>
+              <Text style={styles.label}>{t('addItem.form.condition.label')}</Text>
               <View style={styles.categoryContainer}>
                 <TouchableOpacity
                   style={[
@@ -587,7 +566,7 @@ export default function AddItem() {
                       condition === "新品" && styles.selectedCategoryText,
                     ]}
                   >
-                    新品
+                    {t('addItem.form.condition.new')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -610,7 +589,7 @@ export default function AddItem() {
                       condition === "中古" && styles.selectedCategoryText,
                     ]}
                   >
-                    中古
+                    {t('addItem.form.condition.used')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -618,15 +597,14 @@ export default function AddItem() {
 
             {/* 購入価格入力 */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>購入価格 <Text style={styles.optionalText}>（任意）</Text></Text>
-              <Text style={styles.sublabel}>アイテムの購入価格を入力します</Text>
+              <Text style={styles.label}>{t('addItem.form.purchasePrice.label')}</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="pricetag-outline" size={20} color={theme.text + "99"} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   value={purchasePrice}
                   onChangeText={setPurchasePrice}
-                  placeholder="例: 5000"
+                  placeholder={t('addItem.form.purchasePrice.placeholder')}
                   placeholderTextColor={theme.text + "77"}
                   keyboardType="numeric"
                 />
@@ -635,15 +613,14 @@ export default function AddItem() {
 
             {/* メモ入力 */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>メモ <Text style={styles.optionalText}>（任意）</Text></Text>
-              <Text style={styles.sublabel}>アイテムに関するメモを入力します</Text>
+              <Text style={styles.label}>{t('addItem.form.memo.label')}</Text>
               <View style={[styles.inputContainer, { height: 100 }]}>
                 <Ionicons name="document-text-outline" size={20} color={theme.text + "99"} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
                   value={memo}
                   onChangeText={setMemo}
-                  placeholder="例: お気に入りのシャツ。冬はインナーとして着用。"
+                  placeholder={t('addItem.form.memo.placeholder')}
                   placeholderTextColor={theme.text + "77"}
                   multiline={true}
                   numberOfLines={4}
@@ -675,7 +652,9 @@ export default function AddItem() {
               ) : (
                 <Ionicons name="save-outline" size={20} color="#fff" style={styles.addButtonIcon} />
               )}
-              <Text style={styles.addButtonText}>アイテムを追加</Text>
+              <Text style={styles.addButtonText}>
+                {isLoading ? t('addItem.actions.adding') : t('addItem.actions.add')}
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

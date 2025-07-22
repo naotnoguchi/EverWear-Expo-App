@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
@@ -14,10 +15,15 @@ import { useAuth } from "../../contexts/AuthContext";
 import { usePremiumFeatures, usePurchase } from "../../contexts/PurchaseContext";
 import { useTabReset } from "../../contexts/TabResetContext";
 import { useTheme } from "../../contexts/ThemeContext";
+import { formatDateLocalized } from "../../lib/dateUtils";
+import { getContactUrl, getPrivacyUrl, getTermsUrl } from "../../lib/i18n";
 
 export default function Settings() {
   // Get router
   const router = useRouter();
+  
+  // Get translation function
+  const { t, i18n } = useTranslation();
 
   // Get auth functions
   const { signOut, isAnonymous, resetAnonymousData } = useAuth();
@@ -48,8 +54,8 @@ export default function Settings() {
     router.push({
       pathname: "/webview",
       params: {
-        url: "https://everwearapp.com/terms.html",
-        title: "利用規約"
+        url: getTermsUrl(),
+        title: t('settings.appInfo.terms')
       }
     });
   };
@@ -59,20 +65,19 @@ export default function Settings() {
     router.push({
       pathname: "/webview",
       params: {
-        url: "https://everwearapp.com/privacy.html",
-        title: "プライバシーポリシー"
+        url: getPrivacyUrl(),
+        title: t('settings.appInfo.privacy')
       }
     });
   };
 
   // Handle feedback
-  const FEEDBACK_URL = "https://forms.gle/wUCJnuHMkazHNF7B7";
   const handleFeedback = () => {
     router.push({
       pathname: "/webview",
       params: {
-        url: FEEDBACK_URL,
-        title: "お問い合わせ"
+        url: getContactUrl(),
+        title: t('settings.support.contact')
       }
     });
   };
@@ -80,22 +85,22 @@ export default function Settings() {
   // Handle logout
   const handleLogout = async () => {
     Alert.alert(
-      "ログアウト",
-      "本当にログアウトしますか？",
+      t('settings.actions.logout.title'),
+      t('settings.actions.logout.message'),
       [
         {
-          text: "キャンセル",
+          text: t('common.cancel'),
           style: "cancel",
         },
         {
-          text: "ログアウト",
+          text: t('settings.actions.logout.confirm'),
           onPress: async () => {
             try {
               await signOut();
               // The app will automatically redirect to the login screen
               // due to the auth state change and the logic in _layout.tsx
             } catch (error) {
-              Alert.alert("エラー", "ログアウトに失敗しました");
+              Alert.alert(t('common.error'), t('settings.actions.logout.error'));
               console.error("Logout error:", error);
             }
           },
@@ -109,15 +114,15 @@ export default function Settings() {
 
   const handleResetAnonymousData = async () => {
     Alert.alert(
-      "データリセット",
-      "全てのデータが削除され、ログイン画面に戻ります。\n\nこの操作は取り消すことができません。",
+      t('settings.actions.resetData.title'),
+      t('settings.actions.resetData.message'),
       [
         {
-          text: "キャンセル",
+          text: t('common.cancel'),
           style: "cancel",
         },
         {
-          text: "リセット",
+          text: t('settings.actions.resetData.confirm'),
           style: "destructive",
           onPress: async () => {
             setIsResetting(true);
@@ -126,9 +131,11 @@ export default function Settings() {
             } catch (error: any) {
               console.error("Reset error:", error);
               Alert.alert(
-                "エラー", 
-                `データリセットに失敗しました。\n\n${error.message || 'ネットワークエラーが発生しました'}\n\n再度お試しください。`,
-                [{ text: "OK" }]
+                t('common.error'), 
+                t('settings.actions.resetData.error', { 
+                  error: error.message || 'ネットワークエラーが発生しました' 
+                }),
+                [{ text: t('common.ok') }]
               );
             } finally {
               setIsResetting(false);
@@ -334,14 +341,14 @@ export default function Settings() {
       {/* 匿名ユーザー向けアカウント案内 */}
       {isAnonymous && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>アカウント</Text>
+          <Text style={styles.sectionTitle}>{t('settings.account.title')}</Text>
           <View style={[styles.anonymousNotice, { 
             backgroundColor: theme.background === '#000000' ? '#2d1b1b' : '#FFF0F0',
             borderColor: '#e74c3c' 
           }]}>
             <Ionicons name="information-circle" size={24} color="#e74c3c" />
             <Text style={styles.anonymousNoticeText}>
-              現在ゲストとして利用中です
+              {t('settings.account.guest.status')}
             </Text>
           </View>
           <TouchableOpacity 
@@ -349,13 +356,10 @@ export default function Settings() {
             onPress={() => router.push('/auth/link-account')}
           >
             <Ionicons name="person-add-outline" size={24} color="#3498db" />
-            <Text style={styles.actionButtonText}>アカウント登録</Text>
+            <Text style={styles.actionButtonText}>{t('settings.account.guest.register')}</Text>
           </TouchableOpacity>
           <Text style={styles.anonymousDescription}>
-            アカウント登録すると：{'\n'}
-            • 長期間経過してもデータが安全に保存されます{'\n'}
-            • 複数端末でデータを同期できます{'\n'}
-            • プレミアム機能(無制限のアイテム登録)を購入できます
+            {t('settings.account.guest.benefits')}
           </Text>
         </View>
       )}
@@ -363,10 +367,10 @@ export default function Settings() {
       {/* 通常ユーザー向けアカウント管理 */}
       {!isAnonymous && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>アカウント</Text>
+          <Text style={styles.sectionTitle}>{t('settings.account.title')}</Text>
           <TouchableOpacity style={styles.actionButton} onPress={handleAccountManagement}>
             <Ionicons name="person-outline" size={24} color="#3498db" />
-            <Text style={styles.actionButtonText}>アカウント管理</Text>
+            <Text style={styles.actionButtonText}>{t('settings.account.manage')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -374,49 +378,49 @@ export default function Settings() {
       {/* プレミアムプラン - 匿名ユーザーには表示しない */}
       {!isAnonymous && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>プレミアムプラン</Text>
+          <Text style={styles.sectionTitle}>{t('settings.premium.title')}</Text>
 
           {isPremium ? (
             // プレミアム契約済みの場合
             <View style={styles.premiumActiveContainer}>
               <View style={styles.premiumStatusHeader}>
                 <Ionicons name="star" size={24} color="#FFD700" />
-                <Text style={styles.premiumActiveTitle}>プレミアム会員</Text>
+                <Text style={styles.premiumActiveTitle}>{t('settings.premium.active.member')}</Text>
                 <View style={styles.premiumBadge}>
-                  <Text style={styles.premiumBadgeText}>有効</Text>
+                  <Text style={styles.premiumBadgeText}>{t('settings.premium.active.status')}</Text>
                 </View>
               </View>
 
               <View style={styles.premiumInfoItem}>
-                <Text style={styles.premiumInfoLabel}>契約プラン</Text>
+                <Text style={styles.premiumInfoLabel}>{t('settings.premium.active.plan')}</Text>
                 <Text style={styles.premiumInfoValue}>
-                  {subscription.productId === process.env.EXPO_PUBLIC_PREMIUM_YEARLY_PRODUCT_ID ? '年額プラン' : '月額プラン'}
+                  {subscription.productId === process.env.EXPO_PUBLIC_PREMIUM_YEARLY_PRODUCT_ID ? t('settings.premium.active.yearlyPlan') : t('settings.premium.active.monthlyPlan')}
                 </Text>
               </View>
 
               {subscription.originalPurchaseDate && (
                 <View style={styles.premiumInfoItem}>
-                  <Text style={styles.premiumInfoLabel}>初回契約開始日</Text>
+                  <Text style={styles.premiumInfoLabel}>{t('settings.premium.active.originalPurchase')}</Text>
                   <Text style={styles.premiumInfoValue}>
-                    {subscription.originalPurchaseDate.toLocaleDateString('ja-JP')}
+                    {formatDateLocalized(subscription.originalPurchaseDate, i18n.language)}
                   </Text>
                 </View>
               )}
 
               {subscription.latestPurchaseDate && (
                 <View style={styles.premiumInfoItem}>
-                  <Text style={styles.premiumInfoLabel}>現在の契約開始日</Text>
+                  <Text style={styles.premiumInfoLabel}>{t('settings.premium.active.currentPurchase')}</Text>
                   <Text style={styles.premiumInfoValue}>
-                    {subscription.latestPurchaseDate.toLocaleDateString('ja-JP')}
+                    {formatDateLocalized(subscription.latestPurchaseDate, i18n.language)}
                   </Text>
                 </View>
               )}
 
               {subscription.expirationDate && (
                 <View style={styles.premiumInfoItem}>
-                  <Text style={styles.premiumInfoLabel}>次回更新日</Text>
+                  <Text style={styles.premiumInfoLabel}>{t('settings.premium.active.nextRenewal')}</Text>
                   <Text style={styles.premiumInfoValue}>
-                    {subscription.expirationDate.toLocaleDateString('ja-JP')}
+                    {formatDateLocalized(subscription.expirationDate, i18n.language)}
                   </Text>
                 </View>
               )}
@@ -426,7 +430,7 @@ export default function Settings() {
                 onPress={() => router.push("/subscription")}
               >
                 <Ionicons name="settings" size={20} color="#3498db" />
-                <Text style={styles.manageSubscriptionText}>契約管理</Text>
+                <Text style={styles.manageSubscriptionText}>{t('settings.premium.active.manage')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -437,10 +441,10 @@ export default function Settings() {
                 onPress={() => router.push("/subscription")}
               >
                 <Ionicons name="star" size={24} color="#FFD700" />
-                <Text style={styles.actionButtonText}>プレミアムプランを見る</Text>
+                <Text style={styles.actionButtonText}>{t('settings.premium.viewPlan')}</Text>
               </TouchableOpacity>
               <Text style={styles.premiumDescription}>
-                プレミアムプランでは、アイテム登録数の制限解除（無料プランは5件まで）などの特典があります。
+                {t('settings.premium.description')}
               </Text>
             </>
           )}
@@ -448,29 +452,29 @@ export default function Settings() {
       )}
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>アプリ情報</Text>
+        <Text style={styles.sectionTitle}>{t('settings.appInfo.title')}</Text>
         <View style={styles.infoItem}>
-          <Text style={styles.infoLabel}>バージョン</Text>
+          <Text style={styles.infoLabel}>{t('settings.appInfo.version')}</Text>
           <Text style={styles.infoValue}>1.0.0</Text>
         </View>
 
         <TouchableOpacity style={styles.actionButton} onPress={handleTermsOfService}>
           <Ionicons name="document-text" size={24} color="#3498db" />
-          <Text style={styles.actionButtonText}>利用規約</Text>
+          <Text style={styles.actionButtonText}>{t('settings.appInfo.terms')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionButton} onPress={handlePrivacyPolicy}>
           <Ionicons name="shield-checkmark" size={24} color="#3498db" />
-          <Text style={styles.actionButtonText}>プライバシーポリシー</Text>
+          <Text style={styles.actionButtonText}>{t('settings.appInfo.privacy')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* サポート セクション */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>サポート</Text>
+        <Text style={styles.sectionTitle}>{t('settings.support.title')}</Text>
         <TouchableOpacity style={styles.actionButton} onPress={handleFeedback}>
           <Ionicons name="mail-outline" size={24} color="#3498db" />
-          <Text style={styles.actionButtonText}>お問い合わせ</Text>
+          <Text style={styles.actionButtonText}>{t('settings.support.contact')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -484,12 +488,12 @@ export default function Settings() {
           {isResetting ? (
             <>
               <ActivityIndicator size="small" color="#d9534f" />
-              <Text style={styles.resetButtonText}>リセット中...</Text>
+              <Text style={styles.resetButtonText}>{t('settings.actions.resetData.processing')}</Text>
             </>
           ) : (
             <>
               <Ionicons name="refresh" size={20} color="#d9534f" />
-              <Text style={styles.resetButtonText}>データをリセット</Text>
+              <Text style={styles.resetButtonText}>{t('settings.actions.resetData.button')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -499,13 +503,13 @@ export default function Settings() {
           onPress={handleLogout}
         >
           <Ionicons name="log-out" size={20} color="#d9534f" />
-          <Text style={styles.logoutButtonText}>ログアウト</Text>
+          <Text style={styles.logoutButtonText}>{t('settings.actions.logout.button')}</Text>
         </TouchableOpacity>
       )}
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          © 2025 EverWear All Rights Reserved
+          {t('settings.footer')}
         </Text>
       </View>
     </ScrollView>

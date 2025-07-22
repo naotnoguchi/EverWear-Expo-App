@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { Stack, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
@@ -17,10 +18,12 @@ import { PurchasesPackage } from "react-native-purchases";
 import { useAuth } from "../contexts/AuthContext";
 import { usePremiumFeatures, usePurchase } from "../contexts/PurchaseContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { getPrivacyUrl, getTermsUrl } from "../lib/i18n";
 
 export default function SubscriptionScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { subscription, offerings, loading, error, purchasePackage, restorePurchases, clearError, refreshOfferings } = usePurchase();
   const { isPremium } = usePremiumFeatures();
@@ -64,25 +67,19 @@ export default function SubscriptionScreen() {
   // 月額・年額プランでは RevenueCat から返るローカライズ済みの priceString をそのまま使用する
   // 無料プランは端末のロケールに合わせて 0 をフォーマット
   const localeCurrencyCode = monthlyPackage?.product.currencyCode || yearlyPackage?.product.currencyCode || 'JPY';
-  // const freePlanPriceString = new Intl.NumberFormat(undefined, {
-  //   style: 'currency',
-  //   currency: localeCurrencyCode,
-  // }).format(0);
-
-  // 暫定対応：日本国内のみ配信のため無料プランの価格を固定表示
-  const freePlanPriceString = '¥0';
-
-  const monthlyPriceString = monthlyPackage?.product.priceString;
-  const yearlyPriceString = yearlyPackage?.product.priceString;
-  const yearlyMonthlyEquivalentString = yearlyPackage ? new Intl.NumberFormat(undefined, {
+  const freePlanPriceString = new Intl.NumberFormat(undefined, {
     style: 'currency',
-    currency: yearlyPackage.product.currencyCode,
-  }).format(yearlyPackage.product.price / 12) : '';
+    currency: localeCurrencyCode,
+  }).format(0);
 
-  // ---- 日本国内のみ配信のため価格表示を固定 ------------------
-  const monthlyDisplayPrice = '¥480';
-  const yearlyDisplayPrice = '¥3,800';
-  const yearlyMonthlyEquivalentDisplay = '¥317';
+  const monthlyDisplayPrice = monthlyPackage?.product.priceString || '-';
+  const yearlyDisplayPrice = yearlyPackage?.product.priceString || '-';
+  const yearlyMonthlyEquivalentDisplay = yearlyPackage
+    ? new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: yearlyPackage.product.currencyCode,
+      }).format(yearlyPackage.product.price / 12)
+    : '-';
 
   // formatPrice は互換用途に残しておく（今後の削除候補）
   const formatPrice = (price: number, currencyCode: string) => {
@@ -95,11 +92,11 @@ export default function SubscriptionScreen() {
   const handlePurchase = async (packageToPurchase: PurchasesPackage) => {
     if (isAnonymous) {
       Alert.alert(
-        "アカウント登録が必要です",
-        "プレミアム機能を利用するにはアカウント登録が必要です。",
+        t('subscription.alerts.accountRequired.title'),
+        t('subscription.alerts.accountRequired.premium'),
         [
-          { text: "キャンセル", style: "cancel" },
-          { text: "アカウント登録", onPress: () => router.push('/auth/link-account') }
+          { text: t('subscription.alerts.accountRequired.cancel'), style: "cancel" },
+          { text: t('subscription.alerts.accountRequired.register'), onPress: () => router.push('/auth/link-account') }
         ]
       );
       return;
@@ -110,11 +107,11 @@ export default function SubscriptionScreen() {
       await purchasePackage(packageToPurchase);
 
       Alert.alert(
-        "購入完了",
-        "プレミアムプランにアップグレードしました！",
+        t('subscription.alerts.purchase.successTitle'),
+        t('subscription.alerts.purchase.successMessage'),
         [
           {
-            text: "OK",
+            text: t('common.ok'),
             onPress: () => router.back(),
           },
         ]
@@ -128,8 +125,8 @@ export default function SubscriptionScreen() {
 
       if (!isCancelledError) {
         Alert.alert(
-          "購入エラー",
-          "購入処理中にエラーが発生しました。もう一度お試しください。"
+          t('subscription.alerts.purchase.errorTitle'),
+          t('subscription.alerts.purchase.errorMessage')
         );
       }
     } finally {
@@ -140,11 +137,11 @@ export default function SubscriptionScreen() {
   const handleRestore = async () => {
     if (isAnonymous) {
       Alert.alert(
-        "アカウント登録が必要です",
-        "購入の復元機能を利用するにはアカウント登録が必要です。",
+        t('subscription.alerts.accountRequired.title'),
+        t('subscription.alerts.accountRequired.restore'),
         [
-          { text: "キャンセル", style: "cancel" },
-          { text: "アカウント登録", onPress: () => router.push('/auth/link-account') }
+          { text: t('subscription.alerts.accountRequired.cancel'), style: "cancel" },
+          { text: t('subscription.alerts.accountRequired.register'), onPress: () => router.push('/auth/link-account') }
         ]
       );
       return;
@@ -155,8 +152,8 @@ export default function SubscriptionScreen() {
       await restorePurchases();
 
       Alert.alert(
-        "購入履歴の復元",
-        "購入履歴を確認しました。"
+        t('subscription.alerts.restore.successTitle'),
+        t('subscription.alerts.restore.successMessage')
       );
     } catch (error: any) {
       console.error('Restore error:', error);
@@ -167,8 +164,8 @@ export default function SubscriptionScreen() {
 
       if (!isCancelledError) {
         Alert.alert(
-          "復元エラー",
-          "購入履歴の復元中にエラーが発生しました。"
+          t('subscription.alerts.restore.errorTitle'),
+          t('subscription.alerts.restore.errorMessage')
         );
       }
     } finally {
@@ -179,11 +176,11 @@ export default function SubscriptionScreen() {
   const handleManageSubscription = () => {
     if (isAnonymous) {
       Alert.alert(
-        "アカウント登録が必要です",
-        "契約管理を行うにはアカウント登録が必要です。",
+        t('subscription.alerts.accountRequired.title'),
+        t('subscription.alerts.accountRequired.manage'),
         [
-          { text: "キャンセル", style: "cancel" },
-          { text: "アカウント登録", onPress: () => router.push('/auth/link-account') }
+          { text: t('subscription.alerts.accountRequired.cancel'), style: "cancel" },
+          { text: t('subscription.alerts.accountRequired.register'), onPress: () => router.push('/auth/link-account') }
         ]
       );
       return;
@@ -454,7 +451,7 @@ export default function SubscriptionScreen() {
       <>
         <Stack.Screen
           options={{
-            title: "プレミアムプラン",
+            title: t('subscription.title'),
             headerTitleStyle: {
               color: theme.text,
             },
@@ -466,7 +463,7 @@ export default function SubscriptionScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3498db" />
           <Text style={[styles.errorText, { marginTop: 16 }]}>
-            読み込み中...
+            {t('subscription.loading')}
           </Text>
         </View>
       </>
@@ -478,7 +475,7 @@ export default function SubscriptionScreen() {
       <>
         <Stack.Screen
           options={{
-            title: "プレミアムプラン",
+            title: t('subscription.title'),
             headerTitleStyle: {
               color: theme.text,
             },
@@ -491,7 +488,7 @@ export default function SubscriptionScreen() {
           <Ionicons name="warning" size={48} color="#e74c3c" />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.restoreButton} onPress={() => router.back()}>
-            <Text style={styles.restoreButtonText}>戻る</Text>
+            <Text style={styles.restoreButtonText}>{t('subscription.error.back')}</Text>
           </TouchableOpacity>
         </View>
       </>
@@ -508,7 +505,7 @@ export default function SubscriptionScreen() {
     <>
       <Stack.Screen
         options={{
-          title: "プレミアムプラン",
+          title: t('subscription.title'),
           headerTitleStyle: {
             color: theme.text,
           },
@@ -523,13 +520,13 @@ export default function SubscriptionScreen() {
       >
         <View style={styles.header}>
           <Ionicons name="star" size={60} color="#FFD700" />
-          <Text style={styles.headerTitle}>プレミアムプランで無制限に管理</Text>
+          <Text style={styles.headerTitle}>{t('subscription.header.title')}</Text>
           <Text style={styles.headerSubtitle}>
-            大切な洋服をすべて登録して、より充実したワードローブ管理を
+            {t('subscription.header.subtitle')}
           </Text>
           {isPremium && (
             <View style={styles.premiumBadge}>
-              <Text style={styles.premiumBadgeText}>プレミアム会員</Text>
+              <Text style={styles.premiumBadgeText}>{t('subscription.header.premiumBadge')}</Text>
             </View>
           )}
         </View>
@@ -537,48 +534,51 @@ export default function SubscriptionScreen() {
         {/* プレミアム契約済みユーザー向けの契約詳細 */}
         {isPremium && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>契約詳細</Text>
+            <Text style={styles.sectionTitle}>{t('subscription.subscription.sectionTitle')}</Text>
 
             <View style={styles.subscriptionDetailCard}>
               <View style={styles.subscriptionHeader}>
                 <Ionicons name="star" size={24} color="#FFD700" />
-                <Text style={styles.subscriptionTitle}>アクティブなプレミアムプラン</Text>
+                <Text style={styles.subscriptionTitle}>{t('subscription.subscription.activeTitle')}</Text>
                 <View style={styles.activeBadge}>
-                  <Text style={styles.activeBadgeText}>有効</Text>
+                  <Text style={styles.activeBadgeText}>{t('subscription.subscription.activeBadge')}</Text>
                 </View>
               </View>
 
               <View style={styles.subscriptionInfo}>
                 <View style={styles.subscriptionInfoItem}>
-                  <Text style={styles.subscriptionInfoLabel}>契約プラン</Text>
+                  <Text style={styles.subscriptionInfoLabel}>{t('subscription.subscription.plan')}</Text>
                   <Text style={styles.subscriptionInfoValue}>
-                    {subscription.productId === process.env.EXPO_PUBLIC_PREMIUM_YEARLY_PRODUCT_ID ? '年額プラン' : '月額プラン'}
+                    {subscription.productId === process.env.EXPO_PUBLIC_PREMIUM_YEARLY_PRODUCT_ID 
+                      ? t('subscription.subscription.yearlyPlan') 
+                      : t('subscription.subscription.monthlyPlan')
+                    }
                   </Text>
                 </View>
 
                 {subscription.originalPurchaseDate && (
                   <View style={styles.subscriptionInfoItem}>
-                    <Text style={styles.subscriptionInfoLabel}>初回契約開始日</Text>
+                    <Text style={styles.subscriptionInfoLabel}>{t('subscription.subscription.originalPurchase')}</Text>
                     <Text style={styles.subscriptionInfoValue}>
-                      {subscription.originalPurchaseDate.toLocaleDateString('ja-JP')}
+                      {subscription.originalPurchaseDate.toLocaleDateString(i18n.language === 'ja' ? 'ja-JP' : 'en-US')}
                     </Text>
                   </View>
                 )}
 
                 {subscription.latestPurchaseDate && (
                   <View style={styles.subscriptionInfoItem}>
-                    <Text style={styles.subscriptionInfoLabel}>現在の契約開始日</Text>
+                    <Text style={styles.subscriptionInfoLabel}>{t('subscription.subscription.currentPurchase')}</Text>
                     <Text style={styles.subscriptionInfoValue}>
-                      {subscription.latestPurchaseDate.toLocaleDateString('ja-JP')}
+                      {subscription.latestPurchaseDate.toLocaleDateString(i18n.language === 'ja' ? 'ja-JP' : 'en-US')}
                     </Text>
                   </View>
                 )}
 
                 {subscription.expirationDate && (
                   <View style={styles.subscriptionInfoItem}>
-                    <Text style={styles.subscriptionInfoLabel}>次回更新日</Text>
+                    <Text style={styles.subscriptionInfoLabel}>{t('subscription.subscription.nextRenewal')}</Text>
                     <Text style={styles.subscriptionInfoValue}>
-                      {subscription.expirationDate.toLocaleDateString('ja-JP')}
+                      {subscription.expirationDate.toLocaleDateString(i18n.language === 'ja' ? 'ja-JP' : 'en-US')}
                     </Text>
                   </View>
                 )}
@@ -586,7 +586,7 @@ export default function SubscriptionScreen() {
 
               <View style={styles.subscriptionActions}>
                 <Text style={styles.subscriptionNote}>
-                  サブスクリプションの解約や変更は、App Store（iOS）またはGoogle Play（Android）から行ってください。
+                  {t('subscription.subscription.note')}
                 </Text>
               </View>
             </View>
@@ -594,33 +594,33 @@ export default function SubscriptionScreen() {
         )}
 
         <View style={styles.planSection}>
-          <Text style={styles.sectionTitle}>プラン比較</Text>
+          <Text style={styles.sectionTitle}>{t('subscription.plans.sectionTitle')}</Text>
 
           <View style={styles.planCard}>
             <View style={styles.planHeader}>
-              <Text style={styles.planTitle}>無料プラン</Text>
+              <Text style={styles.planTitle}>{t('subscription.plans.free.title')}</Text>
               <Text style={styles.planPrice}>{freePlanPriceString}</Text>
             </View>
             <View style={styles.planFeatures}>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle" size={20} color="#3498db" />
-                <Text style={styles.featureText}>大切な洋服5件まで登録可能</Text>
+                <Text style={styles.featureText}>{t('subscription.plans.free.features.itemLimit')}</Text>
               </View>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle" size={20} color="#3498db" />
-                <Text style={styles.featureText}>日々の着用・洗濯を簡単記録</Text>
+                <Text style={styles.featureText}>{t('subscription.plans.free.features.recording')}</Text>
               </View>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle" size={20} color="#3498db" />
-                <Text style={styles.featureText}>着用履歴でスタイリングを振り返り</Text>
+                <Text style={styles.featureText}>{t('subscription.plans.free.features.history')}</Text>
               </View>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle" size={20} color="#3498db" />
-                <Text style={styles.featureText}>詳細統計でワードローブの全体像を把握</Text>
+                <Text style={styles.featureText}>{t('subscription.plans.free.features.statistics')}</Text>
               </View>
               <View style={styles.featureItem}>
                 <Ionicons name="checkmark-circle" size={20} color="#3498db" />
-                <Text style={styles.featureText}>洗濯効率分析・環境影響・節約効果の可視化</Text>
+                <Text style={styles.featureText}>{t('subscription.plans.free.features.analysis')}</Text>
               </View>
             </View>
           </View>
@@ -629,17 +629,17 @@ export default function SubscriptionScreen() {
           {monthlyPackage && (
             <View style={[styles.planCard, styles.premiumCard]}>
               <View style={styles.planHeader}>
-                <Text style={[styles.planTitle, styles.premiumTitle]}>月額プラン</Text>
+                <Text style={[styles.planTitle, styles.premiumTitle]}>{t('subscription.plans.monthly.title')}</Text>
                 <Text style={styles.planPrice}>{monthlyDisplayPrice}</Text>
               </View>
               <View style={styles.planFeatures}>
                 <View style={styles.featureItem}>
                   <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>無料プランのすべての機能</Text>
+                  <Text style={styles.featureText}>{t('subscription.plans.monthly.features.allFree')}</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>お気に入りアイテムを無制限登録</Text>
+                  <Text style={styles.featureText}>{t('subscription.plans.monthly.features.unlimited')}</Text>
                 </View>
               </View>
               {!isPremium && (
@@ -651,7 +651,7 @@ export default function SubscriptionScreen() {
                   {purchasing ? (
                     <ActivityIndicator color="white" />
                   ) : (
-                    <Text style={styles.purchaseButtonText}>月額プランを購入</Text>
+                    <Text style={styles.purchaseButtonText}>{t('subscription.plans.monthly.purchaseButton')}</Text>
                   )}
                 </TouchableOpacity>
               )}
@@ -662,20 +662,20 @@ export default function SubscriptionScreen() {
           {yearlyPackage && (
             <View style={[styles.planCard, styles.premiumCard]}>
               <View style={styles.planHeader}>
-                <Text style={[styles.planTitle, styles.premiumTitle]}>年額プラン</Text>
+                <Text style={[styles.planTitle, styles.premiumTitle]}>{t('subscription.plans.yearly.title')}</Text>
                 <Text style={styles.planPrice}>{yearlyDisplayPrice}</Text>
                 <Text style={styles.yearlyPrice}>
-                  月額換算: {yearlyMonthlyEquivalentDisplay}
+                  {t('subscription.plans.yearly.monthlyEquivalent', { price: yearlyMonthlyEquivalentDisplay })}
                 </Text>
               </View>
               <View style={styles.planFeatures}>
                 <View style={styles.featureItem}>
                   <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>無料プランのすべての機能</Text>
+                  <Text style={styles.featureText}>{t('subscription.plans.yearly.features.allFree')}</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <Ionicons name="checkmark-circle" size={20} color="#FFD700" />
-                  <Text style={styles.featureText}>お気に入りアイテムを無制限登録</Text>
+                  <Text style={styles.featureText}>{t('subscription.plans.yearly.features.unlimited')}</Text>
                 </View>
               </View>
               {!isPremium && (
@@ -687,7 +687,7 @@ export default function SubscriptionScreen() {
                   {purchasing ? (
                     <ActivityIndicator color="white" />
                   ) : (
-                    <Text style={styles.purchaseButtonText}>年額プランを購入</Text>
+                    <Text style={styles.purchaseButtonText}>{t('subscription.plans.yearly.purchaseButton')}</Text>
                   )}
                 </TouchableOpacity>
               )}
@@ -698,21 +698,21 @@ export default function SubscriptionScreen() {
         {/* 規約同意注釈 */}
         {!isPremium && (
           <Text style={[styles.agreementText, { color: theme.text + "99" }]} selectable={false}>
-            プレミアムプランを購入することで、
+            {t('subscription.agreement.prefix')}
             <Text
               style={{ color: theme.primary, textDecorationLine: 'underline' }}
-              onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/terms.html', title: '利用規約' } })}
+              onPress={() => router.push({ pathname: '/webview', params: { url: getTermsUrl(), title: t('subscription.agreement.terms') } })}
             >
-              利用規約
+              {t('subscription.agreement.terms')}
             </Text>
-            と
+            {i18n.language === 'ja' ? 'と' : ' and '}
             <Text
               style={{ color: theme.primary, textDecorationLine: 'underline' }}
-              onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/privacy.html', title: 'プライバシーポリシー' } })}
+              onPress={() => router.push({ pathname: '/webview', params: { url: getPrivacyUrl(), title: t('subscription.agreement.privacy') } })}
             >
-              プライバシーポリシー
+              {t('subscription.agreement.privacy')}
             </Text>
-            に同意したものとみなします。
+            {t('subscription.agreement.suffix')}
           </Text>
         )}
 
@@ -722,28 +722,28 @@ export default function SubscriptionScreen() {
           onPress={handleRestore}
           disabled={purchasing}
         >
-          <Text style={styles.restoreButtonText}>購入履歴を復元</Text>
+          <Text style={styles.restoreButtonText}>{t('subscription.actions.restorePurchases')}</Text>
         </TouchableOpacity>
 
         {/* データ保持に関する重要な説明 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>データ保持について</Text>
+          <Text style={styles.sectionTitle}>{t('subscription.dataRetention.sectionTitle')}</Text>
           <View style={styles.infoItem}>
             <Ionicons name="information-circle" size={20} color={theme.primary} />
             <Text style={styles.infoText}>
-              プレミアム登録中に作成したアイテムは、サブスクリプションをキャンセルした後も安全に保持されます。
+              {t('subscription.dataRetention.preserved')}
             </Text>
           </View>
           <View style={styles.infoItem}>
             <Ionicons name="eye" size={20} color={theme.primary} />
             <Text style={styles.infoText}>
-              無料プランでは最新の5件のアイテムのみ表示されますが、6件目以降のデータは削除されません。
+              {t('subscription.dataRetention.freeLimit')}
             </Text>
           </View>
           <View style={styles.infoItem}>
             <Ionicons name="refresh" size={20} color={theme.primary} />
             <Text style={styles.infoText}>
-              プレミアムプランに再度アップグレードすると、保存されている全てのアイテムが再び表示されます。
+              {t('subscription.dataRetention.reupgrade')}
             </Text>
           </View>
         </View>
@@ -753,7 +753,7 @@ export default function SubscriptionScreen() {
           onPress={handleManageSubscription}
           disabled={purchasing}
         >
-          <Text style={styles.restoreButtonText}>契約管理を行う</Text>
+          <Text style={styles.restoreButtonText}>{t('subscription.actions.manageSubscription')}</Text>
         </TouchableOpacity>
 
       </ScrollView>

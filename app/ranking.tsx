@@ -2,16 +2,29 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, Stack } from "expo-router";
 import React, { useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useImageUrls } from '../hooks/useImageUrls';
 import { getPrivateUrls } from "../lib/storageClient";
 import { Period, RankingItem } from "../services/statisticsServiceFactory";
-import { CategoryValue } from "../types/categories";
+import { CategoryValue, getCategoryIdByValue } from "../types/categories";
 
 export default function RankingScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
+
+  // カテゴリ翻訳関数
+  const getCategoryName = (categoryValue: CategoryValue) => {
+    if (!categoryValue) return '';
+    
+    // CategoryValue（日本語表示名）からカテゴリIDを取得
+    const categoryId = getCategoryIdByValue(categoryValue);
+    
+    // カテゴリIDを翻訳キーに変換
+    return t(`addItem.categories.${categoryId}`);
+  };
 
   // 統計コンテキストを使用（新しいAPI）
   const {
@@ -102,20 +115,28 @@ export default function RankingScreen() {
         <Text style={styles.rankText}>{items.indexOf(item) + 1}</Text>
       </View>
 
-      <Image
-        source={{
-          uri: imageUrls[item.id] || item.imageUrl || require('@/assets/images/placeholder.png'),
-          cacheKey: item.imageUrl,
-          width: 80,
-          height: 80
-        }}
-        style={styles.itemImage}
-        contentFit="cover"
-        cachePolicy="disk"
-        onError={() => {
-          // エラー時は何もしない（デフォルトのフォールバック画像が表示される）
-        }}
-      />
+      <View style={styles.itemImageContainer}>
+        {imageUrls[item.id] || item.imageUrl ? (
+          <Image
+            source={{
+              uri: imageUrls[item.id] || item.imageUrl,
+              cacheKey: item.imageUrl,
+              width: 80,
+              height: 80
+            }}
+            style={styles.itemImage}
+            contentFit="cover"
+            cachePolicy="disk"
+            onError={() => {
+              // エラー時は何もしない（フォールバック表示になる）
+            }}
+          />
+        ) : (
+          <View style={styles.placeholderContainer}>
+            <Ionicons name="shirt-outline" size={40} color={theme.text + "66"} />
+          </View>
+        )}
+      </View>
 
       <View style={styles.itemInfo}>
                         {item.name && item.name.trim() && (
@@ -124,10 +145,10 @@ export default function RankingScreen() {
                   </Text>
                 )}
         <Text style={[styles.itemCategory, { color: theme.text + "99" }]}>
-          {item.brand ? `${item.brand} / ${item.category}` : item.category}
+          {item.brand ? `${item.brand} / ${getCategoryName(item.category) || t('ranking.noCategory')}` : (getCategoryName(item.category) || t('ranking.noCategory'))}
         </Text>
         <Text style={[styles.itemWears, { color: theme.text }]}>
-          {item.wearCount}回着用
+          {t('ranking.wearCount', { count: item.wearCount })}
         </Text>
 
         <View style={styles.barContainer}>
@@ -144,26 +165,26 @@ export default function RankingScreen() {
 
   // Period options
   const periodOptions: { label: string; value: Period }[] = [
-    { label: '1ヶ月', value: '1month' },
-    { label: '3ヶ月', value: '3months' },
-    { label: '6ヶ月', value: '6months' },
-    { label: '1年', value: '1year' },
-    { label: 'すべて', value: 'all' },
+    { label: t('ranking.period.1month'), value: '1month' },
+    { label: t('ranking.period.3months'), value: '3months' },
+    { label: t('ranking.period.6months'), value: '6months' },
+    { label: t('ranking.period.1year'), value: '1year' },
+    { label: t('ranking.period.all'), value: 'all' },
   ];
 
   // Category options
   const categoryOptions: { label: string; value: CategoryValue }[] = [
-    { label: 'すべて', value: null },
-    { label: 'トップス', value: 'トップス' },
-    { label: 'ボトムス', value: 'ボトムス' },
-    { label: 'ジャケット', value: 'ジャケット' },
-    { label: 'アウター', value: 'アウター' },
-    { label: 'セットアップ', value: 'セットアップ' },
-    { label: 'ワンピース', value: 'ワンピース' },
-    { label: 'シューズ', value: 'シューズ' },
-    { label: 'バッグ', value: 'バッグ' },
-    { label: '小物', value: '小物' },
-    { label: 'その他', value: 'その他' },
+    { label: t('ranking.categories.all'), value: null },
+    { label: t('addItem.categories.tops'), value: 'トップス' },
+    { label: t('addItem.categories.bottoms'), value: 'ボトムス' },
+    { label: t('addItem.categories.jacket'), value: 'ジャケット' },
+    { label: t('addItem.categories.outerwear'), value: 'アウター' },
+    { label: t('addItem.categories.setup'), value: 'セットアップ' },
+    { label: t('addItem.categories.dress'), value: 'ワンピース' },
+    { label: t('addItem.categories.shoes'), value: 'シューズ' },
+    { label: t('addItem.categories.bag'), value: 'バッグ' },
+    { label: t('addItem.categories.accessories'), value: '小物' },
+    { label: t('addItem.categories.others'), value: 'その他' },
   ];
 
   const styles = StyleSheet.create({
@@ -246,13 +267,24 @@ export default function RankingScreen() {
       fontWeight: 'bold',
       fontSize: 16,
     },
-    itemImage: {
+    itemImageContainer: {
       width: 60,
       height: 60,
       borderRadius: 8,
       marginLeft: 8,
       marginVertical: 8, // 上下の余白を追加（アイテム名が空でも最低限の余白を確保）
       alignSelf: 'center',
+      backgroundColor: theme.border,
+    },
+    itemImage: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 8,
+    },
+    placeholderContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
       backgroundColor: theme.border,
     },
     itemInfo: {
@@ -319,7 +351,7 @@ export default function RankingScreen() {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={{ marginTop: 16, color: theme.text }}>ランキングデータを読み込み中...</Text>
+        <Text style={{ marginTop: 16, color: theme.text }}>{t('ranking.loading')}</Text>
       </View>
     );
   }
@@ -331,7 +363,7 @@ export default function RankingScreen() {
         <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
         <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={recalculateStatistics}>
-          <Text style={styles.retryButtonText}>再試行</Text>
+          <Text style={styles.retryButtonText}>{t('ranking.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -341,8 +373,8 @@ export default function RankingScreen() {
     <>
       <Stack.Screen 
         options={{
-          title: "着用回数ランキング",
-          headerBackTitle: "戻る",
+          title: t('ranking.title'),
+          headerBackTitle: t('common.back'),
         }} 
       />
       
@@ -351,7 +383,7 @@ export default function RankingScreen() {
         <View style={styles.filtersContainer}>
           {/* Period selector */}
           <View style={styles.filterSection}>
-            <Text style={[styles.filterLabel, { color: theme.text }]}>期間</Text>
+            <Text style={[styles.filterLabel, { color: theme.text }]}>{t('ranking.filters.period')}</Text>
             <View style={styles.optionsRow}>
               {periodOptions.map((option) => (
                 <TouchableOpacity
@@ -379,7 +411,7 @@ export default function RankingScreen() {
 
           {/* Sort order toggle */}
           <View style={styles.filterSection}>
-            <Text style={[styles.filterLabel, { color: theme.text }]}>並び順</Text>
+            <Text style={[styles.filterLabel, { color: theme.text }]}>{t('ranking.filters.sortOrder')}</Text>
             <TouchableOpacity
               style={[styles.sortToggle, { backgroundColor: theme.card }]}
               onPress={handleSortOrderChange}
@@ -390,14 +422,14 @@ export default function RankingScreen() {
                 color={theme.text} 
               />
               <Text style={[styles.sortToggleText, { color: theme.text }]}>
-                {sortOrder === 'most' ? '着用回数 多い順' : '着用回数 少ない順'}
+                {sortOrder === 'most' ? t('ranking.sortOrder.mostWorn') : t('ranking.sortOrder.leastWorn')}
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* Category selector */}
           <View style={styles.filterSection}>
-            <Text style={[styles.filterLabel, { color: theme.text }]}>カテゴリ</Text>
+            <Text style={[styles.filterLabel, { color: theme.text }]}>{t('ranking.filters.category')}</Text>
             <View style={styles.optionsRow}>
               <FlatList
                 data={categoryOptions}
@@ -442,10 +474,10 @@ export default function RankingScreen() {
           <View style={styles.emptyContainer}>
             <Ionicons name="shirt-outline" size={64} color={theme.text + "66"} />
             <Text style={[styles.emptyText, { color: theme.text }]}>
-              該当するアイテムがありません
+              {t('ranking.noItems')}
             </Text>
             <Text style={[styles.emptySubtext, { color: theme.text + "99" }]}>
-              フィルター条件を変更してお試しください
+              {t('ranking.changeFilters')}
             </Text>
           </View>
         )}

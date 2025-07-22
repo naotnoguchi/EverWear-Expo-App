@@ -4,6 +4,7 @@ import * as Linking from 'expo-linking';
 import { Redirect, Stack, useSegments } from "expo-router";
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
+import { I18nextProvider, useTranslation } from 'react-i18next';
 import { Platform, StyleSheet, useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -15,6 +16,7 @@ import { OnboardingProvider, useOnboarding } from '../contexts/OnboardingContext
 import { PurchaseProvider } from '../contexts/PurchaseContext';
 import { StatisticsProvider, useStatistics } from '../contexts/StatisticsContext';
 import { TabResetProvider } from '../contexts/TabResetContext';
+import i18n from '../lib/i18n';
 
 // Main app component with navigation and auth flow
 function MainApp() {
@@ -24,6 +26,9 @@ function MainApp() {
   const segments = useSegments();
   const colorScheme = useColorScheme();
   const theme = useTheme();
+
+  // i18n
+  const { t } = useTranslation();
 
   const adaptedBadgeNotifications = React.useMemo(() =>
     badgeNotifications.map((n: any) => ({
@@ -161,7 +166,7 @@ function MainApp() {
         <Stack.Screen
           name="auth/verify"
           options={{
-            title: "確認コード入力",
+            title: t('screen.verify.title'),
             headerBackVisible: false,
             gestureEnabled: false,
           }}
@@ -169,15 +174,15 @@ function MainApp() {
         <Stack.Screen
           name="auth/reset-password"
           options={{
-            title: "パスワードリセット",
+            title: t('screen.resetPassword.title'),
             headerShown: false,
           }}
         />
-        <Stack.Screen name="item/[id]" options={{ title: "アイテム詳細", headerBackTitle: "戻る" }} />
+        <Stack.Screen name="item/[id]" options={{ title: t('screen.itemDetail.title'), headerBackTitle: t('common.back') }} />
         <Stack.Screen
           name="add"
           options={{
-            title: "アイテム追加",
+            title: t('screen.itemAdd.title'),
             animation: "slide_from_bottom",
             presentation: "modal",
             gestureEnabled: false,
@@ -193,7 +198,7 @@ function MainApp() {
         <Stack.Screen
           name="batch-record"
           options={{
-            title: "一括記録",
+            title: t('screen.batchRecord.title'),
             animation: "slide_from_bottom",
             presentation: "modal",
             gestureEnabled: false,
@@ -206,16 +211,16 @@ function MainApp() {
             }),
           }}
         />
-        <Stack.Screen name="ranking" options={{ title: "着用回数ランキング", headerBackTitle: "戻る" }} />
-        <Stack.Screen name="efficiency" options={{ title: "洗濯効率分析", headerBackTitle: "戻る" }} />
-        <Stack.Screen name="impact" options={{ title: "環境影響・節約効果", headerBackTitle: "戻る" }} />
-        <Stack.Screen name="badges" options={{ title: "バッジ・アチーブメント", headerBackTitle: "戻る" }} />
-        <Stack.Screen name="badges-overview" options={{ title: "バッジコレクション", headerBackTitle: "戻る" }} />
-        <Stack.Screen name="item/stats/[id]" options={{ title: "アイテム詳細分析", headerBackTitle: "戻る" }} />
-        <Stack.Screen name="subscription" options={{ title: "プレミアムプラン", headerBackTitle: "戻る" }} />
-        <Stack.Screen name="account" options={{ title: "アカウント管理", headerBackTitle: "戻る" }} />
-        <Stack.Screen name="auth/link-account" options={{ title: "アカウント登録", headerBackTitle: "戻る" }} />
-        <Stack.Screen name="webview" options={{ headerBackTitle: "戻る" }} />
+        <Stack.Screen name="ranking" options={{ title: t('screen.ranking.title'), headerBackTitle: t('common.back') }} />
+        <Stack.Screen name="efficiency" options={{ title: t('screen.efficiency.title'), headerBackTitle: t('common.back') }} />
+        <Stack.Screen name="impact" options={{ title: t('screen.impact.title'), headerBackTitle: t('common.back') }} />
+        <Stack.Screen name="badges" options={{ title: t('screen.badges.title'), headerBackTitle: t('common.back') }} />
+        <Stack.Screen name="badges-overview" options={{ title: t('screen.badgesOverview.title'), headerBackTitle: t('common.back') }} />
+        <Stack.Screen name="item/stats/[id]" options={{ title: t('screen.itemStats.title'), headerBackTitle: t('common.back') }} />
+        <Stack.Screen name="subscription" options={{ title: t('screen.subscription.title'), headerBackTitle: t('common.back') }} />
+        <Stack.Screen name="account" options={{ title: t('screen.account.title'), headerBackTitle: t('common.back') }} />
+        <Stack.Screen name="auth/link-account" options={{ title: t('screen.linkAccount.title'), headerBackTitle: t('common.back') }} />
+        <Stack.Screen name="webview" options={{ headerBackTitle: t('common.back') }} />
       </Stack>
       <BadgeNotificationManager 
         notifications={adaptedBadgeNotifications} 
@@ -227,25 +232,27 @@ function MainApp() {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <GestureHandlerRootView style={styles.container}>
-        <AuthProvider>
-          <PurchaseProvider>
-            <OnboardingProvider>
-              <ClothingProvider>
-                <ThemeProvider>
-                  <TabResetProvider>
-                    <StatisticsProvider>
-                      <MainApp />
-                    </StatisticsProvider>
-                  </TabResetProvider>
-                </ThemeProvider>
-              </ClothingProvider>
-            </OnboardingProvider>
-          </PurchaseProvider>
-        </AuthProvider>
-      </GestureHandlerRootView>
-    </SafeAreaProvider>
+    <I18nextProvider i18n={i18n}>
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={styles.container}>
+          <AuthProvider>
+            <PurchaseProvider>
+              <OnboardingProvider>
+                <ClothingProvider>
+                  <ThemeProvider>
+                    <TabResetProvider>
+                      <StatisticsProvider>
+                        <MainApp />
+                      </StatisticsProvider>
+                    </TabResetProvider>
+                  </ThemeProvider>
+                </ClothingProvider>
+              </OnboardingProvider>
+            </PurchaseProvider>
+          </AuthProvider>
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
+    </I18nextProvider>
   );
 }
 

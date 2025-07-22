@@ -1,14 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
 import React, { useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Modal, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
+import i18n from '../lib/i18n';
 import { Period } from "../services/statisticsServiceFactory";
 
 export default function ImpactScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const { t } = useTranslation();
 
   // 統計コンテキストを使用（新しいAPI）
   const {
@@ -27,24 +30,23 @@ export default function ImpactScreen() {
   // 環境影響データを共有
   const handleShare = async () => {
     try {
-      const shareMessage = `
-🌱 私の環境貢献度 🌱
-
-🌍 CO2削減量: ${impact?.co2Reduced.toFixed(1)}kg
-🌳 植樹相当効果: ${impact?.treeEquivalent.toFixed(1)}本の木
-
-💧 節水: ${impact?.waterSaved.amount}L (${impact?.waterSaved.cost}円相当)
-⚡ 節電: ${impact?.electricitySaved.amount}kWh (${impact?.electricitySaved.cost}円相当)
-🧴 洗剤節約: ${impact?.detergentSaved.amount}ml (${impact?.detergentSaved.cost}円相当)
-
-総節約金額: ${((impact?.electricitySaved.cost || 0) + (impact?.waterSaved.cost || 0) + (impact?.detergentSaved.cost || 0))}円
-
-EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
-`;
+      const totalSavings = (impact?.electricitySaved.cost || 0) + (impact?.waterSaved.cost || 0) + (impact?.detergentSaved.cost || 0);
+      
+      const shareMessage = t('impact.share.message', {
+        co2: impact?.co2Reduced.toFixed(1),
+        trees: impact?.treeEquivalent.toFixed(1),
+        water: impact?.waterSaved.amount,
+        waterCost: impact?.waterSaved.cost,
+        electricity: impact?.electricitySaved.amount,
+        electricityCost: impact?.electricitySaved.cost,
+        detergent: impact?.detergentSaved.amount,
+        detergentCost: impact?.detergentSaved.cost,
+        totalSavings: totalSavings
+      });
 
       await Share.share({
         message: shareMessage,
-        title: '私の環境貢献度'
+        title: t('impact.share.title')
       });
     } catch (error) {
       console.error('共有エラー:', error);
@@ -67,11 +69,11 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
 
   // Period options
   const periodOptions: { label: string; value: Period }[] = [
-    { label: '1ヶ月', value: '1month' },
-    { label: '3ヶ月', value: '3months' },
-    { label: '6ヶ月', value: '6months' },
-    { label: '1年', value: '1year' },
-    { label: 'すべて', value: 'all' },
+    { label: t('impact.period.1month'), value: '1month' },
+    { label: t('impact.period.3months'), value: '3months' },
+    { label: t('impact.period.6months'), value: '6months' },
+    { label: t('impact.period.1year'), value: '1year' },
+    { label: t('impact.period.all'), value: 'all' },
   ];
 
   const styles = StyleSheet.create({
@@ -372,7 +374,7 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={{ marginTop: 16, color: theme.text }}>環境影響データを読み込み中...</Text>
+        <Text style={{ marginTop: 16, color: theme.text }}>{t('impact.loading')}</Text>
       </View>
     );
   }
@@ -382,9 +384,9 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
     return (
       <View style={[styles.container, styles.centerContent]}>
         <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
-        <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
+        <Text style={[styles.errorText, { color: theme.error }]}>{t('impact.error.title')}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={recalculateStatistics}>
-          <Text style={styles.retryButtonText}>再試行</Text>
+          <Text style={styles.retryButtonText}>{t('impact.error.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -394,15 +396,15 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
     <>
       <Stack.Screen 
         options={{
-          title: "環境影響・節約効果",
-          headerBackTitle: "戻る",
+          title: t('impact.title'),
+          headerBackTitle: t('common.back'),
         }} 
       />
       <View style={styles.container}>
         <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
           {/* Period selector */}
           <View style={styles.filterSection}>
-            <Text style={[styles.filterLabel, { color: theme.text }]}>期間</Text>
+            <Text style={[styles.filterLabel, { color: theme.text }]}>{t('common.period')}</Text>
             <View style={styles.optionsRow}>
               {periodOptions.map((option) => (
                 <TouchableOpacity
@@ -433,7 +435,7 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
             <View style={styles.cardHeader}>
               <Ionicons name="leaf" size={24} color="#27ae60" />
               <Text style={[styles.cardTitle, { color: theme.text }]}>
-                洗濯削減効果
+                {t('impact.metrics.washReduction')}
               </Text>
               <TouchableOpacity 
                 onPress={() => setShowWashInfoModal(true)}
@@ -446,15 +448,15 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
             <View style={styles.highlightContainer}>
               <View style={styles.highlightItem}>
                 <Text style={styles.highlightValue}>{(impact?.totalWashesReduced || 0).toFixed(1)}</Text>
-                <Text style={[styles.highlightLabel, { color: theme.text }]}>洗濯回数削減</Text>
+                <Text style={[styles.highlightLabel, { color: theme.text }]}>{t('impact.metrics.washesReduced')}</Text>
               </View>
 
               <View style={styles.divider} />
 
               <View style={styles.highlightItem}>
-                <Text style={styles.highlightValue}>{(impact?.co2Reduced || 0).toFixed(1)} kg</Text>
+                <Text style={styles.highlightValue}>{(impact?.co2Reduced || 0).toFixed(1)} {t('impact.units.kg')}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={[styles.highlightLabel, { color: theme.text }]}>CO2削減量</Text>
+                  <Text style={[styles.highlightLabel, { color: theme.text }]}>{t('impact.metrics.co2Reduced')}</Text>
                   <TouchableOpacity 
                     onPress={() => setShowCO2InfoModal(true)}
                     style={{ marginLeft: 2 }}
@@ -469,7 +471,7 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
               <View style={styles.highlightItem}>
                 <Text style={styles.highlightValue}>{(impact?.treeEquivalent || 0).toFixed(1)}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={[styles.highlightLabel, { color: theme.text }]}>植樹相当効果</Text>
+                  <Text style={[styles.highlightLabel, { color: theme.text }]}>{t('impact.metrics.treeEquivalent')}</Text>
                   <TouchableOpacity 
                     onPress={() => setShowTreeInfoModal(true)}
                     style={{ marginLeft: 2 }}
@@ -481,8 +483,10 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
             </View>
 
             <Text style={[styles.impactDescription, { color: theme.text + "CC" }]}>
-              「着用するたびに洗濯する」場合と比較して、あなたは{(impact?.totalWashesReduced || 0).toFixed(1)}回の洗濯を削減しました。
-              これは約{(impact?.treeEquivalent || 0).toFixed(1)}本の木を植えるのと同等のCO2削減効果があります。
+              {t('impact.description', {
+                washesReduced: (impact?.totalWashesReduced || 0).toFixed(1),
+                treeEquivalent: (impact?.treeEquivalent || 0).toFixed(1)
+              })}
             </Text>
           </View>
 
@@ -491,7 +495,7 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
             <View style={styles.cardHeader}>
               <Ionicons name="water" size={24} color="#3498db" />
               <Text style={[styles.cardTitle, { color: theme.text }]}>
-                資源節約効果
+                {t('impact.metrics.resourceSavings')}
               </Text>
             </View>
 
@@ -501,7 +505,7 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
               </View>
               <View style={styles.resourceInfo}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={[styles.resourceTitle, { color: theme.text }]}>電気</Text>
+                  <Text style={[styles.resourceTitle, { color: theme.text }]}>{t('impact.metrics.electricitySaved')}</Text>
                   <TouchableOpacity 
                     onPress={() => setShowElectricityInfoModal(true)}
                     style={styles.infoIcon}
@@ -510,7 +514,10 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
                   </TouchableOpacity>
                 </View>
                 <Text style={[styles.resourceValue, { color: theme.text }]}>
-                  {impact?.electricitySaved.amount || 0} kWh（{impact?.electricitySaved.cost || 0}円相当）
+                  {impact?.electricitySaved.amount || 0} {t('impact.units.kwh')}（{i18n.language === 'ja' 
+                    ? `${impact?.electricitySaved.cost || 0}${t('impact.units.yen')}${t('impact.units.equivalent')}`
+                    : `${t('impact.units.yen')}${impact?.electricitySaved.cost || 0} ${t('impact.units.equivalent')}`
+                  }）
                 </Text>
                 <View style={styles.progressBarContainer}>
                   <View 
@@ -532,7 +539,7 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
               </View>
               <View style={styles.resourceInfo}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={[styles.resourceTitle, { color: theme.text }]}>水</Text>
+                  <Text style={[styles.resourceTitle, { color: theme.text }]}>{t('impact.metrics.waterSaved')}</Text>
                   <TouchableOpacity 
                     onPress={() => setShowWaterInfoModal(true)}
                     style={styles.infoIcon}
@@ -541,7 +548,10 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
                   </TouchableOpacity>
                 </View>
                 <Text style={[styles.resourceValue, { color: theme.text }]}>
-                  {impact?.waterSaved.amount || 0} L（{impact?.waterSaved.cost || 0}円相当）
+                  {impact?.waterSaved.amount || 0} {t('impact.units.liters')}（{i18n.language === 'ja' 
+                    ? `${impact?.waterSaved.cost || 0}${t('impact.units.yen')}${t('impact.units.equivalent')}`
+                    : `${t('impact.units.yen')}${impact?.waterSaved.cost || 0} ${t('impact.units.equivalent')}`
+                  }）
                 </Text>
                 <View style={styles.progressBarContainer}>
                   <View 
@@ -563,7 +573,7 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
               </View>
               <View style={styles.resourceInfo}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={[styles.resourceTitle, { color: theme.text }]}>洗剤</Text>
+                  <Text style={[styles.resourceTitle, { color: theme.text }]}>{t('impact.metrics.detergentSaved')}</Text>
                   <TouchableOpacity 
                     onPress={() => setShowDetergentInfoModal(true)}
                     style={styles.infoIcon}
@@ -572,7 +582,10 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
                   </TouchableOpacity>
                 </View>
                 <Text style={[styles.resourceValue, { color: theme.text }]}>
-                  {impact?.detergentSaved.amount || 0} ml（{impact?.detergentSaved.cost || 0}円相当）
+                  {impact?.detergentSaved.amount || 0} {t('impact.units.ml')}（{i18n.language === 'ja' 
+                    ? `${impact?.detergentSaved.cost || 0}${t('impact.units.yen')}${t('impact.units.equivalent')}`
+                    : `${t('impact.units.yen')}${impact?.detergentSaved.cost || 0} ${t('impact.units.equivalent')}`
+                  }）
                 </Text>
                 <View style={styles.progressBarContainer}>
                   <View 
@@ -590,12 +603,13 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
 
             <View style={styles.totalSavings}>
               <Text style={[styles.totalSavingsLabel, { color: theme.text }]}>
-                総節約金額
+                {t('impact.metrics.totalSavings')}
               </Text>
               <Text style={styles.totalSavingsValue}>
-                {((impact?.electricitySaved.cost || 0) + 
-                  (impact?.waterSaved.cost || 0) + 
-                  (impact?.detergentSaved.cost || 0)).toLocaleString()}円
+                {i18n.language === 'ja' 
+                  ? `${((impact?.electricitySaved.cost || 0) + (impact?.waterSaved.cost || 0) + (impact?.detergentSaved.cost || 0)).toLocaleString()}${t('impact.units.yen')}`
+                  : `${t('impact.units.yen')}${((impact?.electricitySaved.cost || 0) + (impact?.waterSaved.cost || 0) + (impact?.detergentSaved.cost || 0)).toLocaleString()}`
+                }
               </Text>
             </View>
           </View>
@@ -605,7 +619,7 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
             <View style={styles.cardHeader}>
               <Ionicons name="shirt" size={24} color="#e74c3c" />
               <Text style={[styles.cardTitle, { color: theme.text }]}>
-                洋服寿命延長効果
+                {t('impact.metrics.lifespanExtension')}
               </Text>
               <TouchableOpacity 
                 onPress={() => setShowLifespanInfoModal(true)}
@@ -616,8 +630,9 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
             </View>
 
             <Text style={[styles.lifespanDescription, { color: theme.text }]}>
-              洗濯回数を{(impact?.totalWashesReduced || 0).toFixed(1)}回削減したことで、あなたの洋服の寿命が延びています。
-              洗濯による繊維へのダメージが軽減され、お気に入りの服をより長く着ることができます。
+              {t('impact.lifespanDescription', {
+                washesReduced: (impact?.totalWashesReduced || 0).toFixed(1)
+              })}
             </Text>
 
             <View style={styles.lifespanEffect}>
@@ -625,7 +640,9 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
                 <Ionicons name="time" size={32} color="#e74c3c" />
               </View>
               <Text style={[styles.lifespanValue, { color: theme.text }]}>
-                洋服の寿命 約{Math.round((impact?.totalWashesReduced || 0) * 0.05) + 1}倍に延長
+                {t('impact.lifespanValue', {
+                  multiplier: Math.round((impact?.totalWashesReduced || 0) * 0.05) + 1
+                })}
               </Text>
             </View>
           </View>
@@ -636,7 +653,7 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
               <View style={styles.cardHeader}>
                 <Ionicons name="bar-chart" size={24} color="#3498db" />
                 <Text style={[styles.cardTitle, { color: theme.text }]}>
-                  月別削減効果
+                  {t('impact.metrics.monthlyReduction')}
                 </Text>
               </View>
 
@@ -656,7 +673,7 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
                           {item.washesReduced.toFixed(1)}
                         </Text>
                         <Text style={[styles.chartCo2Value, { color: "#27ae60" }]}>
-                          {item.co2Reduced.toFixed(1)}kg
+                          {item.co2Reduced.toFixed(1)}{t('impact.units.kg')}
                         </Text>
                       </View>
                       <View
@@ -679,11 +696,11 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
               <View style={styles.chartLegend}>
                 <View style={styles.legendItem}>
                   <View style={[styles.legendColor, { backgroundColor: "#3498db" }]} />
-                  <Text style={[styles.legendText, { color: theme.text }]}>洗濯回数削減</Text>
+                  <Text style={[styles.legendText, { color: theme.text }]}>{t('impact.metrics.washesReduced')}</Text>
                 </View>
                 <View style={styles.legendItem}>
                   <View style={[styles.legendColor, { backgroundColor: "#27ae60" }]} />
-                  <Text style={[styles.legendText, { color: theme.text }]}>CO2削減量(kg)</Text>
+                  <Text style={[styles.legendText, { color: theme.text }]}>{t('impact.metrics.co2Reduced')}({t('impact.units.kg')})</Text>
                 </View>
               </View>
             </View>
@@ -694,7 +711,7 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
             <View style={styles.cardHeader}>
               <Ionicons name="globe" size={24} color="#27ae60" />
               <Text style={[styles.cardTitle, { color: theme.text }]}>
-                環境貢献度
+                {t('impact.metrics.environmentalContribution')}
               </Text>
             </View>
 
@@ -712,14 +729,16 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
               </View>
 
               <Text style={[styles.environmentalText, { color: theme.text }]}>
-                あなたの洗濯習慣の改善により、{(impact?.co2Reduced || 0).toFixed(1)}kgのCO2排出を削減しました。
-                これは約{(impact?.treeEquivalent || 0).toFixed(1)}本の木が1年間に吸収するCO2量に相当します。
+                {t('impact.environmentalText', {
+                  co2: (impact?.co2Reduced || 0).toFixed(1),
+                  treeEquivalent: (impact?.treeEquivalent || 0).toFixed(1)
+                })}
               </Text>
             </View>
 
             <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
               <Ionicons name="share-social" size={16} color="white" />
-              <Text style={styles.shareButtonText}>環境貢献度をシェアする</Text>
+              <Text style={styles.shareButtonText}>{t('impact.share.button')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -741,18 +760,18 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
               <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>洗濯回数削減の計算方法について</Text>
+            <Text style={styles.modalTitle}>{t('impact.info.washInfo.title')}</Text>
 
             <Text style={styles.modalText}>
-              環境影響の計算は、「着用するたびに洗濯する」場合と比較して、実際の洗濯回数の差に基づいています。
+              {t('impact.info.washInfo.content1')}
             </Text>
 
             <Text style={styles.modalText}>
-              ただし、実際には複数のアイテムを一度に洗濯することが一般的です。そのため、削減された洗濯回数は平均的な洗濯機1回あたりのアイテム数（5アイテム）で割って計算しています。
+              {t('impact.info.washInfo.content2')}
             </Text>
 
             <Text style={styles.modalText}>
-              例：10回着用して2回洗濯した場合、理論上は8回の洗濯を削減したことになりますが、1回の洗濯で平均5アイテムを洗うと考えると、実際の削減効果は8÷5=1.6回分となります。
+              {t('impact.info.washInfo.content3')}
             </Text>
           </View>
         </View>
@@ -774,18 +793,18 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
               <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>水量（料金）の計算方法について</Text>
+            <Text style={styles.modalTitle}>{t('impact.info.waterInfo.title')}</Text>
 
             <Text style={styles.modalText}>
-              水量の節約効果は、削減された洗濯回数に1回の洗濯で使用される平均的な水量（約50リットル）を掛けて計算しています。
+              {t('impact.info.waterInfo.content1')}
             </Text>
 
             <Text style={styles.modalText}>
-              料金は地域によって異なりますが、一般的な水道料金（1000リットルあたり約300円）に基づいて計算しています。
+              {t('impact.info.waterInfo.content2')}
             </Text>
 
             <Text style={styles.modalText}>
-              例：洗濯回数を10回削減した場合、50リットル×10回=500リットルの水を節約したことになり、料金に換算すると約150円の節約となります。
+              {t('impact.info.waterInfo.content3')}
             </Text>
           </View>
         </View>
@@ -807,18 +826,18 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
               <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>電気量（料金）の計算方法について</Text>
+            <Text style={styles.modalTitle}>{t('impact.info.energyInfo.title')}</Text>
 
             <Text style={styles.modalText}>
-              電気量の節約効果は、削減された洗濯回数に1回の洗濯で使用される平均的な電力量（約0.5kWh）を掛けて計算しています。
+              {t('impact.info.energyInfo.content1')}
             </Text>
 
             <Text style={styles.modalText}>
-              料金は電力会社や契約プランによって異なりますが、一般的な電気料金（1kWhあたり約25円）に基づいて計算しています。
+              {t('impact.info.energyInfo.content2')}
             </Text>
 
             <Text style={styles.modalText}>
-              例：洗濯回数を10回削減した場合、0.5kWh×10回=5kWhの電力を節約したことになり、料金に換算すると約125円の節約となります。
+              {t('impact.info.energyInfo.content3')}
             </Text>
           </View>
         </View>
@@ -840,18 +859,18 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
               <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>CO2削減量の計算方法について</Text>
+            <Text style={styles.modalTitle}>{t('impact.info.co2Info.title')}</Text>
 
             <Text style={styles.modalText}>
-              CO2削減量は、節約された電力量に電力のCO2排出係数（1kWhあたり約0.5kg）を掛けて計算しています。
+              {t('impact.info.co2Info.content1')}
             </Text>
 
             <Text style={styles.modalText}>
-              洗濯機の使用だけでなく、水の供給や処理に関連するCO2排出も考慮しています。
+              {t('impact.info.co2Info.content2')}
             </Text>
 
             <Text style={styles.modalText}>
-              例：電力を5kWh節約した場合、5kWh×0.5kg/kWh=2.5kgのCO2排出を削減したことになります。
+              {t('impact.info.co2Info.content3')}
             </Text>
           </View>
         </View>
@@ -873,18 +892,18 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
               <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>植樹相当効果の計算方法について</Text>
+            <Text style={styles.modalTitle}>{t('impact.info.treeInfo.title')}</Text>
 
             <Text style={styles.modalText}>
-              植樹相当効果は、削減されたCO2排出量を、1本の木が1年間に吸収するCO2量（約20kg）で割って計算しています。
+              {t('impact.info.treeInfo.content1')}
             </Text>
 
             <Text style={styles.modalText}>
-              この値は、あなたの洗濯習慣の改善が、どれだけの数の木を植えるのと同等のCO2吸収効果があるかを示しています。
+              {t('impact.info.treeInfo.content2')}
             </Text>
 
             <Text style={styles.modalText}>
-              例：CO2排出を10kg削減した場合、10kg÷20kg/本=0.5本の木を植えるのと同等の効果があります。
+              {t('impact.info.treeInfo.content3')}
             </Text>
           </View>
         </View>
@@ -906,18 +925,18 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
               <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>洗剤消費量（料金）の計算方法について</Text>
+            <Text style={styles.modalTitle}>{t('impact.info.detergentInfo.title')}</Text>
 
             <Text style={styles.modalText}>
-              洗剤の節約効果は、削減された洗濯回数に1回の洗濯で使用される平均的な洗剤量（約30ml）を掛けて計算しています。
+              {t('impact.info.detergentInfo.content1')}
             </Text>
 
             <Text style={styles.modalText}>
-              料金は洗剤の種類によって異なりますが、一般的な洗剤の価格（800mlボトルで約400円）に基づいて計算しています。
+              {t('impact.info.detergentInfo.content2')}
             </Text>
 
             <Text style={styles.modalText}>
-              例：洗濯回数を10回削減した場合、30ml×10回=300mlの洗剤を節約したことになり、料金に換算すると約150円の節約となります。
+              {t('impact.info.detergentInfo.content3')}
             </Text>
           </View>
         </View>
@@ -939,18 +958,18 @@ EverWearで洋服の寿命を延ばしながら環境にも貢献しよう！
               <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>洋服寿命延長効果の計算方法について</Text>
+            <Text style={styles.modalTitle}>{t('impact.info.lifespanInfo.title')}</Text>
 
             <Text style={styles.modalText}>
-              洋服の寿命延長効果は、洗濯回数の削減に基づいて計算しています。一般的に、洗濯は衣類の繊維を傷め、色落ちや形崩れの原因となります。
+              {t('impact.info.lifespanInfo.content1')}
             </Text>
 
             <Text style={styles.modalText}>
-              研究によると、洗濯回数が20%減少すると、衣類の寿命は約1.5倍に延びるとされています。このデータに基づき、削減された洗濯回数から寿命延長効果を推定しています。
+              {t('impact.info.lifespanInfo.content2')}
             </Text>
 
             <Text style={styles.modalText}>
-              例：洗濯回数を20回から16回に20%削減した場合、衣類の寿命は約1.5倍に延びると推定されます。
+              {t('impact.info.lifespanInfo.content3')}
             </Text>
           </View>
         </View>

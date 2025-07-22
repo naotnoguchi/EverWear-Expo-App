@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Animated,
@@ -23,7 +24,25 @@ import { useClothing } from '../../contexts/ClothingContext';
 import { useTabReset } from '../../contexts/TabResetContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useImageUrls } from '../../hooks/useImageUrls';
-import { formatDateJapanese } from '../../lib/dateUtils';
+import { formatDateLocalized } from '../../lib/dateUtils';
+
+// カテゴリ値から翻訳キーへのマッピング
+const getCategoryKeyFromValue = (categoryValue: string): string => {
+  const categoryMap: Record<string, string> = {
+    'トップス': 'tops',
+    'ボトムス': 'bottoms',
+    'ジャケット': 'jacket',
+    'アウター': 'outerwear',
+    'セットアップ': 'setup',
+    'ワンピース': 'dress',
+    'シューズ': 'shoes',
+    'バッグ': 'bag',
+    '小物': 'accessories',
+    'その他': 'others'
+  };
+  
+  return categoryMap[categoryValue] || 'others';
+};
 
 // React Native の LayoutAnimation を有効化（Android用）
 if (Platform.OS === 'android') {
@@ -106,6 +125,7 @@ const generateHistoryData = (clothingItems: any[]): HistoryItem[] => {
 export default function History() {
   const { clothingItems, deleteWearHistory, deleteWashHistory } = useClothing();
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
   const { registerResetFunction } = useTabReset();
   const [selectedDate, setSelectedDate] = useState<string | null>(null); // 選択された日付
   const [isCalendarMinimized, setIsCalendarMinimized] = useState(false); // カレンダーが最小化されているかどうか
@@ -116,12 +136,27 @@ export default function History() {
   const scrollDirection = useRef<'up' | 'down'>('down'); // スクロール方向
   const isScrolling = useRef(false); // スクロール中かどうか
   const animationInProgressRef = useRef(false); // アニメーション進行中フラグ
+  
+  // 改善: スクロール制御用の新しいref
+  const lastScrollTime = useRef(0); // 前回のスクロール時間
+  const scrollVelocity = useRef(0); // スクロール速度
+  const lastStateChangeTime = useRef(0); // 最後の状態変更時間
+  const consecutiveDirectionChanges = useRef(0); // 連続する方向変更回数
 
   // アニメーション用の値
   const calendarHeight = useRef(new Animated.Value(1)).current; // 1: 最大化、0: 最小化
   const calendarHeaderOpacity = useRef(new Animated.Value(1)).current; // ヘッダーの透明度
   const expandButtonOpacity = useRef(new Animated.Value(0)).current; // 展開ボタンの透明度
   // 折りたたみボタンの位置のアニメーション値を削除
+
+  // 改善: 定数定義
+  const SCROLL_THRESHOLDS = {
+    MINIMIZE: 30, // 最小化の閾値（ヒステリシス）
+    MAXIMIZE: 10, // 最大化の閾値（ヒステリシス）
+    DIRECTION_CHANGE: 2, // スクロール方向変更の閾値
+    MIN_VELOCITY: 50, // 最小スクロール速度（px/s）
+    DEBOUNCE_TIME: 300, // デバウンス時間（ms）
+  };
 
   // ページがフォーカスされた時に状態をリセット
   useEffect(() => {
@@ -133,6 +168,12 @@ export default function History() {
     // スクロール位置をリセット
     lastScrollY.current = 0;
     scrollDirection.current = 'down';
+    
+    // 改善: 新しいrefもリセット
+    lastScrollTime.current = 0;
+    scrollVelocity.current = 0;
+    lastStateChangeTime.current = 0;
+    consecutiveDirectionChanges.current = 0;
 
     return () => {
       // クリーンアップ
@@ -191,13 +232,13 @@ export default function History() {
     const sections = Object.keys(groupedByDate)
       .map(date => ({
         date,
-        title: formatDateJapanese(date),
+        title: formatDateLocalized(date, i18n.language),
         data: groupedByDate[date]
       }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return sections;
-  }, [filteredHistory]);
+  }, [filteredHistory, i18n.language]);
 
   // アニメーションの設定
   const animateCalendar = (minimize: boolean) => {
@@ -205,6 +246,9 @@ export default function History() {
     if ((minimize && isCalendarMinimized) || (!minimize && !isCalendarMinimized) || animationInProgressRef.current) {
       return;
     }
+
+    // 改善: 状態変更時間を記録
+    lastStateChangeTime.current = Date.now();
 
     // アニメーション進行中フラグを設定
     animationInProgressRef.current = true;
@@ -267,12 +311,12 @@ export default function History() {
   // 履歴削除ハンドラー
   const handleDeleteHistory = (item: HistoryItem) => {
     Alert.alert(
-      `${item.eventType === "wear" ? "着用" : "洗濯"}履歴を削除`,
-      `${item.itemName}の${item.date}の履歴を削除しますか？`,
+      t('history.deleteHistory.title', { eventType: item.eventType === "wear" ? t('history.wear') : t('history.wash') }),
+      t('history.deleteHistory.message', { itemName: item.itemName, date: item.date }),
       [
-        { text: "キャンセル", style: "cancel" },
+        { text: t('common.cancel'), style: "cancel" },
         {
-          text: "削除",
+          text: t('common.delete'),
           style: "destructive",
           onPress: async () => {
             try {
@@ -283,14 +327,18 @@ export default function History() {
               }
 
               Alert.alert(
-                "削除完了", 
-                `${item.itemName}の${item.date}の${item.eventType === "wear" ? "着用" : "洗濯"}履歴を削除しました`
+                t('history.deleteHistory.successTitle'),
+                t('history.deleteHistory.successMessage', { 
+                  itemName: item.itemName, 
+                  date: item.date, 
+                  eventType: item.eventType === "wear" ? t('history.wear') : t('history.wash')
+                })
               );
             } catch (err) {
               console.error('Error in handleDeleteHistory:', err);
               Alert.alert(
-                "削除エラー", 
-                `${item.eventType === "wear" ? "着用" : "洗濯"}履歴の削除に失敗しました。もう一度お試しください。`
+                t('history.deleteHistory.errorTitle'),
+                t('history.deleteHistory.errorMessage', { eventType: item.eventType === "wear" ? t('history.wear') : t('history.wash') })
               );
             }
           }
@@ -321,30 +369,38 @@ export default function History() {
           </View>
         </View>
 
-        <Image
-          source={{
-            uri: imageUrls[item.itemId] || item.imageUrl || require('@/assets/images/placeholder.png'),
-            cacheKey: item.imageUrl,
-            width: 60,
-            height: 60
-          }}
-          style={styles.itemImage}
-          contentFit="cover"
-          cachePolicy="disk"
-          onError={() => {
-            // エラー時は何もしない（デフォルトのフォールバック画像が表示される）
-          }}
-        />
+        <View style={styles.itemImageContainer}>
+          {imageUrls[item.itemId] || item.imageUrl ? (
+            <Image
+              source={{
+                uri: imageUrls[item.itemId] || item.imageUrl,
+                cacheKey: item.imageUrl,
+                width: 60,
+                height: 60
+              }}
+              style={styles.itemImage}
+              contentFit="cover"
+              cachePolicy="disk"
+              onError={() => {
+                // エラー時は何もしない（フォールバック表示になる）
+              }}
+            />
+          ) : (
+            <View style={styles.placeholderContainer}>
+              <Ionicons name="shirt-outline" size={30} color={theme.text + "66"} />
+            </View>
+          )}
+        </View>
 
         <View style={styles.historyContent}>
           {item.itemName && item.itemName.trim() && (
             <Text style={styles.historyTitle}>{item.itemName}</Text>
           )}
           <Text style={styles.historyCategory}>
-            {item.brand ? `${item.brand} / ${item.category}` : item.category}
+            {item.brand ? `${item.brand} / ${t(`categories.${getCategoryKeyFromValue(item.category)}`)}` : t(`categories.${getCategoryKeyFromValue(item.category)}`)}
           </Text>
           <Text style={styles.historyAction}>
-            {item.eventType === "wear" ? "着用しました" : "洗濯しました"}
+            {item.eventType === "wear" ? t('history.actions.wore') : t('history.actions.washed')}
           </Text>
         </View>
       </TouchableOpacity>
@@ -406,31 +462,66 @@ export default function History() {
   // Handle scroll events to minimize/maximize calendar
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollY = event.nativeEvent.contentOffset.y;
+    const currentTime = Date.now();
 
     // アニメーション中は処理をスキップ
     if (animationInProgressRef.current) {
       return;
     }
 
-    // スクロール方向を判定（前回のスクロール位置と比較）
-    // 閾値を下げて、より敏感に反応するようにする
-    const isSignificantChange = Math.abs(scrollY - lastScrollY.current) > 0.5;
+    // 改善: デバウンスチェック
+    if (currentTime - lastStateChangeTime.current < SCROLL_THRESHOLDS.DEBOUNCE_TIME) {
+      return;
+    }
+
+    // 改善: スクロール速度の計算
+    const timeDiff = currentTime - lastScrollTime.current;
+    if (timeDiff > 0) {
+      const distance = Math.abs(scrollY - lastScrollY.current);
+      scrollVelocity.current = (distance / timeDiff) * 1000; // px/s
+    }
+    lastScrollTime.current = currentTime;
+
+    // 改善: スクロール方向の判定（より安定した判定）
+    const isSignificantChange = Math.abs(scrollY - lastScrollY.current) > SCROLL_THRESHOLDS.DIRECTION_CHANGE;
     const newDirection = isSignificantChange 
       ? (scrollY > lastScrollY.current ? 'down' : 'up')
       : scrollDirection.current;
+
+    // 改善: 方向変更の追跡
+    if (isSignificantChange && newDirection !== scrollDirection.current) {
+      consecutiveDirectionChanges.current++;
+    } else if (isSignificantChange) {
+      consecutiveDirectionChanges.current = 0;
+    }
 
     if (isSignificantChange) {
       scrollDirection.current = newDirection;
       lastScrollY.current = scrollY;
     }
 
+    // 改善: スクロール速度が遅すぎる場合は状態変更を無効化
+    if (scrollVelocity.current < SCROLL_THRESHOLDS.MIN_VELOCITY) {
+      return;
+    }
+
+    // 改善: 連続する方向変更が多すぎる場合は状態変更を無効化
+    if (consecutiveDirectionChanges.current > 3) {
+      return;
+    }
+
+    // 改善: ヒステリシスを使用した状態変更条件
     // カレンダーを最小化する条件: 下スクロール時で、閾値よりスクロールした場合
-    if (newDirection === 'down' && scrollY > 10 && !isCalendarMinimized) {
+    if (newDirection === 'down' && scrollY > SCROLL_THRESHOLDS.MINIMIZE && !isCalendarMinimized) {
       animateCalendar(true);
+      lastStateChangeTime.current = currentTime;
+      consecutiveDirectionChanges.current = 0;
     } 
     // カレンダーを最大化する条件: 上スクロール時で、リストの先頭に近い場合
-    else if (newDirection === 'up' && scrollY < 5 && isCalendarMinimized) {
+    else if (newDirection === 'up' && scrollY < SCROLL_THRESHOLDS.MAXIMIZE && isCalendarMinimized) {
       animateCalendar(false);
+      lastStateChangeTime.current = currentTime;
+      consecutiveDirectionChanges.current = 0;
     }
   };
 
@@ -520,11 +611,22 @@ export default function History() {
       justifyContent: "center",
       alignItems: "center",
     },
-    itemImage: {
+    itemImageContainer: {
       width: 60,
       height: 60,
       borderRadius: 8,
       alignSelf: 'center',
+      backgroundColor: theme.border,
+    },
+    itemImage: {
+      width: 60,
+      height: 60,
+      borderRadius: 8,
+    },
+    placeholderContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
       backgroundColor: theme.border,
     },
     historyContent: {
@@ -694,7 +796,7 @@ export default function History() {
                 activeOpacity={0.7}
               >
                 <Ionicons name="chevron-down" size={20} color={theme.text} />
-                <Text style={styles.expandButtonText}>カレンダーを表示</Text>
+                <Text style={styles.expandButtonText}>{t('history.showCalendar')}</Text>
               </TouchableOpacity>
             </Animated.View>
           </>
@@ -705,10 +807,10 @@ export default function History() {
       {showHint && filteredHistory.length > 0 && (
         <View style={styles.hintContainer}>
           <Text style={styles.hintText}>
-            履歴を長押しすると削除できます
+            {t('history.hint.longPress')}
           </Text>
           <TouchableOpacity onPress={() => setShowHint(false)}>
-            <Text style={styles.hintCloseText}>閉じる</Text>
+            <Text style={styles.hintCloseText}>{t('common.close')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -740,7 +842,7 @@ export default function History() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="document-text-outline" size={60} color={theme.text + "66"} /* with more transparency */ />
-            <Text style={styles.placeholderText}>履歴がありません</Text>
+            <Text style={styles.placeholderText}>{t('history.empty')}</Text>
           </View>
         }
       />

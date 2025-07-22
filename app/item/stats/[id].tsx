@@ -2,14 +2,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../../../contexts/StatisticsContext";
 import { useTheme } from "../../../contexts/ThemeContext";
+import { formatDateLocalized } from "../../../lib/dateUtils";
 import { getPrivateUrl } from "../../../lib/storageClient";
 import { ItemDetailStats } from "../../../services/statisticsServiceFactory";
 import { CategoryValue } from "../../../types/categories";
 
 export default function ItemDetailScreen() {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -86,6 +89,14 @@ export default function ItemDetailScreen() {
       width: 120,
       height: 120,
       borderRadius: 8,
+    },
+    placeholderContainer: {
+      width: 120,
+      height: 120,
+      borderRadius: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.card + '20',
     },
     cardHeader: {
       flexDirection: 'row',
@@ -305,7 +316,7 @@ export default function ItemDetailScreen() {
       console.log('アイテム詳細画面: データ取得開始');
       const data = await getItemDetailStats(id);
       if (!data) {
-        throw new Error('アイテムデータが見つかりませんでした。');
+        throw new Error(t('itemDetail.dataNotFound'));
       }
       console.log('アイテム詳細画面: 取得したデータ:', {
         id: data.id,
@@ -335,7 +346,7 @@ export default function ItemDetailScreen() {
       }
     } catch (err) {
       console.error('アイテム詳細データの取得エラー:', err);
-      setError('アイテム詳細データの取得に失敗しました。後でもう一度お試しください。');
+      setError(t('itemDetail.fetchError'));
     } finally {
       setLoading(false);
     }
@@ -348,32 +359,34 @@ export default function ItemDetailScreen() {
 
   // Calculate efficiency status - itemStatsがnullでないことを確認
   const getEfficiencyStatus = useCallback(() => {
-    if (!itemStats) return { text: 'データなし', color: '#999' };
+    if (!itemStats) return { text: t('itemStats.efficiency.noData'), color: '#999' };
 
     // 着用・洗濯履歴がない場合、または洗濯履歴が0件の場合は判定を表示しない
     if (itemStats.wearCount === 0 && itemStats.washCount === 0) {
-      return { text: '履歴なし', color: '#999' };
+      return { text: t('itemStats.efficiency.noHistory'), color: '#999' };
     } else if (itemStats.washCount === 0) {
-      return { text: 'データなし', color: '#999' };
+      return { text: t('itemStats.efficiency.noData'), color: '#999' };
     }
 
     const lowerThreshold = 0.8; // 閾値の80%
     const upperThreshold = 1.2; // 閾値の120%
 
     if (itemStats.efficiency >= lowerThreshold && itemStats.efficiency <= upperThreshold) {
-      return { text: '良好', color: '#27ae60' }; // 最適範囲内
+      return { text: t('itemStats.efficiency.good'), color: '#27ae60' }; // 最適範囲内
     } else if (itemStats.efficiency > upperThreshold) {
-      return { text: '洗濯不足', color: '#f39c12' }; // 洗濯頻度が低すぎる
+      return { text: t('itemStats.efficiency.underwashed'), color: '#f39c12' }; // 洗濯頻度が低すぎる
     } else {
-      return { text: '洗いすぎ', color: '#e74c3c' }; // 洗濯頻度が高すぎる
+      return { text: t('itemStats.efficiency.overwashed'), color: '#e74c3c' }; // 洗濯頻度が高すぎる
     }
-  }, [itemStats]);
+  }, [itemStats, t]);
 
   // Find day with most wears - itemStatsがnullでないことを確認
   const getMostWornDay = useCallback(() => {
     if (!itemStats) return null;
     const days = Object.entries(itemStats.wearsByDay);
     if (days.length === 0) return null;
+
+    console.log('Days data:', days); // デバッグ用
 
     return days.reduce((max, current) => {
       return current[1] > max[1] ? current : max;
@@ -386,29 +399,128 @@ export default function ItemDetailScreen() {
     const months = Object.entries(itemStats.wearsByMonth);
     if (months.length === 0) return null;
 
+    console.log('Months data:', months); // デバッグ用
+
     return months.reduce((max, current) => {
       return current[1] > max[1] ? current : max;
     });
   }, [itemStats]);
 
+  // カテゴリ名を翻訳する関数
+  const getCategoryName = useCallback((category: CategoryValue) => {
+    if (!category) return '';
+    
+    const categoryMap: Record<string, string> = {
+      'トップス': 'tops',
+      'ボトムス': 'bottoms',
+      'ワンピース': 'dress',
+      'アウター': 'outerwear',
+      'ジャケット': 'jacket',
+      'シューズ': 'shoes',
+      'バッグ': 'bag',
+      '小物': 'accessories',
+      'セットアップ': 'setup',
+      'その他': 'others'
+    };
+    return t(`itemStats.categories.${categoryMap[category]}`);
+  }, [t]);
+
+  // 曜日名を翻訳する関数
+  const getDayName = useCallback((day: string) => {
+    console.log('getDayName called with:', day); // デバッグ用
+    
+    const dayMap: Record<string, string> = {
+      // 英語の曜日
+      'Monday': 'monday',
+      'Tuesday': 'tuesday',
+      'Wednesday': 'wednesday',
+      'Thursday': 'thursday',
+      'Friday': 'friday',
+      'Saturday': 'saturday',
+      'Sunday': 'sunday',
+      // 日本語の曜日
+      '月曜日': 'monday',
+      '火曜日': 'tuesday',
+      '水曜日': 'wednesday',
+      '木曜日': 'thursday',
+      '金曜日': 'friday',
+      '土曜日': 'saturday',
+      '日曜日': 'sunday'
+    };
+    
+    const mappedDay = dayMap[day];
+    console.log('Mapped day:', mappedDay); // デバッグ用
+    
+    if (!mappedDay) {
+      console.warn('Unknown day:', day);
+      return day; // 翻訳できない場合は元の値を返す
+    }
+    
+    return t(`itemStats.days.${mappedDay}`);
+  }, [t]);
+
+  // 月名を翻訳する関数
+  const getMonthName = useCallback((month: string) => {
+    console.log('getMonthName called with:', month); // デバッグ用
+    
+    const monthMap: Record<string, string> = {
+      // 英語の月
+      'January': 'january',
+      'February': 'february',
+      'March': 'march',
+      'April': 'april',
+      'May': 'may',
+      'June': 'june',
+      'July': 'july',
+      'August': 'august',
+      'September': 'september',
+      'October': 'october',
+      'November': 'november',
+      'December': 'december',
+      // 日本語の月
+      '1月': 'january',
+      '2月': 'february',
+      '3月': 'march',
+      '4月': 'april',
+      '5月': 'may',
+      '6月': 'june',
+      '7月': 'july',
+      '8月': 'august',
+      '9月': 'september',
+      '10月': 'october',
+      '11月': 'november',
+      '12月': 'december'
+    };
+    
+    const mappedMonth = monthMap[month];
+    console.log('Mapped month:', mappedMonth); // デバッグ用
+    
+    if (!mappedMonth) {
+      console.warn('Unknown month:', month);
+      return month; // 翻訳できない場合は元の値を返す
+    }
+    
+    return t(`itemStats.months.${mappedMonth}`);
+  }, [t]);
+
   // カテゴリに基づく洗濯アドバイスを取得
   const getWashingAdvice = useCallback((category: CategoryValue) => {
     switch (category) {
       case 'ボトムス':
-        return 'ボトムスは5-10回着用ごとに洗濯するのが理想的です。洗いすぎも洗わなさすぎも避けましょう。';
+        return t('itemStats.efficiency.tip.bottoms');
       case 'アウター':
-        return 'アウターは汚れた場合を除き、シーズンに1-2回の洗濯で十分です。ただし、汚れが目立つ場合は適宜洗濯しましょう。';
+        return t('itemStats.efficiency.tip.outerwear');
       default:
-        return '一般的な衣類は2-3回着用ごとに洗濯するのが理想的です。衣類の種類や着用状況に応じて調整しましょう。';
+        return t('itemStats.efficiency.tip.default');
     }
-  }, []);
+  }, [t]);
 
   // Render loading state
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color={theme.primary || '#3498db'} />
-        <Text style={{ marginTop: 16, color: theme.text }}>アイテム詳細データを読み込み中...</Text>
+        <Text style={{ marginTop: 16, color: theme.text }}>{t('itemStats.loading')}</Text>
       </View>
     );
   }
@@ -419,10 +531,10 @@ export default function ItemDetailScreen() {
       <View style={[styles.container, styles.centerContent]}>
         <Ionicons name="alert-circle-outline" size={48} color={theme.error || '#e74c3c'} />
         <Text style={styles.errorText}>
-          {error || 'アイテムが見つかりませんでした。'}
+          {error || t('itemDetail.notFound')}
         </Text>
         <TouchableOpacity style={styles.retryButton} onPress={fetchItemDetail}>
-          <Text style={styles.retryButtonText}>再試行</Text>
+          <Text style={styles.retryButtonText}>{t('itemStats.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -436,8 +548,8 @@ export default function ItemDetailScreen() {
     <>
       <Stack.Screen 
         options={{
-          title: "アイテム詳細分析",
-          headerBackTitle: "戻る",
+          title: t('itemStats.title'),
+          headerBackTitle: t('common.back'),
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
               <Ionicons name="arrow-back" size={24} color={theme.text} />
@@ -455,7 +567,7 @@ export default function ItemDetailScreen() {
             </Text>
           )}
           <Text style={styles.itemCategory}>
-            {itemStats.brand ? `${itemStats.brand} / ${itemStats.category}` : itemStats.category}
+            {itemStats.brand ? `${itemStats.brand} / ${getCategoryName(itemStats.category)}` : getCategoryName(itemStats.category)}
           </Text>
 
           <View style={styles.statsRow}>
@@ -464,7 +576,7 @@ export default function ItemDetailScreen() {
                 {itemStats.wearCount}
               </Text>
               <Text style={styles.statLabel}>
-                着用回数
+                {t('itemStats.stats.wearCount')}
               </Text>
             </View>
 
@@ -473,7 +585,7 @@ export default function ItemDetailScreen() {
                 {itemStats.washCount}
               </Text>
               <Text style={styles.statLabel}>
-                洗濯回数
+                {t('itemStats.stats.washCount')}
               </Text>
             </View>
 
@@ -482,7 +594,7 @@ export default function ItemDetailScreen() {
                 {(itemStats.wearPerWash || 0).toFixed(1)}
               </Text>
               <Text style={styles.statLabel}>
-                着用/洗濯
+                {t('itemStats.stats.wearPerWash')}
               </Text>
             </View>
 
@@ -491,31 +603,33 @@ export default function ItemDetailScreen() {
                 {efficiencyStatus.text}
               </Text>
               <Text style={styles.statLabel}>
-                効率
+                {t('itemStats.stats.efficiency')}
               </Text>
             </View>
           </View>
 
           <View style={styles.imageContainer}>
-            <Image
-              source={
-                imageUrl
-                  ? {
-                      uri: imageUrl,
-                      width: 120,
-                      height: 120
-                    }
-                  : require('../../../assets/images/placeholder.png')
-              }
-              style={[styles.itemImage, { width: 120, height: 120 }]}
-              contentFit="cover"
-              cachePolicy="disk"
-              transition={200}
-              onError={(error) => {
-                console.error('Image load error:', error);
-                setImageUrl(null);
-              }}
-            />
+            {imageUrl ? (
+              <Image
+                source={{
+                  uri: imageUrl,
+                  width: 120,
+                  height: 120
+                }}
+                style={[styles.itemImage, { width: 120, height: 120 }]}
+                contentFit="cover"
+                cachePolicy="disk"
+                transition={200}
+                onError={(error) => {
+                  console.error('Image load error:', error);
+                  setImageUrl(null);
+                }}
+              />
+            ) : (
+              <View style={styles.placeholderContainer}>
+                <Ionicons name="shirt-outline" size={60} color={theme.text + "66"} />
+              </View>
+            )}
           </View>
         </View>
 
@@ -524,7 +638,7 @@ export default function ItemDetailScreen() {
           <View style={styles.cardHeader}>
             <Ionicons name="speedometer" size={24} color="#3498db" />
             <Text style={styles.cardTitle}>
-              洗濯効率
+              {t('itemStats.efficiency.title')}
             </Text>
           </View>
 
@@ -573,22 +687,22 @@ export default function ItemDetailScreen() {
                 />
               )}
               <View style={styles.efficiencyScale}>
-                <Text style={styles.efficiencyScaleText}>洗濯不足</Text>
-                <Text style={[styles.efficiencyScaleText, { position: 'absolute', left: '50%', transform: [{ translateX: -10 }] }]}>良好</Text>
-                <Text style={styles.efficiencyScaleText}>洗いすぎ</Text>
+                <Text style={styles.efficiencyScaleText}>{t('itemStats.efficiency.underwashed')}</Text>
+                <Text style={[styles.efficiencyScaleText, { position: 'absolute', left: '50%', transform: [{ translateX: -10 }] }]}>{t('itemStats.efficiency.good')}</Text>
+                <Text style={styles.efficiencyScaleText}>{t('itemStats.efficiency.overwashed')}</Text>
               </View>
             </View>
 
             <Text style={styles.efficiencyDescription}>
               {itemStats.wearCount === 0 && itemStats.washCount === 0
-                ? 'このアイテムはまだ着用・洗濯の記録がありません。着用と洗濯を記録すると、洗濯効率の分析が表示されます。'
+                ? t('itemStats.efficiency.noWearWashHistory')
                 : itemStats.washCount === 0
-                  ? 'このアイテムはまだ洗濯の記録がありません。洗濯を記録すると、洗濯効率の分析が表示されます。'
+                  ? t('itemStats.efficiency.noWashHistory')
                   : itemStats.efficiency >= 0.8 && itemStats.efficiency <= 1.2
-                    ? 'このアイテムは最適な頻度で洗濯されています。このまま続けましょう！' 
+                    ? t('itemStats.efficiency.optimal')
                     : itemStats.efficiency < 0.8
-                      ? '洗濯頻度が高すぎる可能性があります。洗濯の間にもっと着用することで、衣類の寿命を延ばし、環境への影響を減らせます。'
-                      : '洗濯頻度が低すぎる可能性があります。衣類の清潔さを保つため、もう少し頻繁に洗濯することを検討してください。'}
+                      ? t('itemStats.efficiency.overwashedDesc')
+                      : t('itemStats.efficiency.underwashedDesc')}
             </Text>
 
             <View style={styles.efficiencyTip}>
@@ -605,62 +719,62 @@ export default function ItemDetailScreen() {
           <View style={styles.cardHeader}>
             <Ionicons name="calendar" size={24} color="#3498db" />
             <Text style={styles.cardTitle}>
-              着用パターン
+              {t('itemStats.patterns.title')}
             </Text>
           </View>
 
           <View style={styles.patternContainer}>
             <View style={styles.patternItem}>
               <Text style={styles.patternLabel}>
-                最も着用する曜日
+                {t('itemStats.patterns.mostWornDay')}
               </Text>
               {itemStats.wearCount > 0 && mostWornDay ? (
                 <Text style={styles.patternValue}>
-                  {mostWornDay[0]}（{mostWornDay[1]}回）
+                  {getDayName(mostWornDay[0])}（{mostWornDay[1]}{t('itemStats.patterns.times')}）
                 </Text>
               ) : (
                 <Text style={[styles.patternValue, { color: theme.text + "99" }]}>
-                  データなし
+                  {t('itemStats.patterns.noData')}
                 </Text>
               )}
             </View>
 
             <View style={styles.patternItem}>
               <Text style={styles.patternLabel}>
-                最も着用する月
+                {t('itemStats.patterns.mostWornMonth')}
               </Text>
               {itemStats.wearCount > 0 && mostWornMonth ? (
                 <Text style={styles.patternValue}>
-                  {mostWornMonth[0]}（{mostWornMonth[1]}回）
+                  {getMonthName(mostWornMonth[0])}（{mostWornMonth[1]}{t('itemStats.patterns.times')}）
                 </Text>
               ) : (
                 <Text style={[styles.patternValue, { color: theme.text + "99" }]}>
-                  データなし
+                  {t('itemStats.patterns.noData')}
                 </Text>
               )}
             </View>
 
             <View style={styles.patternItem}>
               <Text style={styles.patternLabel}>
-                平均着用間隔
+                {t('itemStats.patterns.avgWearInterval')}
               </Text>
               {itemStats.wearCount > 1 ? (
                 <Text style={styles.patternValue}>
-                  {(itemStats.averageWearInterval || 0).toFixed(1)}日
+                  {(itemStats.averageWearInterval || 0).toFixed(1)}{t('itemStats.units.days')}
                 </Text>
               ) : (
                 <Text style={[styles.patternValue, { color: theme.text + "99" }]}>
-                  データなし
+                  {t('itemStats.patterns.noData')}
                 </Text>
               )}
             </View>
 
             <View style={styles.patternItem}>
               <Text style={styles.patternLabel}>
-                最終着用日
+                {t('itemStats.patterns.lastWornDate')}
               </Text>
               <Text style={styles.patternValue}>
-                {itemStats.lastWornDate ? new Date(itemStats.lastWornDate).toLocaleDateString('ja-JP') : 'なし'}
+                {itemStats.lastWornDate ? formatDateLocalized(itemStats.lastWornDate, i18n.language) : t('itemDetail.stats.none')}
               </Text>
             </View>
           </View>
@@ -671,7 +785,7 @@ export default function ItemDetailScreen() {
           <View style={styles.cardHeader}>
             <Ionicons name="bar-chart" size={24} color="#3498db" />
             <Text style={styles.cardTitle}>
-              月別着用回数
+              {t('itemStats.monthlyChart.title')}
             </Text>
           </View>
 
@@ -700,7 +814,7 @@ export default function ItemDetailScreen() {
                       ]}
                     />
                     <Text style={styles.chartLabel}>
-                      {month}
+                      {getMonthName(month)}
                     </Text>
                   </View>
                 );
@@ -710,10 +824,10 @@ export default function ItemDetailScreen() {
             <View style={{ alignItems: 'center', padding: 20 }}>
               <Ionicons name="information-circle-outline" size={24} color={theme.primary} />
               <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text, marginTop: 12, marginBottom: 8 }}>
-                着用データがありません
+                {t('itemStats.monthlyChart.noData')}
               </Text>
               <Text style={{ fontSize: 14, textAlign: 'center', color: theme.text + "99", paddingHorizontal: 16 }}>
-                このアイテムを着用すると、月別の着用回数データが表示されます。
+                {t('itemStats.monthlyChart.noDataDesc')}
               </Text>
             </View>
           )}
@@ -724,7 +838,7 @@ export default function ItemDetailScreen() {
           <View style={styles.cardHeader}>
             <Ionicons name="leaf" size={24} color="#27ae60" />
             <Text style={styles.cardTitle}>
-              環境への影響
+              {t('itemStats.environmental.title')}
             </Text>
             <TouchableOpacity 
               onPress={() => setShowWashInfoModal(true)}
@@ -743,7 +857,7 @@ export default function ItemDetailScreen() {
                 {(itemStats.waterSaved || 0).toFixed(1)}L
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={styles.impactLabel}>節水量</Text>
+                <Text style={styles.impactLabel}>{t('itemStats.environmental.waterSaved')}</Text>
                 <TouchableOpacity 
                   onPress={() => setShowWaterInfoModal(true)}
                   style={{ marginLeft: 2 }}
@@ -761,7 +875,7 @@ export default function ItemDetailScreen() {
                 {(itemStats.energySaved || 0).toFixed(1)}kWh
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={styles.impactLabel}>節電量</Text>
+                <Text style={styles.impactLabel}>{t('itemStats.environmental.energySaved')}</Text>
                 <TouchableOpacity 
                   onPress={() => setShowEnergyInfoModal(true)}
                   style={{ marginLeft: 2 }}
@@ -779,7 +893,7 @@ export default function ItemDetailScreen() {
                 {(itemStats.co2Reduced || 0).toFixed(1)}kg
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={styles.impactLabel}>CO2削減量</Text>
+                <Text style={styles.impactLabel}>{t('itemStats.environmental.co2Reduced')}</Text>
                 <TouchableOpacity 
                   onPress={() => setShowCO2InfoModal(true)}
                   style={{ marginLeft: 2 }}
@@ -791,7 +905,7 @@ export default function ItemDetailScreen() {
           </View>
 
           <Text style={styles.impactDescription}>
-            このアイテムの適切な洗濯頻度により、上記の資源を節約し、環境への影響を軽減しています。
+            {t('itemStats.environmental.description')}
           </Text>
         </View>
       </ScrollView>
@@ -812,18 +926,18 @@ export default function ItemDetailScreen() {
               <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>洗濯回数削減の計算方法について</Text>
+            <Text style={styles.modalTitle}>{t('itemStats.modals.washInfo.title')}</Text>
 
             <Text style={styles.modalText}>
-              環境影響の計算は、「着用するたびに洗濯する」場合と比較して、実際の洗濯回数の差に基づいています。
+              {t('itemStats.modals.washInfo.description1')}
             </Text>
 
             <Text style={styles.modalText}>
-              ただし、実際には複数のアイテムを一度に洗濯することが一般的です。そのため、削減された洗濯回数は平均的な洗濯機1回あたりのアイテム数（5アイテム）で割って計算しています。
+              {t('itemStats.modals.washInfo.description2')}
             </Text>
 
             <Text style={styles.modalText}>
-              例：10回着用して2回洗濯した場合、理論上は8回の洗濯を削減したことになりますが、1回の洗濯で平均5アイテムを洗うと考えると、実際の削減効果は8÷5=1.6回分となります。
+              {t('itemStats.modals.washInfo.example')}
             </Text>
           </View>
         </View>
@@ -845,18 +959,18 @@ export default function ItemDetailScreen() {
               <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>水量（料金）の計算方法について</Text>
+            <Text style={styles.modalTitle}>{t('itemStats.modals.waterInfo.title')}</Text>
 
             <Text style={styles.modalText}>
-              水量の節約効果は、削減された洗濯回数に1回の洗濯で使用される平均的な水量（約65リットル）を掛けて計算しています。
+              {t('itemStats.modals.waterInfo.description1')}
             </Text>
 
             <Text style={styles.modalText}>
-              料金は地域によって異なりますが、一般的な水道料金（1000リットルあたり約300円）に基づいて計算しています。
+              {t('itemStats.modals.waterInfo.description2')}
             </Text>
 
             <Text style={styles.modalText}>
-              例：洗濯回数を10回削減した場合、65リットル×10回=650リットルの水を節約したことになり、料金に換算すると約195円の節約となります。
+              {t('itemStats.modals.waterInfo.example')}
             </Text>
           </View>
         </View>
@@ -878,18 +992,18 @@ export default function ItemDetailScreen() {
               <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>電気量（料金）の計算方法について</Text>
+            <Text style={styles.modalTitle}>{t('itemStats.modals.energyInfo.title')}</Text>
 
             <Text style={styles.modalText}>
-              電気量の節約効果は、削減された洗濯回数に1回の洗濯で使用される平均的な電力量（約0.9kWh）を掛けて計算しています。
+              {t('itemStats.modals.energyInfo.description1')}
             </Text>
 
             <Text style={styles.modalText}>
-              料金は電力会社や契約プランによって異なりますが、一般的な電気料金（1kWhあたり約25円）に基づいて計算しています。
+              {t('itemStats.modals.energyInfo.description2')}
             </Text>
 
             <Text style={styles.modalText}>
-              例：洗濯回数を10回削減した場合、0.9kWh×10回=9kWhの電力を節約したことになり、料金に換算すると約225円の節約となります。
+              {t('itemStats.modals.energyInfo.example')}
             </Text>
           </View>
         </View>
@@ -911,18 +1025,18 @@ export default function ItemDetailScreen() {
               <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>CO2削減量の計算方法について</Text>
+            <Text style={styles.modalTitle}>{t('itemStats.modals.co2Info.title')}</Text>
 
             <Text style={styles.modalText}>
-              CO2削減量は、節約された電力量に電力のCO2排出係数（1kWhあたり約0.6kg）を掛けて計算しています。
+              {t('itemStats.modals.co2Info.description1')}
             </Text>
 
             <Text style={styles.modalText}>
-              洗濯機の使用だけでなく、水の供給や処理に関連するCO2排出も考慮しています。
+              {t('itemStats.modals.co2Info.description2')}
             </Text>
 
             <Text style={styles.modalText}>
-              例：電力を9kWh節約した場合、9kWh×0.6kg/kWh=5.4kgのCO2排出を削減したことになります。
+              {t('itemStats.modals.co2Info.example')}
             </Text>
           </View>
         </View>

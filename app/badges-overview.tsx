@@ -1,14 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
 import React, { useRef, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import ViewShot from "react-native-view-shot";
 import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { formatDateLocalized } from "../lib/dateUtils";
 import { BadgeWithStatus } from "../services/badgeService";
 
 export default function BadgesOverviewScreen() {
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
   const { badges, isCalculating, calculationError, recalculateStatistics } = useStatistics();
   const viewShotRef = useRef<ViewShot>(null);
 
@@ -46,8 +49,11 @@ export default function BadgesOverviewScreen() {
       const badgesArray = Array.isArray(badges) ? badges : [];
       await Share.share({
         url: uri,
-        title: 'バッジコレクション',
-        message: `私のバッジコレクション: ${badgesArray.filter(b => b.isEarned).length}/${badgesArray.length}個獲得しました！`
+        title: t('badges.overview.shareTitle'),
+        message: t('badges.overview.shareMessage', { 
+          earned: badgesArray.filter(b => b.isEarned).length,
+          total: badgesArray.length 
+        })
       });
     } catch (error) {
       console.error('Error sharing screenshot:', error);
@@ -181,7 +187,7 @@ export default function BadgesOverviewScreen() {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={{ marginTop: 16, color: theme.text }}>バッジデータを読み込み中...</Text>
+        <Text style={{ marginTop: 16, color: theme.text }}>{t('badges.loading')}</Text>
       </View>
     );
   }
@@ -193,7 +199,7 @@ export default function BadgesOverviewScreen() {
         <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
         <Text style={[styles.errorText, { color: theme.error }]}>{calculationError}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={recalculateStatistics}>
-          <Text style={styles.retryButtonText}>再試行</Text>
+          <Text style={styles.retryButtonText}>{t('badges.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -203,8 +209,8 @@ export default function BadgesOverviewScreen() {
     <>
       <Stack.Screen 
         options={{
-          title: "バッジコレクション",
-          headerBackTitle: "戻る",
+          title: t('badges.overview.title'),
+          headerBackTitle: t('common.back'),
         }} 
       />
       <ScrollView style={styles.container}>
@@ -215,8 +221,14 @@ export default function BadgesOverviewScreen() {
             style={styles.screenshotContainer}
           >
             <View style={styles.header}>
-              <Text style={styles.title}>バッジコレクション</Text>
-              <Text style={styles.subtitle}>獲得済み: {earnedBadges}/{totalBadges} ({earnedPercentage}%)</Text>
+              <Text style={styles.title}>{t('badges.overview.title')}</Text>
+              <Text style={styles.subtitle}>
+                {t('badges.overview.earnedCount', { 
+                  earned: earnedBadges, 
+                  total: totalBadges, 
+                  percentage: earnedPercentage 
+                })}
+              </Text>
             </View>
 
             <View style={styles.badgeGrid}>
@@ -243,11 +255,11 @@ export default function BadgesOverviewScreen() {
                     ]}
                     numberOfLines={2}
                   >
-                    {badge.name}
+                    {t(badge.nameKey)}
                   </Text>
                   {badge.isEarned && showEarnedDates && badge.earnedDate && (
                     <Text style={[styles.earnedDate, { color: theme.text + '99' }]}>
-                      {new Date(badge.earnedDate).toLocaleDateString('ja-JP')}
+                      {formatDateLocalized(badge.earnedDate, i18n.language)}
                     </Text>
                   )}
                   {badge.isEarned && (
@@ -262,9 +274,9 @@ export default function BadgesOverviewScreen() {
         ) : (
           <View style={[styles.screenshotContainer, styles.centerContent]}>
             <Ionicons name="ribbon-outline" size={64} color={theme.text + "66"} />
-            <Text style={[styles.title, { marginTop: 16 }]}>バッジデータを読み込み中です</Text>
+            <Text style={[styles.title, { marginTop: 16 }]}>{t('badges.loadingBadges')}</Text>
             <Text style={[styles.subtitle, { textAlign: 'center', marginTop: 8, marginBottom: 16 }]}>
-              しばらくお待ちください
+              {t('badges.pleaseWait')}
             </Text>
           </View>
         )}
@@ -284,13 +296,13 @@ export default function BadgesOverviewScreen() {
               style={[styles.actionButtonText, 
                 { color: showEarnedDates ? 'white' : theme.primary }]}
             >
-              {showEarnedDates ? '獲得日を非表示' : '獲得日を表示'}
+              {showEarnedDates ? t('badges.overview.hideDates') : t('badges.overview.showDates')}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
             <Ionicons name="share-social" size={16} color="white" />
-            <Text style={styles.actionButtonText}>バッジコレクションをシェアする</Text>
+            <Text style={styles.actionButtonText}>{t('badges.overview.shareButton')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

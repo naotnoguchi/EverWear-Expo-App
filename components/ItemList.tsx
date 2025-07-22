@@ -4,13 +4,32 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, FlatList, Modal, Platform, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import { useClothing } from '../contexts/ClothingContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { formatDateJapanese, formatDateToLocalISOString } from '../lib/dateUtils';
+import { formatDateJapanese, formatDateLocalized, formatDateToLocalISOString } from '../lib/dateUtils';
 import { getPrivateUrls } from '../lib/storageClient';
 import { CategoryValue } from '../types/categories';
 import { ClothingItem } from '../types/clothing';
+
+// カテゴリ値から翻訳キーへのマッピング
+const getCategoryTranslationKey = (categoryValue: CategoryValue): string => {
+  const categoryMap: Record<string, string> = {
+    'トップス': 'categories.tops',
+    'ボトムス': 'categories.bottoms',
+    'ジャケット': 'categories.jacket',
+    'アウター': 'categories.outerwear',
+    'セットアップ': 'categories.setup',
+    'ワンピース': 'categories.dress',
+    'シューズ': 'categories.shoes',
+    'バッグ': 'categories.bag',
+    '小物': 'categories.accessories',
+    'その他': 'categories.others'
+  };
+  
+  return categoryValue ? categoryMap[categoryValue] || categoryValue : '';
+};
 
 // 公開するメソッドの型定義
 export type ItemListRefType = {
@@ -27,6 +46,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
   const router = useRouter();
   const colorScheme = useColorScheme(); // 現在のカラースキーム（ライト/ダーク）を取得
   const theme = useTheme(); // テーマの取得
+  const { t, i18n } = useTranslation();
 
   // FlatListへの参照
   const flatListRef = useRef<FlatList>(null);
@@ -160,44 +180,52 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
       if (showWearDatePicker && selectedDate && selectedItemId) {
         try {
           const formattedDate = formatDateToLocalISOString(currentDate);
-          const japaneseDate = formatDateJapanese(currentDate);
+          const displayDate = i18n.language === 'ja' 
+            ? formatDateJapanese(currentDate)
+            : currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
           await wearItem(selectedItemId, formattedDate);
-          Alert.alert("着用記録", `${japaneseDate}に着用記録を追加しました`);
+          Alert.alert(t('itemList.alerts.wearRecorded'), t('itemList.alerts.wearRecordedMessage', { date: displayDate }));
           onRefresh?.();
         } catch (error: any) {
-          const japaneseDate = formatDateJapanese(currentDate);
+          const displayDate = i18n.language === 'ja' 
+            ? formatDateJapanese(currentDate)
+            : currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
           console.error('Error adding wear record:', error);
           console.error('Error code:', error?.code);
           console.error('Error message:', error?.message);
 
           // Check if the error is about duplicate records
           if (error?.message && error.message.includes('着用記録は既に存在します')) {
-            Alert.alert("重複エラー", `${japaneseDate}の着用記録は既に存在します`);
+            Alert.alert(t('itemList.alerts.duplicateError'), t('itemList.alerts.wearDuplicateMessage', { date: displayDate }));
           } else {
-            Alert.alert("エラー", `${japaneseDate}の着用記録の追加に失敗しました`);
+            Alert.alert(t('common.error'), t('itemList.alerts.wearError', { date: displayDate }));
           }
         }
         setSelectedItemId(null);
       } else if (showWashDatePicker && selectedDate && selectedItemId) {
         try {
           const formattedDate = formatDateToLocalISOString(currentDate);
-          const japaneseDate = formatDateJapanese(currentDate);
+          const displayDate = i18n.language === 'ja' 
+            ? formatDateJapanese(currentDate)
+            : currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
           await washItem(selectedItemId, formattedDate);
-          Alert.alert("洗濯記録", `${japaneseDate}に洗濯記録を追加しました`);
+          Alert.alert(t('itemList.alerts.washRecorded'), t('itemList.alerts.washRecordedMessage', { date: displayDate }));
           onRefresh?.();
         } catch (error: any) {
-          const japaneseDate = formatDateJapanese(currentDate);
+          const displayDate = i18n.language === 'ja' 
+            ? formatDateJapanese(currentDate)
+            : currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
           console.error('Error adding wash record:', error);
           console.error('Error code:', error?.code);
           console.error('Error message:', error?.message);
 
           // Check if the error is about duplicate records
           if (error?.message && error.message.includes('洗濯記録は既に存在します')) {
-            Alert.alert("重複エラー", `${japaneseDate}の洗濯記録は既に存在します`);
+            Alert.alert(t('itemList.alerts.duplicateError'), t('itemList.alerts.washDuplicateMessage', { date: displayDate }));
           } else {
-            Alert.alert("エラー", `${japaneseDate}の洗濯記録の追加に失敗しました`);
+            Alert.alert(t('common.error'), t('itemList.alerts.washError', { date: displayDate }));
           }
         }
         setSelectedItemId(null);
@@ -241,26 +269,30 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
 
     try {
       const formattedDate = formatDateToLocalISOString(selectedDate);
-      const japaneseDate = formatDateJapanese(selectedDate);
+      const displayDate = i18n.language === 'ja' 
+        ? formatDateJapanese(selectedDate)
+        : selectedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
       await wearItem(selectedItemId, formattedDate);
-      Alert.alert("着用記録", `${japaneseDate}に着用記録を追加しました`);
+      Alert.alert(t('itemList.alerts.wearRecorded'), t('itemList.alerts.wearRecordedMessage', { date: displayDate }));
 
       setShowWearModal(false);
       setSelectedItemId(null);
       // 親コンポーネントに更新を通知
       onRefresh?.();
     } catch (error: any) {
-      const japaneseDate = formatDateJapanese(selectedDate);
+      const displayDate = i18n.language === 'ja' 
+        ? formatDateJapanese(selectedDate)
+        : selectedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
       console.error('Error adding wear record:', error);
       console.error('Error code:', error?.code);
       console.error('Error message:', error?.message);
 
       // Check if the error is about duplicate records
       if (error?.message && error.message.includes('着用記録は既に存在します')) {
-        Alert.alert("重複エラー", `${japaneseDate}の着用記録は既に存在します`);
+        Alert.alert(t('itemList.alerts.duplicateError'), t('itemList.alerts.wearDuplicateMessage', { date: displayDate }));
       } else {
-        Alert.alert("エラー", `${japaneseDate}の着用記録の追加に失敗しました`);
+        Alert.alert(t('common.error'), t('itemList.alerts.wearError', { date: displayDate }));
       }
 
       // エラー時もモーダルを閉じる
@@ -275,26 +307,30 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
 
     try {
       const formattedDate = formatDateToLocalISOString(selectedDate);
-      const japaneseDate = formatDateJapanese(selectedDate);
+      const displayDate = i18n.language === 'ja' 
+        ? formatDateJapanese(selectedDate)
+        : selectedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
       await washItem(selectedItemId, formattedDate);
-      Alert.alert("洗濯記録", `${japaneseDate}に洗濯記録を追加しました`);
+      Alert.alert(t('itemList.alerts.washRecorded'), t('itemList.alerts.washRecordedMessage', { date: displayDate }));
 
       setShowWashModal(false);
       setSelectedItemId(null);
       // 親コンポーネントに更新を通知
       onRefresh?.();
     } catch (error: any) {
-      const japaneseDate = formatDateJapanese(selectedDate);
+      const displayDate = i18n.language === 'ja' 
+        ? formatDateJapanese(selectedDate)
+        : selectedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
       console.error('Error adding wash record:', error);
       console.error('Error code:', error?.code);
       console.error('Error message:', error?.message);
 
       // Check if the error is about duplicate records
       if (error?.message && error.message.includes('洗濯記録は既に存在します')) {
-        Alert.alert("重複エラー", `${japaneseDate}の洗濯記録は既に存在します`);
+        Alert.alert(t('itemList.alerts.duplicateError'), t('itemList.alerts.washDuplicateMessage', { date: displayDate }));
       } else {
-        Alert.alert("エラー", `${japaneseDate}の洗濯記録の追加に失敗しました`);
+        Alert.alert(t('common.error'), t('itemList.alerts.washError', { date: displayDate }));
       }
 
       // エラー時もモーダルを閉じる
@@ -341,19 +377,19 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
               <Text style={styles.itemName}>{item.name}</Text>
             )}
             <Text style={styles.itemCategory}>
-              {item.brand ? `${item.brand} / ${item.category}` : item.category}
+              {item.brand ? `${item.brand} / ${t(getCategoryTranslationKey(item.category))}` : t(getCategoryTranslationKey(item.category))}
             </Text>
             <View style={styles.wearInfo}>
               {needsWash ? (
                 <View style={styles.washAlertContainer}>
                   <Ionicons name="warning" size={18} color="#e74c3c" />
                   <Text style={styles.needsWashText}>
-                    洗濯しましょう <Text style={styles.parenthesisText}>({item.wearCount}回着用)</Text>
+                    {t('itemList.needsWash')} <Text style={styles.parenthesisText}>({t('itemList.wearCount', { count: item.wearCount })})</Text>
                   </Text>
                 </View>
               ) : (
                 <Text style={styles.remainingWears}>
-                  あと{remainingWears}回で洗濯 <Text style={styles.parenthesisText}>({item.wearCount}回着用)</Text>
+                  {t('itemList.remainingWears', { count: remainingWears })} <Text style={styles.parenthesisText}>({t('itemList.wearCount', { count: item.wearCount })})</Text>
                 </Text>
               )}
               <View style={styles.progressContainer}>
@@ -370,7 +406,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
                 />
               </View>
             </View>
-            <Text style={styles.lastWorn}>最終着用日: {item.lastWorn ? formatDateJapanese(item.lastWorn) : "なし"}</Text>
+            <Text style={styles.lastWorn}>{t('itemList.lastWorn')}: {item.lastWorn ? formatDateLocalized(item.lastWorn, i18n.language) : t('itemList.none')}</Text>
           </View>
           <View style={styles.actionsContainer}>
             <TouchableOpacity
@@ -381,7 +417,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
               }}
             >
               <Ionicons name="shirt" size={20} color="#3498db" />
-              <Text style={styles.actionText}>着用</Text>
+              <Text style={styles.actionText}>{t('itemList.actions.wear')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -400,7 +436,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
               />
               <Text style={[
                 needsWash ? styles.washActionText : styles.washActionTextNormal
-              ]}>洗濯</Text>
+              ]}>{t('itemList.actions.wash')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -652,7 +688,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
       <View style={styles.emptyContainer}>
         <ActivityIndicator size="large" color="#3498db" />
         <Text style={styles.emptyText}>
-          データを読み込み中...
+          {t('common.loading.processing')}
         </Text>
       </View>
     );
@@ -663,7 +699,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>
-          {category ? `${category}カテゴリのアイテムはありません` : "アイテムはありません"}
+          {category ? t('itemList.empty.category', { category: t(getCategoryTranslationKey(category)) }) : t('itemList.empty.all')}
         </Text>
       </View>
     );
@@ -682,7 +718,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
           display="default"
           onChange={onDateChange}
           maximumDate={new Date()} // 未来の日付は選択できないように
-          locale="ja-JP"
+          locale={i18n.language === 'ja' ? 'ja-JP' : 'en-US'}
           themeVariant={colorScheme || 'light'}
         />
       )}
@@ -696,7 +732,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>着用日を選択</Text>
+            <Text style={styles.modalTitle}>{t('itemList.modal.selectWearDate')}</Text>
             <DateTimePicker
               value={selectedDate}
               mode="date"
@@ -704,7 +740,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
               onChange={onDateChange}
               maximumDate={new Date()} // 未来の日付は選択できないように
               style={styles.datePicker}
-              locale="ja-JP"
+              locale={i18n.language === 'ja' ? 'ja-JP' : 'en-US'}
               themeVariant={colorScheme || 'light'}
             />
             <View style={styles.modalButtons}>
@@ -715,13 +751,13 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
                   setSelectedItemId(null);
                 }}
               >
-                <Text style={styles.modalButtonText}>キャンセル</Text>
+                <Text style={styles.modalButtonText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
                 onPress={confirmWearDate}
               >
-                <Text style={styles.modalButtonText}>確定</Text>
+                <Text style={styles.modalButtonText}>{t('common.confirm')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -737,7 +773,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>洗濯日を選択</Text>
+            <Text style={styles.modalTitle}>{t('itemList.modal.selectWashDate')}</Text>
             <DateTimePicker
               value={selectedDate}
               mode="date"
@@ -745,7 +781,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
               onChange={onDateChange}
               maximumDate={new Date()} // 未来の日付は選択できないように
               style={styles.datePicker}
-              locale="ja-JP"
+              locale={i18n.language === 'ja' ? 'ja-JP' : 'en-US'}
               themeVariant={colorScheme || 'light'}
             />
             <View style={styles.modalButtons}>
@@ -756,13 +792,13 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
                   setSelectedItemId(null);
                 }}
               >
-                <Text style={styles.modalButtonText}>キャンセル</Text>
+                <Text style={styles.modalButtonText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
                 onPress={confirmWashDate}
               >
-                <Text style={styles.modalButtonText}>確定</Text>
+                <Text style={styles.modalButtonText}>{t('common.confirm')}</Text>
               </TouchableOpacity>
             </View>
           </View>

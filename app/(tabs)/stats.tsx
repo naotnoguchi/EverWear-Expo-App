@@ -2,18 +2,33 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../../contexts/StatisticsContext";
 import { useTabReset } from "../../contexts/TabResetContext";
 import { useTheme } from "../../contexts/ThemeContext";
+import { formatDateLocalized } from "../../lib/dateUtils";
 import { getPrivateUrls } from "../../lib/storageClient";
 import type { BadgeWithStatus } from "../../services/badgeService";
 import { Period, RankingItem } from "../../services/statisticsServiceFactory";
+import { CategoryValue, getCategoryIdByValue } from "../../types/categories";
 
 export default function Stats() {
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
   const scrollViewRef = useRef<ScrollView>(null);
   const { registerResetFunction } = useTabReset();
+
+  // カテゴリ翻訳関数
+  const getCategoryName = (categoryValue: CategoryValue) => {
+    if (!categoryValue) return '';
+    
+    // CategoryValue（日本語表示名）からカテゴリIDを取得
+    const categoryId = getCategoryIdByValue(categoryValue);
+    
+    // カテゴリIDを翻訳キーに変換
+    return t(`addItem.categories.${categoryId}`);
+  };
 
   // 画像URL管理用の状態
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
@@ -74,12 +89,10 @@ export default function Stats() {
 
   // 効率ステータスの色を取得
   const getEfficiencyStatusColor = (status: string) => {
-    switch (status) {
-      case '良好': return '#27ae60'; // Green
-      case '洗濯不足': return '#f39c12'; // Orange
-      case '洗いすぎ': return '#e74c3c'; // Red
-      default: return '#3498db'; // Blue
-    }
+    if (status === t('stats.laundryEfficiency.status.good')) return '#27ae60'; // Green
+    if (status === t('stats.laundryEfficiency.status.underwashing')) return '#f39c12'; // Orange
+    if (status === t('stats.laundryEfficiency.status.overwashing')) return '#e74c3c'; // Red
+    return '#3498db'; // Blue
   };
 
   // 追加: バッジカテゴリごとの色を取得（Badges 画面と統一）
@@ -454,6 +467,8 @@ export default function Stats() {
     },
     impactItem: {
       alignItems: 'center',
+      flex: 1,
+      maxWidth: '33.33%',
     },
     impactIconContainer: {
       width: 50,
@@ -470,7 +485,8 @@ export default function Stats() {
       marginBottom: 4,
     },
     impactLabel: {
-      fontSize: 12,
+      fontSize: 11,
+      textAlign: 'center',
     },
     impactDescription: {
       fontSize: 14,
@@ -579,22 +595,16 @@ export default function Stats() {
 
   // Period options for selector
   const periodOptions: { label: string; value: Period }[] = [
-    { label: '1ヶ月', value: '1month' },
-    { label: '3ヶ月', value: '3months' },
-    { label: '6ヶ月', value: '6months' },
-    { label: '1年', value: '1year' },
-    { label: 'すべて', value: 'all' },
+    { label: t('stats.period.1month'), value: '1month' },
+    { label: t('stats.period.3months'), value: '3months' },
+    { label: t('stats.period.6months'), value: '6months' },
+    { label: t('stats.period.1year'), value: '1year' },
+    { label: t('stats.period.all'), value: 'all' },
   ];
 
   // Get period display text
   const getPeriodText = () => {
-    switch (period) {
-      case '1month': return '過去1ヶ月間';
-      case '3months': return '過去3ヶ月間';
-      case '6months': return '過去6ヶ月間';
-      case '1year': return '過去1年間';
-      case 'all': return 'すべての期間';
-    }
+    return t(`stats.periodText.${period}`);
   };
 
   // Render loading state
@@ -602,7 +612,7 @@ export default function Stats() {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
         <ActivityIndicator size="large" color="#3498db" />
-        <Text style={{ marginTop: 16, color: theme.text }}>統計データを読み込み中...</Text>
+        <Text style={{ marginTop: 16, color: theme.text }}>{t('common.loading.loadingStats')}</Text>
       </View>
     );
   }
@@ -614,7 +624,7 @@ export default function Stats() {
         <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={() => fetchStats()}>
-          <Text style={styles.retryButtonText}>再試行</Text>
+          <Text style={styles.retryButtonText}>{t('stats.error.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -626,7 +636,7 @@ export default function Stats() {
       style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerSubtitle}>
-          {getPeriodText()}のデータに基づく分析
+          {t('stats.periodDescription', { period: getPeriodText() })}
         </Text>
 
         {/* Period selector */}
@@ -660,7 +670,7 @@ export default function Stats() {
             <Ionicons name="shirt" size={24} color="#3498db" />
           </View>
           <Text style={styles.statValue}>{stats?.totalItems || 0}</Text>
-          <Text style={styles.statLabel}>アイテム数</Text>
+          <Text style={styles.statLabel}>{t('stats.basicStats.totalItems')}</Text>
         </View>
 
         <View key="total-wears" style={styles.statCard}>
@@ -668,7 +678,7 @@ export default function Stats() {
             <Ionicons name="repeat" size={24} color="#3498db" />
           </View>
           <Text style={styles.statValue}>{stats?.totalWears || 0}</Text>
-          <Text style={styles.statLabel}>総着用回数</Text>
+          <Text style={styles.statLabel}>{t('stats.basicStats.totalWears')}</Text>
         </View>
 
         <View key="total-washes" style={styles.statCard}>
@@ -676,7 +686,7 @@ export default function Stats() {
             <Ionicons name="water" size={24} color="#3498db" />
           </View>
           <Text style={styles.statValue}>{stats?.totalWashes || 0}</Text>
-          <Text style={styles.statLabel}>総洗濯回数</Text>
+          <Text style={styles.statLabel}>{t('stats.basicStats.totalWashes')}</Text>
         </View>
 
         <View key="average-wears" style={styles.statCard}>
@@ -686,12 +696,12 @@ export default function Stats() {
           {stats && stats.totalWashes > 0 ? (
             <>
               <Text style={styles.statValue}>{stats.averageWearsBetweenWashes || 0}</Text>
-              <Text style={styles.statLabel}>平均着用回数/洗濯</Text>
+              <Text style={styles.statLabel}>{t('stats.basicStats.averageWears')}</Text>
             </>
           ) : (
             <>
-              <Text style={[styles.statValue, { fontSize: 14 }]}>データなし</Text>
-              <Text style={styles.statLabel}>洗濯履歴が必要です</Text>
+              <Text style={[styles.statValue, { fontSize: 14 }]}>{t('stats.basicStats.noData')}</Text>
+              <Text style={styles.statLabel}>{t('stats.basicStats.needWashHistory')}</Text>
             </>
           )}
         </View>
@@ -700,12 +710,12 @@ export default function Stats() {
       {/* Ranking section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>着用回数ランキング</Text>
+          <Text style={styles.sectionTitle}>{t('stats.ranking.title')}</Text>
           <TouchableOpacity 
             style={styles.viewAllButton}
             onPress={() => router.push('/ranking')}
           >
-            <Text style={styles.viewAllText}>すべて見る</Text>
+            <Text style={styles.viewAllText}>{t('stats.ranking.viewAll')}</Text>
             <Ionicons name="chevron-forward" size={16} color="#3498db" />
           </TouchableOpacity>
         </View>
@@ -750,10 +760,10 @@ export default function Stats() {
                     </Text>
                   )}
                   <Text style={[styles.itemCategory, { color: theme.text + "99" }]}>
-                    {item.brand ? `${item.brand} / ${item.category || 'カテゴリなし'}` : (item.category || 'カテゴリなし')}
+                    {item.brand ? `${item.brand} / ${getCategoryName(item.category) || t('stats.ranking.noCategory')}` : (getCategoryName(item.category) || t('stats.ranking.noCategory'))}
                   </Text>
                   <Text style={[styles.itemWears, { color: theme.text }]} numberOfLines={1}>
-                    {item.wearCount || 0}回着用
+                    {t('stats.ranking.wearCount', { count: item.wearCount || 0 })}
                   </Text>
                   <View style={styles.barContainer}>
                     <View 
@@ -770,7 +780,7 @@ export default function Stats() {
         ) : (
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyText, { color: theme.text }]}>
-              データがありません
+              {t('stats.ranking.noData')}
             </Text>
           </View>
         )}
@@ -779,12 +789,12 @@ export default function Stats() {
       {/* Efficiency information */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>洗濯効率</Text>
+          <Text style={styles.sectionTitle}>{t('stats.laundryEfficiency.title')}</Text>
           <TouchableOpacity 
             style={styles.viewAllButton}
             onPress={() => router.push('/efficiency')}
           >
-            <Text style={styles.viewAllText}>詳細を見る</Text>
+            <Text style={styles.viewAllText}>{t('stats.viewAll')}</Text>
             <Ionicons name="chevron-forward" size={16} color="#3498db" />
           </TouchableOpacity>
         </View>
@@ -794,31 +804,39 @@ export default function Stats() {
               <View style={{ alignItems: 'center', padding: 16 }}>
                 <Ionicons name="information-circle-outline" size={24} color={theme.primary} />
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text, marginTop: 12, marginBottom: 8 }}>
-                  着用・洗濯履歴がありません
+                  {t('stats.laundryEfficiency.noHistory')}
                 </Text>
                 <Text style={{ fontSize: 14, textAlign: 'center', color: theme.text + "99", paddingHorizontal: 16 }}>
-                  アイテムの着用と洗濯を記録すると、洗濯効率の分析情報が表示されます。
+                  {t('stats.laundryEfficiency.noHistoryDescription')}
                 </Text>
               </View>
             ) : (
               <>
                 <Text style={styles.efficiencyText}>
-                  あなたの洗濯効率は
                   {(() => {
                     const status = stats.averageWearsBetweenWashes >= stats.averageWashThreshold * 0.8 && 
-                      stats.averageWearsBetweenWashes <= stats.averageWashThreshold * 1.2 ? '良好' : 
-                      stats.averageWearsBetweenWashes < stats.averageWashThreshold * 0.8 ? '洗いすぎ' : '洗濯不足';
+                      stats.averageWearsBetweenWashes <= stats.averageWashThreshold * 1.2 ? 'good' : 
+                      stats.averageWearsBetweenWashes < stats.averageWashThreshold * 0.8 ? 'overwashing' : 'underwashing';
+                    const statusText = t(`stats.laundryEfficiency.status.${status}`);
+                    const fullText = t('stats.laundryEfficiency.statusText', { 
+                      status: statusText,
+                      count: stats.averageWearsBetweenWashes 
+                    });
+                    const parts = fullText.split(statusText);
+                    
                     return (
-                      <Text style={[styles.efficiencyHighlight, { color: getEfficiencyStatusColor(status) }]}>
-                        {status}
-                      </Text>
+                      <>
+                        <Text>{parts[0]}</Text>
+                        <Text style={[styles.efficiencyHighlight, { color: getEfficiencyStatusColor(statusText) }]}>
+                          {statusText}
+                        </Text>
+                        <Text>{parts[1] || ''}</Text>
+                      </>
                     );
                   })()}
-                  です。平均して{stats.averageWearsBetweenWashes}回着用ごとに洗濯しています。
                 </Text>
                 <Text style={styles.efficiencyTip}>
-                  <Ionicons name="bulb" size={16} color="#f39c12" /> ヒント:
-                  最適な洗濯頻度は衣類の種類によって異なります。洗いすぎも洗わなさすぎも避けましょう。
+                  <Ionicons name="bulb" size={16} color="#f39c12" /> {t('stats.laundryEfficiency.tip')}
                 </Text>
               </>
             )
@@ -826,10 +844,10 @@ export default function Stats() {
             <View style={{ alignItems: 'center', padding: 16 }}>
               <Ionicons name="information-circle-outline" size={24} color={theme.primary} />
               <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text, marginTop: 12, marginBottom: 8 }}>
-                洗濯効率データがありません
+                {t('stats.laundryEfficiency.noData')}
               </Text>
               <Text style={{ fontSize: 14, textAlign: 'center', color: theme.text + "99", paddingHorizontal: 16 }}>
-                アイテムを登録して着用・洗濯履歴を記録すると、洗濯効率の分析情報が表示されます。
+                {t('stats.laundryEfficiency.noDataDescription')}
               </Text>
             </View>
           )}
@@ -839,12 +857,12 @@ export default function Stats() {
       {/* Environmental impact section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>環境影響・節約効果</Text>
+          <Text style={styles.sectionTitle}>{t('stats.environment.title')}</Text>
           <TouchableOpacity 
             style={styles.viewAllButton}
             onPress={() => router.push('/impact')}
           >
-            <Text style={styles.viewAllText}>詳細を見る</Text>
+            <Text style={styles.viewAllText}>{t('stats.viewAll')}</Text>
             <Ionicons name="chevron-forward" size={16} color="#3498db" />
           </TouchableOpacity>
         </View>
@@ -856,7 +874,7 @@ export default function Stats() {
                 <Ionicons name="water" size={24} color="#3498db" />
               </View>
               <Text style={styles.impactValue}>{impactData?.totalWashesReduced?.toFixed(1) || '0.0'}</Text>
-              <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>洗濯回数削減</Text>
+              <Text style={[styles.impactLabel, { color: theme.text + "99" }]} numberOfLines={2}>{t('stats.environment.washesReduced')}</Text>
             </View>
 
             <View key="co2-reduced" style={styles.impactItem}>
@@ -864,7 +882,7 @@ export default function Stats() {
                 <Ionicons name="leaf" size={24} color="#27ae60" />
               </View>
               <Text style={styles.impactValue}>{impactData?.co2Reduced?.toFixed(1) || '0.0'} kg</Text>
-              <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>CO2削減量</Text>
+              <Text style={[styles.impactLabel, { color: theme.text + "99" }]} numberOfLines={2}>{t('stats.environment.co2Reduced')}</Text>
             </View>
 
             <View key="savings" style={styles.impactItem}>
@@ -873,18 +891,22 @@ export default function Stats() {
               </View>
               <Text style={styles.impactValue}>
                 {impactData ? (
-                  ((impactData.waterSaved?.cost || 0) + 
-                  (impactData.electricitySaved?.cost || 0) + 
-                  (impactData.detergentSaved?.cost || 0)).toLocaleString()
-                ) : '0'}円
+                  i18n.language === 'ja' 
+                    ? `${((impactData.waterSaved?.cost || 0) + (impactData.electricitySaved?.cost || 0) + (impactData.detergentSaved?.cost || 0)).toLocaleString()}${t('impact.units.yen')}`
+                    : `${t('impact.units.yen')}${((impactData.waterSaved?.cost || 0) + (impactData.electricitySaved?.cost || 0) + (impactData.detergentSaved?.cost || 0)).toLocaleString()}`
+                ) : (
+                  i18n.language === 'ja' ? `0${t('impact.units.yen')}` : `${t('impact.units.yen')}0`
+                )}
               </Text>
-              <Text style={[styles.impactLabel, { color: theme.text + "99" }]}>節約金額</Text>
+              <Text style={[styles.impactLabel, { color: theme.text + "99" }]} numberOfLines={2}>{t('stats.environment.savings')}</Text>
             </View>
           </View>
 
           <Text style={[styles.impactDescription, { color: theme.text + "CC" }]}>
-            「着用するたびに洗濯する」場合と比較して、あなたは{impactData?.totalWashesReduced?.toFixed(1) || '0.0'}回の洗濯を削減しました。
-            これは約{impactData?.treeEquivalent?.toFixed(1) || '0.0'}本の木を植えるのと同等のCO2削減効果があります。
+            {t('stats.environment.description', { 
+              washesReduced: impactData?.totalWashesReduced?.toFixed(1) || '0.0',
+              trees: impactData?.treeEquivalent?.toFixed(1) || '0.0'
+            })}
           </Text>
         </View>
       </View>
@@ -892,12 +914,12 @@ export default function Stats() {
       {/* Badges section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>バッジ・アチーブメント</Text>
+          <Text style={styles.sectionTitle}>{t('stats.badges.title')}</Text>
           <TouchableOpacity 
             style={styles.viewAllButton}
             onPress={() => router.push('/badges')}
           >
-            <Text style={styles.viewAllText}>すべて見る</Text>
+            <Text style={styles.viewAllText}>{t('stats.viewAllBadges')}</Text>
             <Ionicons name="chevron-forward" size={16} color="#3498db" />
           </TouchableOpacity>
         </View>
@@ -926,37 +948,37 @@ export default function Stats() {
               <View style={styles.badgeInfo}>
                 <View style={styles.badgeHeader}>
                   <Text style={[styles.badgeName, { color: theme.text }]}>
-                    {recentBadge.name}
+                    {t(recentBadge.nameKey)}
                   </Text>
                   <View style={styles.recentBadge}>
                     <Ionicons name="time-outline" size={10} color="white" style={{ marginRight: 2 }} />
-                    <Text style={styles.recentBadgeText}>NEW</Text>
+                    <Text style={styles.recentBadgeText}>{t('stats.badges.newBadge')}</Text>
                   </View>
                 </View>
 
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Ionicons name="calendar-outline" size={12} color={theme.text + "99"} style={{ marginRight: 4 }} />
                   <Text style={[styles.badgeDate, { color: theme.text + "99" }]}>
-                    {recentBadge.earnedDate ? new Date(recentBadge.earnedDate).toLocaleDateString('ja-JP') : '不明'}
+                    {recentBadge.earnedDate ? formatDateLocalized(recentBadge.earnedDate, i18n.language) : t('stats.badges.unknownDate')}
                   </Text>
                 </View>
               </View>
             </View>
 
             <Text style={styles.moreBadgesText}>
-              バッジをもっと見る <Ionicons name="arrow-forward" size={14} color="#3498db" />
+              {t('stats.badges.moreBadges')} <Ionicons name="arrow-forward" size={14} color="#3498db" />
             </Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.emptyContainer}>
             <Ionicons name="ribbon-outline" size={48} color={theme.text + "66"} />
             <Text style={[styles.emptyText, { color: theme.text, marginTop: 12 }]}>
-              {badges.length > 0 ? '獲得したバッジはありません' : 'バッジコレクションを始めよう！'}
+              {badges.length > 0 ? t('stats.badges.noBadges') : t('stats.badges.startCollection')}
             </Text>
             <Text style={[styles.emptySubtext, { color: theme.text + "99", marginBottom: 12 }]}>
               {badges.length > 0 
-                ? 'アプリを使い続けて、様々な条件を達成するとバッジが獲得できます。チャレンジしてみましょう！' 
-                : 'アイテムを登録して着用・洗濯を記録すると、様々なバッジを獲得できます。最初のアイテムを登録して、バッジ収集を始めましょう！'}
+                ? t('stats.badges.noBadgesDescription')
+                : t('stats.badges.startDescription')}
             </Text>
             <TouchableOpacity 
               style={styles.checkBadgesButton}
@@ -964,7 +986,7 @@ export default function Stats() {
             >
               <Ionicons name="ribbon" size={16} color="white" style={{ marginRight: 6 }} />
               <Text style={styles.checkBadgesText}>
-                {badges.length > 0 ? 'バッジ一覧を見る' : 'バッジの種類を見る'}
+                {badges.length > 0 ? t('stats.badges.viewBadges') : t('stats.badges.viewBadgeTypes')}
               </Text>
             </TouchableOpacity>
           </View>

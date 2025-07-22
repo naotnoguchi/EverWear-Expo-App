@@ -2,15 +2,18 @@ import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, Dimensions, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useColorScheme } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { getPrivacyUrl, getTermsUrl } from '../../lib/i18n';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [resetEmail, setResetEmail] = useState('');
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [showResetForm, setShowResetForm] = useState(false);
   const { signIn, signInWithGoogle, signInWithApple, resetPassword, signInAnonymously, isAnonymous } = useAuth();
@@ -24,7 +27,7 @@ export default function LoginScreen() {
 
   const handleEmailLogin = async () => {
     if (!email || !password) {
-      Alert.alert('エラー', 'メールアドレスとパスワードを入力してください');
+      Alert.alert(t('common.error'), t('login.alertEmptyFields'));
       return;
     }
 
@@ -38,7 +41,7 @@ export default function LoginScreen() {
         // メール未確認の場合は確認コード入力画面へ遷移
         router.push({ pathname: '/auth/verify', params: { email, type: 'signup' } });
       } else {
-        Alert.alert('ログインエラー', message || 'ログインに失敗しました');
+        Alert.alert(t('login.loginErrorTitle'), message || t('login.loginFailed'));
       }
     } finally {
       setIsLoading(false);
@@ -54,8 +57,8 @@ export default function LoginScreen() {
     } catch (error: any) {
       console.error('Google login error:', error);
       Alert.alert(
-        'Googleログインエラー', 
-        error.message || 'Googleログインに失敗しました。\n\n・インターネット接続を確認してください\n・Google認証設定を確認してください'
+        t('login.googleErrorTitle'),
+        error.message || t('login.googleFailed')
       );
     } finally {
       setIsLoading(false);
@@ -75,7 +78,7 @@ export default function LoginScreen() {
         error.message?.includes('The user canceled');
 
       if (!isUserCanceled) {
-        Alert.alert('Appleログインに失敗しました');
+        Alert.alert(t('login.appleFailed'));
       }
     } finally {
       setIsLoading(false);
@@ -88,7 +91,7 @@ export default function LoginScreen() {
       await signInAnonymously();
       router.replace('/');
     } catch (error: any) {
-      Alert.alert('ゲストログインエラー', error.message || 'ゲストログインに失敗しました');
+      Alert.alert(t('login.guestErrorTitle'), error.message || t('login.guestFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -109,14 +112,14 @@ export default function LoginScreen() {
       // After resetting onboarding status, the app will automatically show the onboarding screen
       // due to the logic in _layout.tsx
     } catch (error: any) {
-      Alert.alert('エラー', 'オンボーディングの表示に失敗しました');
+      Alert.alert(t('common.error'), t('login.onboardingFailed'));
     }
   };
 
   // パスワードリセット処理
   const handleResetPassword = async () => {
     if (!resetEmail) {
-      Alert.alert('エラー', 'メールアドレスを入力してください');
+      Alert.alert(t('common.error'), t('login.reset.emailRequired'));
       return;
     }
 
@@ -124,10 +127,10 @@ export default function LoginScreen() {
       setIsLoading(true);
       await resetPassword(resetEmail);
       Alert.alert(
-        'パスワードリセット',
-        'メールに 6 桁のリセットコードを送信しました。コードを入力してください。',
+        t('login.reset.title'),
+        t('login.reset.sent'),
         [{ 
-          text: 'OK', 
+          text: t('common.ok'), 
           onPress: () => {
             setShowResetForm(false);
             router.push({ pathname: '/auth/verify', params: { email: resetEmail, type: 'recovery' } });
@@ -135,7 +138,7 @@ export default function LoginScreen() {
         }]
       );
     } catch (error: any) {
-      Alert.alert('エラー', error.message || 'パスワードリセットに失敗しました');
+      Alert.alert(t('common.error'), error.message || t('login.reset.failed'));
     } finally {
       setIsLoading(false);
     }
@@ -148,11 +151,11 @@ export default function LoginScreen() {
     return (
       <View style={styles.resetForm}>
         <Text style={[styles.resetTitle, { color: theme.text }]}>
-          パスワードをリセット
+          {t('login.reset.formTitle')}
         </Text>
         <TextInput
           style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-          placeholder="メールアドレス"
+          placeholder={t('common.placeholder.email')}
           placeholderTextColor={theme.textSecondary}
           value={resetEmail}
           onChangeText={setResetEmail}
@@ -165,12 +168,12 @@ export default function LoginScreen() {
           disabled={isLoading}
         >
           <Text style={styles.buttonText}>
-            {isLoading ? '送信中...' : 'リセットコードを送信'}
+            {isLoading ? t('common.loading.sending') : t('login.button.sendResetCode')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setShowResetForm(false)}>
           <Text style={[styles.cancelText, { color: theme.textSecondary }]}>
-            キャンセル
+            {t('common.cancel')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -189,13 +192,13 @@ export default function LoginScreen() {
         bounces={false}
         onScrollBeginDrag={Keyboard.dismiss}
       >
-        <Text style={[styles.title, { color: theme.text }]}>EverWearにログイン</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{t('login.title')}</Text>
 
         {!showResetForm && (
           <>
             <TextInput
               style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-              placeholder="メールアドレス"
+              placeholder={t('common.placeholder.email')}
               placeholderTextColor={theme.textSecondary}
               value={email}
               onChangeText={setEmail}
@@ -205,7 +208,7 @@ export default function LoginScreen() {
 
             <TextInput
               style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-              placeholder="パスワード"
+              placeholder={t('common.placeholder.password')}
               placeholderTextColor={theme.textSecondary}
               value={password}
               onChangeText={setPassword}
@@ -218,20 +221,20 @@ export default function LoginScreen() {
               disabled={isLoading}
             >
               <Text style={[styles.buttonText, { color: '#ffffff' }]}>
-                {isLoading ? 'ログイン中...' : 'ログイン'}
+                {isLoading ? t('common.loading.loggingIn') : t('login.button.login') }
               </Text>
             </TouchableOpacity>
 
             <View style={styles.linkContainer}>
               <TouchableOpacity onPress={handleSignUp}>
                 <Text style={[styles.forgotPassword, { color: theme.primary }]}>
-                  新規登録
+                  {t('login.button.signup')}
                 </Text>
               </TouchableOpacity>
-              <Text style={{ color: theme.textSecondary, marginHorizontal: 8 }}> | </Text>
+              <Text style={{ color: theme.textSecondary, marginHorizontal: 8 }}>{t('common.or')}</Text>
               <TouchableOpacity onPress={() => setShowResetForm(true)}>
                 <Text style={[styles.forgotPassword, { color: theme.primary }]}>
-                  パスワードをお忘れですか？
+                  {t('login.link.forgotPassword')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -244,7 +247,7 @@ export default function LoginScreen() {
           <>
             <View style={styles.divider}>
               <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-              <Text style={[styles.dividerText, { color: theme.textSecondary }]}>または</Text>
+              <Text style={[styles.dividerText, { color: theme.textSecondary }]}>{t('common.or')}</Text>
               <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
             </View>
 
@@ -258,7 +261,7 @@ export default function LoginScreen() {
                 style={styles.googleLogo}
               />
               <Text style={styles.socialButtonText}>
-                {isLoading ? '認証中...' : 'Googleでログイン'}
+                {isLoading ? t('common.loading.authenticating') : t('login.button.google')}
               </Text>
             </TouchableOpacity>
 
@@ -274,7 +277,7 @@ export default function LoginScreen() {
 
             <View style={styles.divider}>
               <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-              <Text style={[styles.dividerText, { color: theme.textSecondary }]}>または</Text>
+              <Text style={[styles.dividerText, { color: theme.textSecondary }]}>{t('common.or')}</Text>
               <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
             </View>
 
@@ -285,34 +288,34 @@ export default function LoginScreen() {
             >
               <Ionicons name="person-outline" size={20} color={theme.primary} />
               <Text style={[styles.guestButtonText, { color: theme.primary }]}>
-                {isLoading ? 'ゲストログイン中...' : 'ゲストとして利用'}
+                {isLoading ? t('common.loading.guestLoggingIn') : t('login.button.guest')}
               </Text>
             </TouchableOpacity>
 
 
             {/* 規約同意注釈 */}
             <Text style={[styles.agreementText, { color: theme.textSecondary }]} selectable={false}>
-              いずれかのログイン方法を選択すると、
+              {t('login.agreement.prefix')}
               <Text
                 style={{ color: theme.primary, textDecorationLine: 'underline' }}
-                onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/terms.html', title: '利用規約' } })}
+                onPress={() => router.push({ pathname: '/webview', params: { url: getTermsUrl(), title: t('login.agreement.terms') } })}
               >
-                利用規約
+                {t('login.agreement.terms')}
               </Text>
-              と
+              {t('common.and')}
               <Text
                 style={{ color: theme.primary, textDecorationLine: 'underline' }}
-                onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/privacy.html', title: 'プライバシーポリシー' } })}
+                onPress={() => router.push({ pathname: '/webview', params: { url: getPrivacyUrl(), title: t('login.agreement.privacy') } })}
               >
-                プライバシーポリシー
+                {t('login.agreement.privacy')}
               </Text>
-              に同意したものとみなします。
+              {t('login.agreement.suffix')}
             </Text>
 
             <View style={styles.onboardingLink}>
               <TouchableOpacity onPress={handleOpenOnboarding}>
                 <Text style={[styles.onboardingLinkText, { color: theme.primary }]}>
-                  アプリの使い方を見る
+                  {t('login.link.viewOnboarding')}
                 </Text>
               </TouchableOpacity>
             </View>

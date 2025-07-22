@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTheme } from '../contexts/ThemeContext';
-import { formatDateJapanese } from '../lib/dateUtils';
 
 interface ItemCalendarProps {
   wearHistory: string[];
@@ -29,8 +29,15 @@ const formatDate = (year: number, month: number, day: number) => {
 
 export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHistory, onDeleteWashHistory }: ItemCalendarProps) {
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState<Array<{ day: number; date: string } | null>>([]);
+
+  // 日付フォーマット関数をロケール対応に
+  const formatDateLocalized = (date: string | Date) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return dateObj.toLocaleDateString(i18n.language === 'ja' ? 'ja-JP' : 'en-US');
+  };
 
   // 現在の年と月
   const currentYear = currentDate.getFullYear();
@@ -50,13 +57,31 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
   };
 
   // 月の名前
-  const monthNames = [
-    '1月', '2月', '3月', '4月', '5月', '6月',
-    '7月', '8月', '9月', '10月', '11月', '12月'
+  const getMonthNames = () => [
+    t('itemCalendar.months.january'),
+    t('itemCalendar.months.february'),
+    t('itemCalendar.months.march'),
+    t('itemCalendar.months.april'),
+    t('itemCalendar.months.may'),
+    t('itemCalendar.months.june'),
+    t('itemCalendar.months.july'),
+    t('itemCalendar.months.august'),
+    t('itemCalendar.months.september'),
+    t('itemCalendar.months.october'),
+    t('itemCalendar.months.november'),
+    t('itemCalendar.months.december')
   ];
 
   // 曜日の名前
-  const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+  const getDayNames = () => [
+    t('itemCalendar.days.sunday'),
+    t('itemCalendar.days.monday'),
+    t('itemCalendar.days.tuesday'),
+    t('itemCalendar.days.wednesday'),
+    t('itemCalendar.days.thursday'),
+    t('itemCalendar.days.friday'),
+    t('itemCalendar.days.saturday')
+  ];
 
   // 前の月に移動
   const goToPreviousMonth = () => {
@@ -110,19 +135,20 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
     if (!isWorn && !isWashed) return; // 履歴がない日付は何もしない
 
     // 履歴削除のオプションを表示
+    const localizedDate = formatDateLocalized(dayObj.date);
     Alert.alert(
-      "履歴の削除",
-      `${formatDateJapanese(dayObj.date)}の履歴を削除しますか？`,
+      t('itemCalendar.alerts.deleteTitle'),
+      t('itemCalendar.alerts.deleteMessage', { date: localizedDate }),
       [
-        { text: "キャンセル", style: "cancel" },
+        { text: t('common.cancel'), style: "cancel" },
         ...(isWorn ? [{
-          text: "着用履歴を削除",
-          style: "destructive",
+          text: t('itemCalendar.alerts.deleteWearHistory'),
+          style: "destructive" as const,
           onPress: () => onDeleteWearHistory && onDeleteWearHistory(dayObj.date)
         }] : []),
         ...(isWashed ? [{
-          text: "洗濯履歴を削除",
-          style: "destructive",
+          text: t('itemCalendar.alerts.deleteWashHistory'),
+          style: "destructive" as const,
           onPress: () => onDeleteWashHistory && onDeleteWashHistory(dayObj.date)
         }] : [])
       ]
@@ -305,7 +331,7 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>着用・洗濯履歴</Text>
+        <Text style={styles.headerTitle}>{t('itemCalendar.title')}</Text>
       </View>
 
       <View style={styles.calendarHeader}>
@@ -314,14 +340,16 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
-          <Text style={styles.monthText}>{currentYear}年 {monthNames[currentMonth]}</Text>
+          <Text style={styles.monthText}>
+            {i18n.language === 'ja' ? `${currentYear}年 ${getMonthNames()[currentMonth]}` : `${getMonthNames()[currentMonth]} ${currentYear}`}
+          </Text>
           {!isCurrentMonthToday && (
             <TouchableOpacity
               style={styles.todayButton}
               onPress={resetCalendarToToday}
             >
               <Ionicons name="refresh-outline" size={16} color="#3498db" />
-              <Text style={styles.todayButtonText}>今月に戻る</Text>
+              <Text style={styles.todayButtonText}>{t('itemCalendar.returnToThisMonth')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -341,7 +369,7 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
       <GestureDetector gesture={panGesture}>
         <View>
           <View style={styles.daysHeader}>
-            {dayNames.map((day, index) => (
+            {getDayNames().map((day, index) => (
               <Text key={index} style={[
                 styles.dayName,
                 index === 0 ? styles.sundayText : null,
@@ -404,11 +432,11 @@ export default function ItemCalendar({ wearHistory, washHistory, onDeleteWearHis
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={styles.wearIndicator} />
-          <Text style={styles.legendText}>着用</Text>
+          <Text style={styles.legendText}>{t('itemCalendar.legend.wear')}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={styles.washIndicator} />
-          <Text style={styles.legendText}>洗濯</Text>
+          <Text style={styles.legendText}>{t('itemCalendar.legend.wash')}</Text>
         </View>
       </View>
     </View>

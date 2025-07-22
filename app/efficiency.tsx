@@ -2,15 +2,29 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Stack, useRouter } from "expo-router";
 import React from "react";
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useImageUrls } from '../hooks/useImageUrls';
 import { EfficiencyItem, Period } from "../services/statisticsServiceFactory";
+import { CategoryValue, getCategoryIdByValue } from "../types/categories";
 
 export default function EfficiencyScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const { t } = useTranslation();
+
+  // カテゴリ翻訳関数
+  const getCategoryName = (categoryValue: CategoryValue) => {
+    if (!categoryValue) return '';
+    
+    // CategoryValue（日本語表示名）からカテゴリIDを取得
+    const categoryId = getCategoryIdByValue(categoryValue);
+    
+    // カテゴリIDを翻訳キーに変換
+    return t(`addItem.categories.${categoryId}`);
+  };
 
   // 統計コンテキストを使用（新しいAPI）
   const {
@@ -50,7 +64,7 @@ export default function EfficiencyScreen() {
       case 'good': return '#27ae60'; // Green
       case 'underwashed': return '#f39c12'; // Orange
       case 'overwashed': return '#e74c3c'; // Red
-      default: return '#3498db'; // Blue
+      default: return '#999'; // Gray
     }
   };
 
@@ -58,16 +72,16 @@ export default function EfficiencyScreen() {
   const getStatusText = (status: 'good' | 'underwashed' | 'overwashed', wearCount: number, washCount: number) => {
     // 着用・洗濯履歴がない場合、または洗濯履歴が0件の場合は特別なテキストを表示
     if (wearCount === 0 && washCount === 0) {
-      return '履歴なし';
+      return t('efficiency.status.noHistory');
     } else if (washCount === 0) {
-      return 'データなし';
+      return t('efficiency.status.noData');
     }
 
     switch (status) {
-      case 'good': return '良好';
-      case 'underwashed': return '洗濯不足';
-      case 'overwashed': return '洗いすぎ';
-      default: return '不明';
+      case 'good': return t('efficiency.status.good');
+      case 'underwashed': return t('efficiency.status.underwashed');
+      case 'overwashed': return t('efficiency.status.overwashed');
+      default: return t('efficiency.status.unknown');
     }
   };
 
@@ -75,20 +89,20 @@ export default function EfficiencyScreen() {
   const getEfficiencyMessage = (status: 'good' | 'underwashed' | 'overwashed', wearCount: number, washCount: number) => {
     // 着用・洗濯履歴がない場合は特別なメッセージを表示
     if (wearCount === 0 && washCount === 0) {
-      return 'このアイテムはまだ着用・洗濯の記録がありません。着用と洗濯を記録すると、洗濯効率の分析が表示されます。';
+      return t('efficiency.messages.noHistory');
     } else if (washCount === 0) {
-      return 'このアイテムはまだ洗濯の記録がありません。洗濯を記録すると、洗濯効率の分析が表示されます。';
+      return t('efficiency.messages.noWashData');
     }
 
     switch (status) {
       case 'good':
-        return '最適な洗濯頻度で使用されています。このまま続けましょう！';
+        return t('efficiency.messages.good');
       case 'underwashed':
-        return '洗濯頻度が低すぎる可能性があります。衣類の清潔さを保つため、もう少し頻繁に洗濯することを検討してください。';
+        return t('efficiency.messages.underwashed');
       case 'overwashed':
-        return '洗濯頻度が高すぎる可能性があります。洗濯の間にもっと着用することで、衣類の寿命を延ばし、環境への影響を減らせます。';
+        return t('efficiency.messages.overwashed');
       default:
-        return '洗濯データが不足しています。';
+        return t('efficiency.messages.insufficient');
     }
   };
 
@@ -104,20 +118,26 @@ export default function EfficiencyScreen() {
       {/* 上部セクション：画像、アイテム名、統計値 */}
       <View style={styles.upperSection}>
         <View style={styles.imageContainer}>
-          <Image
-            source={{
-              uri: imageUrls[item.id] || item.imageUrl || require('@/assets/images/placeholder.png'),
-              cacheKey: item.imageUrl,
-              width: 60,
-              height: 60
-            }}
-            style={styles.itemImage}
-            contentFit="cover"
-            cachePolicy="disk"
-            onError={() => {
-              // エラー時は何もしない（デフォルトのフォールバック画像が表示される）
-            }}
-          />
+          {imageUrls[item.id] || item.imageUrl ? (
+            <Image
+              source={{
+                uri: imageUrls[item.id] || item.imageUrl,
+                cacheKey: item.imageUrl,
+                width: 60,
+                height: 60
+              }}
+              style={styles.itemImage}
+              contentFit="cover"
+              cachePolicy="disk"
+              onError={() => {
+                // エラー時は何もしない（フォールバック表示になる）
+              }}
+            />
+          ) : (
+            <View style={styles.placeholderContainer}>
+              <Ionicons name="shirt-outline" size={30} color={theme.text + "66"} />
+            </View>
+          )}
         </View>
 
         <View style={styles.itemInfoSection}>
@@ -127,7 +147,7 @@ export default function EfficiencyScreen() {
                   </Text>
                 )}
           <Text style={[styles.itemCategory, { color: theme.text + "99" }]}>
-            {item.brand ? `${item.brand} / ${item.category}` : item.category}
+            {item.brand ? `${item.brand} / ${getCategoryName(item.category)}` : getCategoryName(item.category)}
           </Text>
 
           <View style={styles.statsRow}>
@@ -136,7 +156,7 @@ export default function EfficiencyScreen() {
                 {item.wearCount}
               </Text>
               <Text style={[styles.statLabel, { color: theme.text + "99" }]}>
-                着用回数
+                {t('efficiency.stats.wearCount')}
               </Text>
             </View>
 
@@ -145,7 +165,7 @@ export default function EfficiencyScreen() {
                 {item.washCount}
               </Text>
               <Text style={[styles.statLabel, { color: theme.text + "99" }]}>
-                洗濯回数
+                {t('efficiency.stats.washCount')}
               </Text>
             </View>
 
@@ -154,7 +174,7 @@ export default function EfficiencyScreen() {
                 {item.threshold}
               </Text>
               <Text style={[styles.statLabel, { color: theme.text + "99" }]}>
-                閾値
+                {t('efficiency.stats.threshold')}
               </Text>
             </View>
 
@@ -163,7 +183,7 @@ export default function EfficiencyScreen() {
                 {getStatusText(item.status, item.wearCount, item.washCount)}
               </Text>
               <Text style={[styles.statLabel, { color: theme.text + "99" }]}>
-                効率
+                {t('efficiency.stats.efficiency')}
               </Text>
             </View>
           </View>
@@ -175,7 +195,7 @@ export default function EfficiencyScreen() {
         <View style={styles.efficiencyContainer}>
           <View style={styles.efficiencyLabelContainer}>
             <Text style={[styles.efficiencyLabel, { color: theme.text }]}>
-              効率
+              {t('efficiency.stats.efficiency')}
             </Text>
             <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status, item.wearCount, item.washCount) }]}>
               <Text style={styles.statusText}>
@@ -228,9 +248,9 @@ export default function EfficiencyScreen() {
               />
             )}
             <View style={styles.efficiencyScale}>
-              <Text style={styles.efficiencyScaleText}>洗濯不足</Text>
-              <Text style={[styles.efficiencyScaleText, { position: 'absolute', left: '50%', transform: [{ translateX: -10 }] }]}>良好</Text>
-              <Text style={styles.efficiencyScaleText}>洗いすぎ</Text>
+              <Text style={styles.efficiencyScaleText}>{t('efficiency.status.underwashed')}</Text>
+              <Text style={[styles.efficiencyScaleText, { position: 'absolute', left: '50%', transform: [{ translateX: -10 }] }]}>{t('efficiency.status.good')}</Text>
+              <Text style={styles.efficiencyScaleText}>{t('efficiency.status.overwashed')}</Text>
             </View>
           </View>
 
@@ -244,11 +264,11 @@ export default function EfficiencyScreen() {
 
   // Period options
   const periodOptions: { label: string; value: Period }[] = [
-    { label: '1ヶ月', value: '1month' },
-    { label: '3ヶ月', value: '3months' },
-    { label: '6ヶ月', value: '6months' },
-    { label: '1年', value: '1year' },
-    { label: 'すべて', value: 'all' },
+    { label: t('efficiency.period.1month'), value: '1month' },
+    { label: t('efficiency.period.3months'), value: '3months' },
+    { label: t('efficiency.period.6months'), value: '6months' },
+    { label: t('efficiency.period.1year'), value: '1year' },
+    { label: t('efficiency.period.all'), value: 'all' },
   ];
 
   const styles = StyleSheet.create({
@@ -527,6 +547,14 @@ export default function EfficiencyScreen() {
     lowerSection: {
       flex: 1,
     },
+    placeholderContainer: {
+      width: 60,
+      height: 60,
+      borderRadius: 4,
+      backgroundColor: '#f0f0f0',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
   });
 
   // Render loading state
@@ -534,7 +562,7 @@ export default function EfficiencyScreen() {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={{ marginTop: 16, color: theme.text }}>効率データを読み込み中...</Text>
+        <Text style={{ marginTop: 16, color: theme.text }}>{t('efficiency.loading')}</Text>
       </View>
     );
   }
@@ -544,9 +572,9 @@ export default function EfficiencyScreen() {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <Ionicons name="alert-circle-outline" size={48} color={theme.error} />
-        <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
+        <Text style={[styles.errorText, { color: theme.error }]}>{t('efficiency.error.title')}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={recalculateStatistics}>
-          <Text style={styles.retryButtonText}>再試行</Text>
+          <Text style={styles.retryButtonText}>{t('efficiency.error.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -556,14 +584,14 @@ export default function EfficiencyScreen() {
     <>
       <Stack.Screen
         options={{
-          title: "洗濯効率分析",
-          headerBackTitle: "戻る",
+          title: t('efficiency.title'),
+          headerBackTitle: t('common.back'),
         }}
       />
       <View style={styles.container}>
         {/* Period selector */}
         <View style={styles.filterSection}>
-          <Text style={[styles.filterLabel, { color: theme.text }]}>期間</Text>
+          <Text style={[styles.filterLabel, { color: theme.text }]}>{t('common.period')}</Text>
           <View style={styles.optionsRow}>
             {periodOptions.map((option) => (
               <TouchableOpacity
@@ -594,7 +622,7 @@ export default function EfficiencyScreen() {
           <View style={styles.summaryHeader}>
             <Ionicons name="speedometer" size={24} color={theme.primary} />
             <Text style={[styles.summaryTitle, { color: theme.text }]}>
-              洗濯効率サマリー
+              {t('efficiency.summary.title')}
             </Text>
           </View>
 
@@ -608,10 +636,9 @@ export default function EfficiencyScreen() {
                     </Text>
                   </View>
                   <Text style={[styles.summaryItemText, { color: theme.text }]}>
-                    洗濯不足
+                    {t('efficiency.status.underwashed')}
                   </Text>
                 </View>
-
                 <View style={styles.summaryItem}>
                   <View style={[styles.summaryBadge, { backgroundColor: '#27ae60' }]}>
                     <Text style={styles.summaryBadgeText}>
@@ -619,10 +646,9 @@ export default function EfficiencyScreen() {
                     </Text>
                   </View>
                   <Text style={[styles.summaryItemText, { color: theme.text }]}>
-                    良好
+                    {t('efficiency.status.good')}
                   </Text>
                 </View>
-
                 <View style={styles.summaryItem}>
                   <View style={[styles.summaryBadge, { backgroundColor: '#e74c3c' }]}>
                     <Text style={styles.summaryBadgeText}>
@@ -630,24 +656,24 @@ export default function EfficiencyScreen() {
                     </Text>
                   </View>
                   <Text style={[styles.summaryItemText, { color: theme.text }]}>
-                    洗いすぎ
+                    {t('efficiency.status.overwashed')}
                   </Text>
                 </View>
               </View>
 
               <Text style={[styles.summaryTip, { color: theme.text + "99" }]}>
-                <Ionicons name="bulb" size={16} color={theme.warning} /> ヒント:
-                洗濯効率を高めるには、設定した閾値に近い頻度で洗濯しましょう。洗いすぎも洗わなさすぎも避けることが大切です。
+                <Ionicons name="bulb" size={16} color={theme.warning} /> {t('common.tip')}:
+                {t('efficiency.tip')}
               </Text>
             </>
           ) : (
             <View style={styles.emptyEfficiencyContainer}>
               <Ionicons name="information-circle-outline" size={24} color={theme.primary} />
               <Text style={[styles.emptyEfficiencyText, { color: theme.text }]}>
-                洗濯効率データがありません
+                {t('efficiency.noData.title')}
               </Text>
               <Text style={[styles.emptyEfficiencySubtext, { color: theme.text + "99" }]}>
-                アイテムを登録して着用・洗濯履歴を記録すると、洗濯効率の分析情報が表示されます。
+                {t('efficiency.noData.message')}
               </Text>
             </View>
           )}
@@ -666,10 +692,10 @@ export default function EfficiencyScreen() {
           <View style={styles.emptyContainer}>
             <Ionicons name="water-outline" size={64} color={theme.text + "66"} />
             <Text style={[styles.emptyText, { color: theme.text }]}>
-              該当するアイテムがありません
+              {t('common.noItems')}
             </Text>
             <Text style={[styles.emptySubtext, { color: theme.text + "99" }]}>
-              フィルター条件を変更してお試しください
+              {t('common.changeFilter')}
             </Text>
           </View>
         )}

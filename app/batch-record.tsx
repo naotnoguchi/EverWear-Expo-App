@@ -3,6 +3,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Image } from "expo-image";
 import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
@@ -21,7 +22,7 @@ import { useClothing } from "../contexts/ClothingContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useImageUrls } from '../hooks/useImageUrls';
 import { formatDateJapanese, formatDateToLocalISOString } from '../lib/dateUtils';
-import { CategoryValue } from '../types/categories';
+import { CategoryValue, getCategoryIdByValue } from '../types/categories';
 
 // BatchResult interface is defined in ClothingContext
 type BatchResult = {
@@ -48,6 +49,18 @@ export default function BatchRecord() {
   const { allClothingItems, batchWearItems, batchWashItems, loading } = useClothing();
   const theme = useTheme();
   const colorScheme = useColorScheme();
+  const { t, i18n } = useTranslation();
+
+  // カテゴリ翻訳関数
+  const getCategoryName = (categoryValue: CategoryValue) => {
+    if (!categoryValue) return t('batchRecord.categories.others');
+    
+    // CategoryValue（日本語表示名）からカテゴリIDを取得
+    const categoryId = getCategoryIdByValue(categoryValue);
+    
+    // カテゴリIDを翻訳キーに変換
+    return t(`addItem.categories.${categoryId}`);
+  };
   
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [tempDate, setTempDate] = useState(new Date()); // iOS用の一時的な日付
@@ -92,7 +105,7 @@ export default function BatchRecord() {
       : allClothingItems;
     
     filteredItems.forEach(item => {
-      const category = item.category || 'その他';
+      const category = getCategoryName(item.category);
       if (!groups[category]) {
         groups[category] = [];
       }
@@ -105,7 +118,7 @@ export default function BatchRecord() {
     });
     
     return groups;
-  }, [allClothingItems, selectedAction]);
+  }, [allClothingItems, selectedAction, t]);
 
   // フィルタリング後のアイテム数を計算
   const filteredItemsCount = useMemo(() => {
@@ -146,12 +159,12 @@ export default function BatchRecord() {
     // 選択内容があれば確認ダイアログを表示
     if (selectedItems.size > 0) {
       Alert.alert(
-        "編集内容の破棄",
-        "選択した内容は保存されません。よろしいですか？",
+        t('batchRecord.alerts.discardTitle'),
+        t('batchRecord.alerts.discardMessage'),
         [
-          { text: "キャンセル", style: "cancel" },
+          { text: t('common.cancel'), style: "cancel" },
           { 
-            text: "破棄", 
+            text: t('batchRecord.alerts.discard'), 
             style: "destructive",
             onPress: () => {
               router.back();
@@ -225,7 +238,7 @@ export default function BatchRecord() {
   // 一括記録の実行
   const executeBatchRecord = async () => {
     if (selectedItems.size === 0) {
-      Alert.alert('エラー', 'アイテムを選択してください');
+      Alert.alert(t('common.error'), t('batchRecord.alerts.selectItems'));
       return;
     }
 
@@ -252,7 +265,7 @@ export default function BatchRecord() {
         }
       }
     } catch (error) {
-      Alert.alert('エラー', '一括記録に失敗しました');
+      Alert.alert(t('common.error'), t('batchRecord.alerts.batchFailed'));
     } finally {
       setBatchLoading(false);
     }
@@ -262,55 +275,34 @@ export default function BatchRecord() {
   const showBatchResult = (result: BatchResult) => {
     const successCount = result.successful.length;
     const failCount = result.failed.length;
-    const actionText = selectedAction === 'wear' ? '着用' : '洗濯';
+    const actionText = selectedAction === 'wear' ? t('batchRecord.actions.wear') : t('batchRecord.actions.wash');
 
     let message = '';
 
     if (failCount === 0) {
       // 全て成功した場合
-      if (successCount === 1) {
-        message = `1件の${actionText}を記録しました。`;
-      } else {
-        message = `${successCount}件の${actionText}を記録しました。`;
-      }
+      message = t('batchRecord.results.allSuccess', { count: successCount, action: actionText });
     } else if (successCount === 0) {
       // 全て失敗した場合
-      if (failCount === 1) {
-        message = `1件の${actionText}記録に失敗しました。\n\n`;
-        // 主要なエラーの種類を判定してメッセージを生成
-        const errorMessage = result.failed[0].error;
-        if (errorMessage.includes('既に存在します')) {
-          message += `同一日付で${actionText}記録が既に存在するアイテムがありました。`;
-        } else {
-          message += `記録処理中にエラーが発生しました。`;
-        }
+      const errorMessage = result.failed[0].error;
+      if (errorMessage.includes('既に存在します')) {
+        message = t('batchRecord.results.allFailedDuplicate', { count: failCount, action: actionText });
       } else {
-        message = `${failCount}件の${actionText}記録に失敗しました。\n\n`;
-        // 失敗理由の傾向を分析
-        const duplicateErrors = result.failed.filter(f => f.error.includes('既に存在します')).length;
-        if (duplicateErrors === failCount) {
-          message += `同一日付で${actionText}記録が既に存在するアイテムがありました。`;
-        } else if (duplicateErrors > 0) {
-          message += `同一日付で${actionText}記録が既に存在するアイテムや、その他のエラーが発生しました。`;
-        } else {
-          message += `記録処理中にエラーが発生しました。`;
-        }
+        message = t('batchRecord.results.allFailedError', { count: failCount, action: actionText });
       }
     } else {
       // 一部成功、一部失敗の場合
-      message = `${successCount}件の${actionText}を記録しました。\n${failCount}件の記録に失敗しました。\n\n`;
-      // 失敗理由の傾向を分析
       const duplicateErrors = result.failed.filter(f => f.error.includes('既に存在します')).length;
       if (duplicateErrors === failCount) {
-        message += `同一日付で${actionText}記録が既に存在するアイテムがありました。`;
+        message = t('batchRecord.results.partialSuccessDuplicate', { successCount, failCount, action: actionText });
       } else if (duplicateErrors > 0) {
-        message += `同一日付で${actionText}記録が既に存在するアイテムや、その他のエラーが発生しました。`;
+        message = t('batchRecord.results.partialSuccessMixed', { successCount, failCount, action: actionText });
       } else {
-        message += `記録処理中にエラーが発生しました。`;
+        message = t('batchRecord.results.partialSuccessError', { successCount, failCount, action: actionText });
       }
     }
 
-    Alert.alert('一括記録', message);
+    Alert.alert(t('batchRecord.title'), message);
   };
 
   // Define styles with theme colors
@@ -555,7 +547,7 @@ export default function BatchRecord() {
     <>
       {/* ヘッダータイトルの設定と閉じるボタンの追加 */}
       <Stack.Screen options={{ 
-        title: "一括記録",
+        title: t('batchRecord.title'),
         presentation: "modal", // モーダル風の表示
         headerTitleStyle: {
           fontWeight: "600",
@@ -585,21 +577,28 @@ export default function BatchRecord() {
           <View style={styles.formContainer}>
             {/* 日付選択 */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>日付</Text>
+              <Text style={styles.label}>{t('batchRecord.fields.date')}</Text>
               <TouchableOpacity 
                 style={styles.inputContainer}
                 onPress={handleDatePickerPress}
               >
                 <Ionicons name="calendar" size={20} color={theme.text} style={styles.inputIcon} />
                 <Text style={styles.dateText}>
-                  {formatDateJapanese(selectedDate)}
+                  {i18n.language === 'ja' 
+                    ? formatDateJapanese(selectedDate)
+                    : selectedDate.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })
+                  }
                 </Text>
               </TouchableOpacity>
             </View>
 
             {/* アクション選択 */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>アクション</Text>
+              <Text style={styles.label}>{t('batchRecord.fields.action')}</Text>
               <View style={styles.actionButtons}>
                 <TouchableOpacity
                   style={[
@@ -618,7 +617,7 @@ export default function BatchRecord() {
                     styles.actionButtonText,
                     selectedAction === 'wear' && styles.actionButtonTextActive
                   ]}>
-                    着用
+                    {t('batchRecord.actions.wear')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -638,7 +637,7 @@ export default function BatchRecord() {
                     styles.actionButtonText,
                     selectedAction === 'wash' && styles.actionButtonTextActive
                   ]}>
-                    洗濯
+                    {t('batchRecord.actions.wash')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -648,11 +647,11 @@ export default function BatchRecord() {
             <View style={styles.inputGroup}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.label}>
-                  アイテム選択 ({selectedItems.size}/{filteredItemsCount})
+                  {t('batchRecord.fields.itemSelection', { selected: selectedItems.size, total: filteredItemsCount })}
                 </Text>
                 <TouchableOpacity onPress={toggleSelectAll}>
                   <Text style={styles.selectAllText}>
-                    {selectedItems.size === filteredItemsCount ? '全解除' : '全選択'}
+                    {selectedItems.size === filteredItemsCount ? t('batchRecord.actions.deselectAll') : t('batchRecord.actions.selectAll')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -660,14 +659,14 @@ export default function BatchRecord() {
               {loading ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color={theme.text} />
-                  <Text style={styles.loadingText}>アイテムを読み込み中...</Text>
+                  <Text style={styles.loadingText}>{t('batchRecord.loading')}</Text>
                 </View>
-              ) : Object.keys(groupedItems).length === 0 ? (
+              ) : filteredItemsCount === 0 ? (
                 <View style={styles.emptyContainer}>
                   <Text style={styles.emptyText}>
                     {selectedAction === 'wash' 
-                      ? '洗濯が必要なアイテムがありません。\n（前回洗濯してから1回以上着用したアイテムのみ表示されます）'
-                      : 'アイテムがありません'
+                      ? t('batchRecord.emptyStates.noWashableItems')
+                      : t('batchRecord.emptyStates.noItems')
                     }
                   </Text>
                 </View>
@@ -703,7 +702,7 @@ export default function BatchRecord() {
                           )}
                           <View style={styles.itemInfo}>
                             <Text style={styles.itemName} numberOfLines={1}>
-                              {item.name || '名前なし'}
+                              {item.name || t('batchRecord.noName')}
                             </Text>
                             <View style={styles.checkboxContainer}>
                               <Ionicons
@@ -734,7 +733,9 @@ export default function BatchRecord() {
                 <ActivityIndicator color="white" style={{ marginRight: 8 }} />
               ) : null}
               <Text style={styles.executeButtonText}>
-                {selectedAction === 'wear' ? '着用記録' : '洗濯記録'}を追加
+                {t('batchRecord.executeButton', { 
+                  action: selectedAction === 'wear' ? t('batchRecord.actions.wearRecord') : t('batchRecord.actions.washRecord') 
+                })}
               </Text>
             </TouchableOpacity>
           </View>
@@ -748,7 +749,7 @@ export default function BatchRecord() {
             display="default"
             onChange={onDateChange}
             maximumDate={new Date()}
-            locale="ja-JP"
+            locale={i18n.language === 'ja' ? "ja-JP" : "en-US"}
             themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
           />
         )}
@@ -762,7 +763,7 @@ export default function BatchRecord() {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>日付を選択</Text>
+              <Text style={styles.modalTitle}>{t('batchRecord.dateModal.title')}</Text>
               <DateTimePicker
                 value={tempDate}
                 mode="date"
@@ -770,7 +771,7 @@ export default function BatchRecord() {
                 onChange={onDateChange}
                 maximumDate={new Date()}
                 style={styles.datePicker}
-                locale="ja-JP"
+                locale={i18n.language === 'ja' ? "ja-JP" : "en-US"}
                 themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
               />
               <View style={styles.modalButtons}>
@@ -778,13 +779,13 @@ export default function BatchRecord() {
                   style={[styles.modalButton, styles.cancelButton]}
                   onPress={cancelDateSelection}
                 >
-                  <Text style={styles.modalButtonText}>キャンセル</Text>
+                  <Text style={styles.modalButtonText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalButton, styles.confirmButton]}
                   onPress={confirmDateSelection}
                 >
-                  <Text style={styles.modalButtonText}>確定</Text>
+                  <Text style={styles.modalButtonText}>{t('batchRecord.dateModal.confirm')}</Text>
                 </TouchableOpacity>
               </View>
             </View>

@@ -4,8 +4,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
 import { auth } from './authClient';
 import {
-  CLOTHING_BUCKET,
-  getAuthenticatedStorage
+    CLOTHING_BUCKET,
+    getAuthenticatedStorage
 } from './storageClient';
 
 // UUIDを生成するヘルパー関数
@@ -55,44 +55,48 @@ const getContentType = (extension: string): string => {
 };
 
 // アルバムから画像を選択する関数
-export const pickImageFromGallery = async (): Promise<string | null> => {
+const pickImageFromGallery = async (translate: (key: string) => string): Promise<string | null> => {
   try {
-    // 権限の確認
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (status !== 'granted') {
-      Alert.alert('権限エラー', '画像を選択するには、写真へのアクセス許可が必要です。');
+    // 権限をリクエスト
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permission.status !== 'granted') {
+      Alert.alert(translate('common.error'), translate('imagePicker.errors.galleryPermission'));
       return null;
     }
 
-    // 画像ピッカーを起動
+    // 画像を選択
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 1.0,
+      quality: 0.8,
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      return result.assets[0].uri;
+      const imageUri = result.assets[0].uri;
+      // 画像を1024x1024にリサイズ
+      const manipulatedImage = await ImageManipulator.manipulateAsync(
+        imageUri,
+        [{ resize: { width: 1024, height: 1024 } }],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      return manipulatedImage.uri;
     }
-
     return null;
   } catch (error) {
-    console.error('[ImagePicker] Gallery selection error:', error);
-    Alert.alert('エラー', 'アルバムからの画像選択中にエラーが発生しました');
+    console.error('[ImagePicker] Gallery error:', error);
+    Alert.alert(translate('common.error'), translate('imagePicker.errors.galleryError'));
     return null;
   }
 };
 
-// カメラで画像を撮影する関数
-export const takePhotoWithCamera = async (): Promise<string | null> => {
+// カメラで写真を撮影する関数
+const takePhotoWithCamera = async (translate: (key: string) => string): Promise<string | null> => {
   try {
-    // カメラ権限の確認
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    
-    if (status !== 'granted') {
-      Alert.alert('権限エラー', '写真を撮影するには、カメラへのアクセス許可が必要です。');
+    // 権限をリクエスト
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (permission.status !== 'granted') {
+      Alert.alert(translate('common.error'), translate('imagePicker.errors.cameraPermission'));
       return null;
     }
 
@@ -110,46 +114,62 @@ export const takePhotoWithCamera = async (): Promise<string | null> => {
     return null;
   } catch (error) {
     console.error('[ImagePicker] Camera capture error:', error);
-    Alert.alert('エラー', 'カメラでの撮影中にエラーが発生しました');
+    Alert.alert(translate('common.error'), translate('imagePicker.errors.cameraError'));
     return null;
   }
 };
 
 // 画像選択オプションを表示する関数
-export const showImagePickerOptions = async (): Promise<string | null> => {
+export const showImagePickerOptions = async (t?: (key: string) => string): Promise<string | null> => {
+  // 翻訳関数が提供されない場合のフォールバック
+  const translate = t || ((key: string) => {
+    const fallbacks: Record<string, string> = {
+      'imagePicker.title': '画像を選択',
+      'imagePicker.message': '画像の取得方法を選択してください',
+      'imagePicker.camera': 'カメラで撮影',
+      'imagePicker.gallery': 'アルバムから選択',
+      'imagePicker.cancel': 'キャンセル',
+      'imagePicker.errors.cameraError': 'カメラでの撮影中にエラーが発生しました',
+      'imagePicker.errors.galleryError': 'アルバムからの画像選択中にエラーが発生しました',
+      'imagePicker.errors.galleryPermission': '画像を選択するには、写真へのアクセス許可が必要です。',
+      'imagePicker.errors.cameraPermission': '写真を撮影するには、カメラへのアクセス許可が必要です。'
+    };
+    return fallbacks[key] || key;
+  });
+
   return new Promise((resolve) => {
     Alert.alert(
-      '画像を選択',
-      '画像の取得方法を選択してください',
+      translate('imagePicker.title'),
+      translate('imagePicker.message'),
       [
         {
-          text: 'カメラで撮影',
+          text: translate('imagePicker.camera'),
           onPress: async () => {
             try {
-              const uri = await takePhotoWithCamera();
+              const uri = await takePhotoWithCamera(translate);
               resolve(uri);
             } catch (error) {
               console.error('[ImagePicker] Camera option error:', error);
-              Alert.alert('エラー', 'カメラでの撮影中にエラーが発生しました');
+              Alert.alert(translate('common.error'), translate('imagePicker.errors.cameraError'));
               resolve(null);
             }
           },
         },
         {
-          text: 'アルバムから選択',
+          text: translate('imagePicker.gallery'),
           onPress: async () => {
             try {
-              const uri = await pickImageFromGallery();
+              const uri = await pickImageFromGallery(translate);
               resolve(uri);
             } catch (error) {
               console.error('[ImagePicker] Gallery option error:', error);
-              Alert.alert('エラー', 'アルバムからの画像選択中にエラーが発生しました');
+              Alert.alert(translate('common.error'), translate('imagePicker.errors.galleryError'));
               resolve(null);
             }
           },
         },
         {
-          text: 'キャンセル',
+          text: translate('imagePicker.cancel'),
           style: 'cancel',
           onPress: () => resolve(null),
         },

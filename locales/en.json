@@ -1,0 +1,1343 @@
+{
+  "common": {
+    "loading": {
+      "processing": "Processing...",
+      "calculating": "Calculating...",
+      "loggingIn": "Logging in...",
+      "sending": "Sending...",
+      "verifying": "Verifying...",
+      "loadingStats": "Loading statistics...",
+      "registering": "Registering...",
+      "authenticating": "Authenticating...",
+      "guestLoggingIn": "Guest login..."
+    },
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "back": "Back",
+    "close": "Close",
+    "ok": "OK",
+    "yes": "Yes",
+    "no": "No",
+    "confirm": "Confirm",
+    "required": "Required",
+    "optional": "Optional",
+    "period": "Period",
+    "tip": "Tip",
+    "noItems": "No items found",
+    "changeFilter": "Please change the filter conditions and try again",
+    "or": "or",
+    "and": "and",
+    "all": "All",
+    "placeholder": {
+      "email": "Email Address",
+      "password": "Password"
+    }
+  },
+  "screen": {
+    "login": { "title": "Login" },
+    "signup": { "title": "Sign Up" },
+    "verify": { "title": "Enter Verification Code" },
+    "resetPassword": { "title": "Reset Password" },
+    "itemDetail": { "title": "Item Details" },
+    "itemAdd": { "title": "Add Item" },
+    "batchRecord": { "title": "Batch Record" },
+    "ranking": { "title": "Wear Count Ranking" },
+    "efficiency": { "title": "Laundry Efficiency Analysis" },
+    "impact": { "title": "Environmental Impact & Savings" },
+    "badges": { "title": "Badges & Achievements" },
+    "badgesOverview": { "title": "Badge Collection" },
+    "itemStats": { "title": "Item Statistics" },
+    "subscription": { "title": "Premium Plan" },
+    "account": { "title": "Account Management" },
+    "linkAccount": { "title": "Account Registration" }
+  },
+  "itemDetail": {
+    "notFound": "Item not found",
+    "dataNotFound": "Item data not found.",
+    "fetchError": "Failed to fetch item detail data. Please try again later.",
+    "stats": {
+      "lastWorn": "Last worn:",
+      "lastWashed": "Last washed:",
+      "none": "None",
+      "wearCount": "Wear count:",
+      "washThreshold": "Wash threshold:"
+    },
+    "washStatus": {
+      "needsWash": "Needs washing",
+      "remainingWears": "{{count}} more wears until wash",
+      "wearCount": "(worn {{count}} times)"
+    },
+    "memo": {
+      "title": "Memo"
+    },
+    "labels": {
+      "category": "Category:",
+      "brand": "Brand:",
+      "condition": "Condition:",
+      "purchasePrice": "Purchase price:",
+      "new": "New",
+      "used": "Used"
+    },
+    "actions": {
+      "edit": "Edit",
+      "recordWear": "Record Wear",
+      "recordWash": "Record Wash",
+      "deleteItem": "Delete This Item"
+    },
+    "alerts": {
+      "wearRecorded": "Added wear record for {{date}}",
+      "wearDuplicate": "Wear record for {{date}} already exists",
+      "wearError": "Failed to add wear record for {{date}}",
+      "washRecorded": "Added wash record for {{date}}",
+      "washDuplicate": "Wash record for {{date}} already exists",
+      "washError": "Failed to add wash record for {{date}}",
+      "deleteConfirm": "Delete this item?",
+      "deleteMessage": "Deleted items cannot be restored.",
+      "deleteSuccess": "Item deleted",
+      "deleteError": "Failed to delete item",
+      "wearHistoryDeleted": "Deleted wear history for {{date}}",
+      "washHistoryDeleted": "Deleted wash history for {{date}}"
+    }
+  },
+  "itemStats": {
+    "title": "Item Detail Analysis",
+    "loading": "Loading item detail data...",
+    "retry": "Retry",
+    "stats": {
+      "wearCount": "Wear Count",
+      "washCount": "Wash Count",
+      "wearPerWash": "Wear/Wash",
+      "efficiency": "Efficiency"
+    },
+    "categories": {
+      "tops": "Tops",
+      "bottoms": "Bottoms",
+      "dress": "Dress",
+      "outerwear": "Outerwear",
+      "jacket": "Jacket",
+      "shoes": "Shoes",
+      "bag": "Bag",
+      "accessories": "Accessories",
+      "setup": "Setup",
+      "others": "Others"
+    },
+    "days": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    },
+    "months": {
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
+    },
+    "units": {
+      "days": "days"
+    },
+    "efficiency": {
+      "title": "Washing Efficiency",
+      "noData": "No Data",
+      "noHistory": "No History",
+      "good": "Good",
+      "underwashed": "Underwashed",
+      "overwashed": "Overwashed",
+      "optimal": "This item is being washed at an optimal frequency. Keep it up!",
+      "overwashedDesc": "The washing frequency may be too high. Wearing clothes more between washes can extend their lifespan and reduce environmental impact.",
+      "underwashedDesc": "The washing frequency may be too low. Consider washing more frequently to maintain clothing cleanliness.",
+      "noWearWashHistory": "This item has no wear or wash records yet. Record wears and washes to see washing efficiency analysis.",
+      "noWashHistory": "This item has no wash records yet. Record washes to see washing efficiency analysis.",
+      "tip": {
+        "bottoms": "Bottoms are ideally washed every 5-10 wears. Avoid washing too much or too little.",
+        "outerwear": "Outerwear typically needs washing only 1-2 times per season unless dirty. Wash as needed if stains are visible.",
+        "default": "General clothing is ideally washed every 2-3 wears. Adjust based on clothing type and wear conditions."
+      }
+    },
+    "patterns": {
+      "title": "Wear Patterns",
+      "mostWornDay": "Most Worn Day",
+      "mostWornMonth": "Most Worn Month",
+      "avgWearInterval": "Average Wear Interval",
+      "lastWornDate": "Last Worn Date",
+      "noData": "No Data",
+      "times": "times"
+    },
+    "monthlyChart": {
+      "title": "Monthly Wear Count",
+      "noData": "No Wear Data",
+      "noDataDesc": "Wear this item to see monthly wear count data."
+    },
+    "environmental": {
+      "title": "Environmental Impact",
+      "waterSaved": "Water Saved",
+      "energySaved": "Energy Saved",
+      "co2Reduced": "CO2 Reduced",
+      "description": "By washing this item at an appropriate frequency, you are saving the above resources and reducing environmental impact."
+    },
+    "modals": {
+      "washInfo": {
+        "title": "About Wash Reduction Calculation",
+        "description1": "Environmental impact calculation is based on the difference between actual wash count and \"washing every time you wear\" scenario.",
+        "description2": "However, it's common to wash multiple items at once. Therefore, the reduced wash count is divided by the average number of items per wash (5 items).",
+        "example": "Example: If worn 10 times and washed 2 times, theoretically 8 washes were reduced, but considering 5 items per wash on average, the actual reduction effect is 8÷5=1.6 washes."
+      },
+      "waterInfo": {
+        "title": "About Water Usage (Cost) Calculation",
+        "description1": "Water savings are calculated by multiplying the reduced wash count by the average water usage per wash (about 65 liters).",
+        "description2": "Costs vary by region, but are calculated based on typical water rates (about $3 per 1000 liters).",
+        "example": "Example: If 10 washes were reduced, 65 liters × 10 washes = 650 liters of water saved, which translates to about $1.95 in savings."
+      },
+      "energyInfo": {
+        "title": "About Energy Usage (Cost) Calculation",
+        "description1": "Energy savings are calculated by multiplying the reduced wash count by the average energy usage per wash (about 0.9 kWh).",
+        "description2": "Costs vary by power company and contract plan, but are calculated based on typical electricity rates (about $0.25 per kWh).",
+        "example": "Example: If 10 washes were reduced, 0.9 kWh × 10 washes = 9 kWh of electricity saved, which translates to about $2.25 in savings."
+      },
+      "co2Info": {
+        "title": "About CO2 Reduction Calculation",
+        "description1": "CO2 reduction is calculated by multiplying the saved electricity by the CO2 emission factor for electricity (about 0.6 kg per kWh).",
+        "description2": "This considers not only washing machine usage, but also CO2 emissions related to water supply and treatment.",
+        "example": "Example: If 9 kWh of electricity was saved, 9 kWh × 0.6 kg/kWh = 5.4 kg of CO2 emissions were reduced."
+      }
+    }
+  },
+  "signup": {
+    "title": "Create Account",
+    "alert": {
+      "emptyFields": "Please fill out all fields",
+      "passwordMismatch": "Passwords do not match"
+    },
+    "codeSentTitle": "Verification Code Sent",
+    "codeSentMessage": "A 6-digit verification code has been sent to your email. Please enter the code.",
+    "registerErrorTitle": "Registration Error",
+    "registerFailed": "Account registration failed",
+    "placeholder": {
+      "passwordConfirm": "Confirm Password"
+    },
+    "button": {
+      "create": "Create Account"
+    },
+    "agreement": {
+      "prefix": "By tapping \"Create Account\", you agree to the ",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "suffix": "."
+    },
+    "footer": {
+      "already": "Already have an account?",
+      "login": "Login"
+    }
+  },
+  "login": {
+    "title": "Login to EverWear",
+    "alertEmptyFields": "Please enter email and password",
+    "loginErrorTitle": "Login Error",
+    "loginFailed": "Login failed",
+    "googleErrorTitle": "Google Login Error",
+    "googleFailed": "Google login failed.\n\n• Check your internet connection\n• Check Google authentication settings",
+    "appleFailed": "Apple login failed",
+    "guestErrorTitle": "Guest Login Error",
+    "guestFailed": "Guest login failed",
+    "onboardingFailed": "Failed to display onboarding",
+    "reset": {
+      "title": "Password Reset",
+      "formTitle": "Reset Password",
+      "emailRequired": "Please enter your email address",
+      "sent": "A 6-digit reset code has been sent to your email. Please enter the code.",
+      "failed": "Password reset failed"
+    },
+    "button": {
+      "login": "Login",
+      "google": "Login with Google",
+      "guest": "Continue as Guest",
+      "signup": "Sign Up",
+      "sendResetCode": "Send Reset Code"
+    },
+    "link": {
+      "forgotPassword": "Forgot password?",
+      "viewOnboarding": "View App Tutorial"
+    },
+    "agreement": {
+      "prefix": "By choosing any login method, you agree to the ",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "suffix": "."
+    }
+  },
+  "resetPassword": {
+    "title": "Set New Password",
+    "alert": {
+      "emptyFields": "Please fill out all fields",
+      "passwordMismatch": "Passwords do not match",
+      "tokenMissing": "Recovery token not found. Please restart password reset.",
+      "failed": "Failed to update password"
+    },
+    "successTitle": "Password Updated",
+    "successMessage": "For security, please log in again with your new password.",
+    "placeholder": {
+      "newPassword": "New Password",
+      "newPasswordConfirm": "Confirm New Password"
+    },
+    "button": {
+      "change": "Change Password"
+    }
+  },
+  "verify": {
+    "subtitle": "Enter the 6-digit code sent to your email",
+    "placeholder": {
+      "code": "123456"
+    },
+    "button": {
+      "verify": "Verify",
+      "resendCode": "Resend verification code",
+      "resendReset": "Resend reset code"
+    },
+    "alert": {
+      "invalidLink": "Invalid link.",
+      "codeRequired": "Please enter the 6-digit code.",
+      "emailVerified": "Email address verified.",
+      "codeVerified": "Code verified. Please set a new password.",
+      "passwordSetupFailed": "Failed to set password",
+      "accountLinkedTitle": "Account Linked",
+      "accountLinkedMessage": "Email and password have been set.",
+      "verificationErrorTitle": "Verification Error",
+      "verificationFailed": "Failed to verify code.",
+      "emailUnknown": "Email address unknown. Please try again.",
+      "sentTitle": "Sent",
+      "resetResent": "Reset code resent. Please check your email.",
+      "codeResent": "Verification code resent. Please check your email.",
+      "resendFailed": "Failed to resend code."
+    }
+  },
+  "linkAccount": {
+    "title": "Account Registration",
+    "notice": "By registering an account, you can continue to use your current data safely",
+    "description": {
+      "main": "Please register an account to continue using your data safely.",
+      "emailForm": "Please enter your email address and password"
+    },
+    "options": {
+      "email": "Register with Email/Password",
+      "google": "Register with Google Account",
+      "googleLoading": "Authenticating with Google..."
+    },
+    "form": {
+      "placeholder": {
+        "email": "Email Address",
+        "password": "Password (8+ characters)",
+        "confirmPassword": "Confirm Password"
+      },
+      "button": {
+        "sendCode": "Send Verification Code",
+        "sending": "Sending...",
+        "back": "Back"
+      }
+    },
+    "alerts": {
+      "validation": {
+        "emailRequired": "Please enter an email address",
+        "emailInvalid": "Please enter a valid email address",
+        "passwordRequired": "Please enter a password",
+        "passwordMismatch": "Passwords do not match",
+        "passwordTooShort": "Password must be at least 8 characters"
+      },
+      "codeSent": {
+        "title": "Verification Code Sent",
+        "message": "A 6-digit verification code has been sent to your email.\n\nPlease enter the code to verify your email address."
+      },
+      "success": {
+        "title": "Account Registration Complete!",
+        "googleMessage": "Google account registration is complete.\n\nYour data will continue to be available safely.",
+        "appleMessage": "Apple account registration is complete.\n\nYour data will continue to be available safely."
+      },
+      "error": {
+        "title": "Account Registration Error",
+        "linkingTitle": "Linking Error",
+        "linkingFailed": "Failed to link account",
+        "googleFailed": "Google authentication failed",
+        "appleFailed": "Apple authentication failed"
+      }
+    },
+    "agreement": {
+      "prefix": "By selecting any registration method, you agree to the ",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "suffix": "."
+    }
+  },
+  "home": {
+    "anonymousBanner": {
+      "message": "Guest mode - Data may be lost after extended periods. Please register an account."
+    },
+    "premiumBanner": {
+      "message": "{{count}} items are hidden"
+    },
+    "itemLimit": {
+      "title": "Item Registration Limit",
+      "messageAnonymous": "You currently have {{count}} items registered.\n\nThe free plan allows up to 5 items.\n\nRegister an account and upgrade to Premium Plan for unlimited items.",
+      "messageFree": "You currently have {{count}} items registered.\n\nThe free plan allows up to 5 items.\n\nUpgrade to Premium Plan for unlimited items.",
+      "register": "Register Account",
+      "viewPremium": "View Premium Plan"
+    }
+  },
+  "stats": {
+    "period": {
+      "1month": "1 Month",
+      "3months": "3 Months",
+      "6months": "6 Months",
+      "1year": "1 Year",
+      "all": "All"
+    },
+    "periodText": {
+      "1month": "Past 1 month",
+      "3months": "Past 3 months",
+      "6months": "Past 6 months",
+      "1year": "Past 1 year",
+      "all": "All time"
+    },
+    "periodDescription": "Analysis based on {{period}} data",
+    "basicStats": {
+      "totalItems": "Items",
+      "totalWears": "Total Wears",
+      "totalWashes": "Total Washes",
+      "averageWears": "Avg Wears/Wash",
+      "noData": "No Data",
+      "needWashHistory": "Wash history needed"
+    },
+    "ranking": {
+      "title": "Wear Count Ranking",
+      "viewAll": "View All",
+      "wearCount": "{{count}} wears",
+      "noCategory": "No Category",
+      "noData": "No data available"
+    },
+    "laundryEfficiency": {
+      "title": "Laundry Efficiency",
+      "noHistory": "No wear/wash history",
+      "noHistoryDescription": "Record item wears and washes to see laundry efficiency analysis.",
+      "noData": "No laundry efficiency data",
+      "noDataDescription": "Register items and record wear/wash history to see laundry efficiency analysis.",
+      "status": {
+        "good": "Good",
+        "overwashing": "Overwashing",
+        "underwashing": "Underwashing"
+      },
+      "statusText": "Your laundry efficiency is {{status}}. You wash on average every {{count}} wears.",
+      "tip": "Tip: Optimal washing frequency varies by clothing type. Avoid both overwashing and underwashing."
+    },
+    "environment": {
+      "title": "Impact & Savings",
+              "washesReduced": "Washes Saved",
+        "co2Reduced": "CO2 Saved",
+        "savings": "Money Saved",
+      "description": "Compared to washing after every wear, you've reduced {{washesReduced}} washes. This has the same CO2 reduction effect as planting about {{trees}} trees."
+    },
+    "badges": {
+      "title": "Badges & Achievements",
+      "newBadge": "NEW",
+      "moreBadges": "View more badges",
+      "noBadges": "No badges earned yet",
+      "startCollection": "Start your badge collection!",
+      "noBadgesDescription": "Keep using the app and achieve various goals to earn badges. Challenge yourself!",
+      "startDescription": "Register items and record wear/wash history to earn various badges. Register your first item to start collecting badges!",
+      "viewBadges": "View Badge List",
+      "viewBadgeTypes": "View Badge Types",
+      "unknownDate": "Unknown"
+    },
+    "error": {
+      "retry": "Retry"
+    },
+    "viewAll": "View Details",
+    "viewAllBadges": "View All"
+  },
+  "settings": {
+    "account": {
+      "title": "Account",
+      "guest": {
+        "status": "Currently using as guest",
+        "register": "Register Account",
+        "benefits": "By registering an account:\n• Your data is safely stored even after long periods\n• Sync data across multiple devices\n• Purchase premium features (unlimited item registration)"
+      },
+      "manage": "Account Settings"
+    },
+    "premium": {
+      "title": "Premium Plan",
+      "viewPlan": "View Premium Plan",
+      "description": "Premium plan includes unlimited item registration (free plan limited to 5 items) and other benefits.",
+      "active": {
+        "member": "Premium Member",
+        "status": "Active",
+        "plan": "Subscription Plan",
+        "yearlyPlan": "Annual Plan",
+        "monthlyPlan": "Monthly Plan",
+        "originalPurchase": "Original Purchase Date",
+        "currentPurchase": "Current Subscription Start",
+        "nextRenewal": "Next Renewal Date",
+        "manage": "Manage Subscription"
+      }
+    },
+    "appInfo": {
+      "title": "App Information",
+      "version": "Version",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy"
+    },
+    "support": {
+      "title": "Support",
+      "contact": "Contact Us"
+    },
+    "actions": {
+      "logout": {
+        "button": "Logout",
+        "title": "Logout",
+        "message": "Are you sure you want to logout?",
+        "confirm": "Logout",
+        "error": "Failed to logout"
+      },
+      "resetData": {
+        "button": "Reset Data",
+        "processing": "Resetting...",
+        "title": "Reset Data",
+        "message": "All data will be deleted and you will return to the login screen.\n\nThis action cannot be undone.",
+        "confirm": "Reset",
+        "error": "Failed to reset data.\n\n{{error}}\n\nPlease try again."
+      }
+    },
+    "footer": "© 2025 EverWear All Rights Reserved"
+  },
+  "badges": {
+    "earned": "Earned",
+    "unearned": "Not Earned",
+    "achieved": "Achieved",
+    "earnedDate": "Earned Date",
+    "loading": "Loading badges...",
+    "retry": "Retry",
+    "title": "Badges & Achievements",
+    "collection": "Badge Collection",
+    "showOverview": "Show Overview",
+    "earnedBadges": "Earned Badges",
+    "categoryFilter": "Category",
+    "statusFilter": "Status",
+    "noMatchingBadges": "No matching badges",
+    "changeFilters": "Try changing the filter conditions",
+    "loadingBadges": "Loading badge data",
+    "pleaseWait": "Please wait",
+    "overview": {
+      "title": "Badge Collection",
+      "earnedCount": "Earned: {{earned}}/{{total}} ({{percentage}}%)",
+      "showDates": "Show Earned Dates",
+      "hideDates": "Hide Earned Dates",
+      "shareButton": "Share Badge Collection",
+      "shareTitle": "Badge Collection",
+      "shareMessage": "My Badge Collection: {{earned}}/{{total}} badges earned!"
+    },
+    "categories": {
+      "usage": "Usage",
+      "efficiency": "Efficiency",
+      "milestone": "Milestone",
+      "achievement": "Achievement", 
+      "special": "Special",
+      "other": "Other"
+    },
+    "names": {
+      "firstItem": "First Item",
+      "firstWear": "First Wear",
+      "firstWash": "First Wash",
+      "itemCollector5": "Item Collector",
+      "itemCollector15": "Fashion Enthusiast",
+      "itemCollector30": "Wardrobe Master",
+      "wearAchieverItem10": "Favorite Discovery",
+      "wearAchieverItem30": "Heavy Rotation",
+      "wearAchieverItem50": "Perfect Match",
+      "wearMaster10": "Wear Rookie",
+      "wearMaster50": "Wear Expert",
+      "wearMaster100": "Wear Master",
+      "washMaster10": "Wash Rookie",
+      "washMaster30": "Wash Expert",
+      "washMaster50": "Wash Master",
+      "washSaver10": "Wash Saver Rookie",
+      "washSaver50": "Wash Saver Expert",
+      "washSaver100": "Wash Saver Master",
+      "categoryMaster": "Category Master",
+      "premiumUnlocked": "Premium User",
+      "consistentTracker": "Consistency Champion"
+    },
+    "descriptions": {
+      "firstItem": "Registered your first item",
+      "firstWear": "Added your first wear record",
+      "firstWash": "Added your first wash record",
+      "itemCollector5": "Registered 5 items",
+      "itemCollector15": "Registered 15 items",
+      "itemCollector30": "Registered 30 items",
+      "wearAchieverItem10": "Wore the same item 10 times",
+      "wearAchieverItem30": "Wore the same item 30 times",
+      "wearAchieverItem50": "Wore the same item 50 times",
+      "wearMaster10": "Recorded 10 total wears",
+      "wearMaster50": "Recorded 50 total wears",
+      "wearMaster100": "Recorded 100 total wears",
+      "washMaster10": "Recorded 10 wash sessions",
+      "washMaster30": "Recorded 30 wash sessions",
+      "washMaster50": "Recorded 50 wash sessions",
+      "washSaver10": "Saved 10 wash cycles",
+      "washSaver50": "Saved 50 wash cycles",
+      "washSaver100": "Saved 100 wash cycles",
+      "categoryMaster": "Registered items in 7 different categories",
+      "premiumUnlocked": "Using premium plan",
+      "consistentTracker": "Recorded for 100 consecutive days"
+    }
+  },
+  "itemCalendar": {
+    "title": "Wear & Wash History",
+    "returnToThisMonth": "Return to this month",
+    "months": {
+      "january": "Jan",
+      "february": "Feb",
+      "march": "Mar",
+      "april": "Apr",
+      "may": "May",
+      "june": "Jun",
+      "july": "Jul",
+      "august": "Aug",
+      "september": "Sep",
+      "october": "Oct",
+      "november": "Nov",
+      "december": "Dec"
+    },
+    "days": {
+      "sunday": "Sun",
+      "monday": "Mon",
+      "tuesday": "Tue",
+      "wednesday": "Wed",
+      "thursday": "Thu",
+      "friday": "Fri",
+      "saturday": "Sat"
+    },
+    "legend": {
+      "wear": "Wear",
+      "wash": "Wash"
+    },
+    "alerts": {
+      "deleteTitle": "Delete History",
+      "deleteMessage": "Delete history for {{date}}?",
+      "deleteWearHistory": "Delete wear history",
+      "deleteWashHistory": "Delete wash history"
+    }
+  },
+  "addItem": {
+    "title": "Add Item",
+    "form": {
+      "required": "(Required)",
+      "optional": "(Optional)",
+      "category": {
+        "label": "Category",
+        "placeholder": "Select a category"
+      },
+      "brand": {
+        "label": "Brand",
+        "placeholder": "Select a brand (optional)",
+        "helpTitle": "If you can't find a brand",
+        "helpMessage": "Please send us a brand addition request through 'Contact Us' in the Settings tab"
+      },
+      "name": {
+        "label": "Item Name",
+        "placeholder": "Enter item name (optional)"
+      },
+      "washThreshold": {
+        "label": "Wash Threshold",
+        "description": "How many wears before washing",
+        "unit": "times",
+        "suffix": "times"
+      },
+      "image": {
+        "label": "Image",
+        "placeholder": "Select an image",
+        "selected": "Image selected",
+        "error": "Failed to select image"
+      },
+      "memo": {
+        "label": "Memo",
+        "placeholder": "Enter memo (optional)"
+      },
+      "condition": {
+        "label": "Condition",
+        "placeholder": "Enter item condition (optional)",
+        "new": "New",
+        "used": "Used"
+      },
+      "purchasePrice": {
+        "label": "Purchase Price",
+        "placeholder": "Enter purchase price (optional)",
+        "currency": "¥"
+      },
+      "brand": {
+        "label": "Brand",
+        "placeholder": "Select a brand (optional)",
+        "helpTitle": "If you can't find a brand",
+        "helpMessage": "Please send us a brand addition request through 'Contact Us' in the Settings tab",
+        "notFound": "If you can't find a brand",
+        "notFoundMessage": "Please send us a brand addition request through 'Contact Us' in the Settings tab"
+      }
+    },
+    "categories": {
+      "tops": "Tops",
+      "bottoms": "Bottoms",
+      "jacket": "Jacket",
+      "outerwear": "Outerwear",
+      "setup": "Set Up",
+      "dress": "Dress",
+      "shoes": "Shoes",
+      "bag": "Bag",
+      "accessories": "Accessories",
+      "others": "Others"
+    },
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "discard": "Discard",
+      "add": "Add",
+      "adding": "Adding..."
+    },
+    "alerts": {
+      "discardTitle": "Discard changes?",
+      "discardMessage": "Your input will be lost.",
+      "saveSuccess": "Item saved successfully",
+      "saveError": "Failed to save item",
+      "categoryRequired": "Please select a category",
+      "imageRequired": "Please select an image",
+      "invalidWashThreshold": "Please enter a valid wash threshold",
+      "addSuccess": "Item added successfully",
+      "addError": "Failed to add item",
+      "washThresholdInvalid": "Please enter a valid wash threshold"
+    }
+  },
+  "brandSelector": {
+    "placeholder": "Select a brand",
+    "searchPlaceholder": "Search for brand...",
+    "noResults": "No results found",
+    "close": "Close"
+  },
+  "imagePicker": {
+    "title": "Select Image",
+    "message": "Choose how to get the image",
+    "camera": "Take Photo",
+    "gallery": "Choose from Gallery",
+    "cancel": "Cancel",
+    "errors": {
+      "cameraPermission": "Camera access permission is required to take photos.",
+      "galleryPermission": "Photo access permission is required to select images.",
+      "cameraError": "An error occurred while taking a photo",
+      "galleryError": "An error occurred while selecting an image from gallery"
+    }
+  },
+  "efficiency": {
+    "title": "Laundry Efficiency Analysis",
+    "period": {
+      "1month": "1 Month",
+      "3months": "3 Months",
+      "6months": "6 Months", 
+      "1year": "1 Year",
+      "all": "All Time"
+    },
+    "status": {
+      "good": "Good",
+      "underwashed": "Underwashed",
+      "overwashed": "Overwashed",
+      "noHistory": "No History",
+      "noData": "No Data",
+      "unknown": "Unknown"
+    },
+    "messages": {
+      "noHistory": "This item has no wear or wash records yet. Record wearing and washing to see efficiency analysis.",
+      "noWashData": "This item has no wash records yet. Record washing to see efficiency analysis.",
+      "good": "Used with optimal washing frequency. Keep it up!",
+      "underwashed": "Washing frequency may be too low. Consider washing more frequently to maintain cleanliness.",
+      "overwashed": "Washing frequency may be too high. Wearing more between washes can extend garment life and reduce environmental impact.",
+      "insufficient": "Insufficient wash data."
+    },
+    "loading": "Calculating efficiency data...",
+    "error": {
+      "title": "Failed to load data",
+      "retry": "Retry"
+    },
+    "noData": {
+      "title": "No efficiency data available",
+      "message": "Record wearing and washing items to see efficiency analysis."
+    },
+    "stats": {
+      "wearCount": "Wear Count",
+      "washCount": "Wash Count",
+      "wearCountWithNum": "Worn {{count}} times",
+      "washCountWithNum": "Washed {{count}} times",
+      "threshold": "Threshold",
+      "efficiency": "Efficiency"
+    },
+    "summary": {
+      "title": "Laundry Efficiency Summary"
+    },
+    "tip": "To improve washing efficiency, wash at frequencies close to your set thresholds. Avoid both overwashing and underwashing."
+  },
+  "impact": {
+    "title": "Environmental Impact",
+    "loading": "Calculating environmental impact data...",
+    "period": {
+      "1month": "1 Month",
+      "3months": "3 Months",
+      "6months": "6 Months",
+      "1year": "1 Year",
+      "all": "All Time"
+    },
+    "metrics": {
+      "co2Reduced": "CO2 Reduced",
+      "treeEquivalent": "Tree Equivalent",
+      "waterSaved": "Water Saved",
+      "electricitySaved": "Electricity Saved",
+      "detergentSaved": "Detergent Saved",
+      "totalSavings": "Total Savings",
+      "washReduction": "Wash Reduction Effect",
+      "washesReduced": "Washes Reduced",
+      "resourceSavings": "Resource Savings",
+      "lifespanExtension": "Clothing Lifespan Extension",
+      "monthlyReduction": "Monthly Reduction Effect",
+      "environmentalContribution": "Environmental Contribution"
+    },
+    "description": "Compared to washing after every wear, you have reduced {{washesReduced}} wash cycles. This has the same CO2 reduction effect as planting approximately {{treeEquivalent}} trees.",
+    "lifespanDescription": "By reducing {{washesReduced}} wash cycles, you have extended the lifespan of your clothes. Damage to fibers from washing is reduced, allowing you to wear your favorite clothes longer.",
+    "lifespanValue": "Clothing lifespan extended by approximately {{multiplier}}x",
+    "units": {
+      "kg": "kg",
+      "trees": "trees",
+      "liters": "L",
+      "kwh": "kWh",
+      "ml": "ml",
+      "yen": "¥",
+      "equivalent": "equivalent"
+    },
+    "share": {
+      "button": "Share Environmental Impact",
+      "title": "My Environmental Impact",
+      "message": "🌱 My Environmental Impact 🌱\n\n🌍 CO2 Reduced: {{co2}}kg\n🌳 Tree Equivalent: {{trees}} trees\n\n💧 Water Saved: {{water}}L (¥{{waterCost}} equivalent)\n⚡ Electricity Saved: {{electricity}}kWh (¥{{electricityCost}} equivalent)\n🧴 Detergent Saved: {{detergent}}ml (¥{{detergentCost}} equivalent)\n\nTotal Savings: ¥{{totalSavings}}\n\nExtend your clothes' lifespan and contribute to the environment with EverWear!"
+    },
+    "environmentalText": "Through improving your washing habits, you have reduced {{co2}}kg of CO2 emissions. This is equivalent to the amount of CO2 absorbed by approximately {{treeEquivalent}} trees in one year.",
+    "info": {
+      "washInfo": {
+        "title": "About Wash Count Reduction Calculation",
+        "content1": "Environmental impact calculations are based on the difference in actual wash counts compared to washing after every wear.",
+        "content2": "However, it's common to wash multiple items together. Therefore, reduced wash counts are divided by the average number of items per wash cycle (5 items).",
+        "content3": "Example: If worn 10 times and washed 2 times, theoretically 8 washes were reduced. But considering an average of 5 items per wash, the actual reduction effect is 8÷5=1.6 wash cycles."
+      },
+      "waterInfo": {
+        "title": "About Water Usage (Cost) Calculation",
+        "content1": "Water savings are calculated by multiplying reduced wash counts by the average water usage per wash (approximately 50 liters).",
+        "content2": "Costs vary by region, but calculations are based on typical water rates (approximately ¥300 per 1000 liters).",
+        "content3": "Example: Reducing 10 wash cycles saves 50L×10=500L of water, equivalent to approximately ¥150 in savings."
+      },
+      "energyInfo": {
+        "title": "About Electricity Usage (Cost) Calculation",
+        "content1": "Electricity savings are calculated by multiplying reduced wash counts by the average power consumption per wash (approximately 0.5kWh).",
+        "content2": "Costs vary by power company and plan, but calculations are based on typical electricity rates (approximately ¥25 per kWh).",
+        "content3": "Example: Reducing 10 wash cycles saves 0.5kWh×10=5kWh of electricity, equivalent to approximately ¥125 in savings."
+      },
+      "co2Info": {
+        "title": "About CO2 Reduction Calculation",
+        "content1": "CO2 reduction is calculated by multiplying saved electricity by the CO2 emission factor for electricity (approximately 0.5kg per kWh).",
+        "content2": "This considers not only washing machine usage but also CO2 emissions related to water supply and treatment.",
+        "content3": "Example: Saving 5kWh of electricity reduces 5kWh×0.5kg/kWh=2.5kg of CO2 emissions."
+      },
+      "treeInfo": {
+        "title": "About Tree Equivalent Effect Calculation",
+        "content1": "Tree equivalent effect is calculated by dividing reduced CO2 emissions by the amount of CO2 one tree absorbs per year (approximately 20kg).",
+        "content2": "This value shows how your improved washing habits have the same CO2 absorption effect as planting a certain number of trees.",
+        "content3": "Example: Reducing 10kg of CO2 emissions has the same effect as planting 10kg÷20kg/tree=0.5 trees."
+      },
+      "detergentInfo": {
+        "title": "About Detergent Usage (Cost) Calculation",
+        "content1": "Detergent savings are calculated by multiplying reduced wash counts by the average detergent usage per wash (approximately 30ml).",
+        "content2": "Costs vary by detergent type, but calculations are based on typical detergent prices (approximately ¥400 for 800ml bottle).",
+        "content3": "Example: Reducing 10 wash cycles saves 30ml×10=300ml of detergent, equivalent to approximately ¥150 in savings."
+      },
+      "lifespanInfo": {
+        "title": "About Clothing Lifespan Extension Effect Calculation",
+        "content1": "Clothing lifespan extension effect is calculated based on the reduction in wash counts. Generally, washing damages clothing fibers and causes fading and shape deterioration.",
+        "content2": "Research shows that a 20% reduction in wash counts extends clothing lifespan by approximately 1.5 times. Based on this data, we estimate lifespan extension effects from reduced wash counts.",
+        "content3": "Example: Reducing wash counts from 20 to 16 times (20% reduction) is estimated to extend clothing lifespan by approximately 1.5 times."
+      }
+    },
+    "error": {
+      "title": "Failed to load data",
+      "retry": "Retry"
+    },
+    "noData": {
+      "title": "No environmental impact data available",
+      "message": "Record wearing and washing items to see environmental impact."
+    }
+  },
+  "ranking": {
+    "title": "Wear Count Ranking",
+    "loading": "Loading ranking data...",
+    "retry": "Retry",
+    "noCategory": "No Category",
+    "wearCount": "Worn {{count}} times",
+    "noItems": "No matching items",
+    "changeFilters": "Try changing the filter conditions",
+    "period": {
+      "1month": "1 Month",
+      "3months": "3 Months",
+      "6months": "6 Months",
+      "1year": "1 Year",
+      "all": "All Time"
+    },
+    "categories": {
+      "all": "All"
+    },
+    "filters": {
+      "period": "Period",
+      "sortOrder": "Sort Order",
+      "category": "Category"
+    },
+    "sortOrder": {
+      "mostWorn": "Most Worn First",
+      "leastWorn": "Least Worn First"
+    }
+  },
+  "batchRecord": {
+    "title": "Batch Record",
+    "loading": "Loading items...",
+    "noName": "No Name",
+    "fields": {
+      "date": "Date",
+      "action": "Action",
+      "itemSelection": "Item Selection ({{selected}}/{{total}})"
+    },
+    "actions": {
+      "wear": "Wear",
+      "wash": "Wash",
+      "wearRecord": "Wear Record",
+      "washRecord": "Wash Record",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All"
+    },
+    "executeButton": "Add {{action}}",
+    "alerts": {
+      "discardTitle": "Discard Changes",
+      "discardMessage": "Your selections will not be saved. Are you sure?",
+      "discard": "Discard",
+      "selectItems": "Please select items",
+      "batchFailed": "Batch record failed"
+    },
+    "results": {
+      "allSuccess": "Successfully recorded {{count}} {{action}} entries.",
+      "allFailedDuplicate": "Failed to record {{count}} {{action}} entries.\n\nItems with existing {{action}} records on the same date were found.",
+      "allFailedError": "Failed to record {{count}} {{action}} entries.\n\nAn error occurred during the recording process.",
+      "partialSuccessDuplicate": "Successfully recorded {{successCount}} {{action}} entries.\n{{failCount}} entries failed.\n\nItems with existing {{action}} records on the same date were found.",
+      "partialSuccessMixed": "Successfully recorded {{successCount}} {{action}} entries.\n{{failCount}} entries failed.\n\nItems with existing {{action}} records on the same date and other errors occurred.",
+      "partialSuccessError": "Successfully recorded {{successCount}} {{action}} entries.\n{{failCount}} entries failed.\n\nAn error occurred during the recording process."
+    },
+    "emptyStates": {
+      "noItems": "No items available",
+      "noWashableItems": "No items need washing.\n(Only items worn at least once since last wash are shown)"
+    },
+    "dateModal": {
+      "title": "Select Date",
+      "confirm": "Confirm"
+    },
+    "categories": {
+      "others": "Others"
+    }
+  },
+  "account": {
+    "sections": {
+      "accountInfo": "Account Information",
+      "dangerZone": "Danger Zone"
+    },
+    "info": {
+      "authMethod": "Authentication Method",
+      "email": "Email Address",
+      "createdDate": "Account Created",
+      "privateEmail": "Private",
+      "unknown": "Unknown"
+    },
+    "authMethods": {
+      "email": "Email/Password",
+      "google": "Google",
+      "apple": "Apple",
+      "anonymous": "Guest",
+      "unknown": "Unknown"
+    },
+    "deleteAccount": {
+      "title": "Delete Account",
+      "message": "This action cannot be undone. Are you sure you want to delete your account?",
+      "description": "Deleting your account will permanently remove all your data. This action cannot be undone.",
+      "button": "Delete Account",
+      "delete": "Delete"
+    }
+  },
+  "deleteAccount": {
+    "warning": {
+      "title": "Delete Account?",
+      "description": "Deleting your account will permanently remove all of the following data:",
+      "data": {
+        "clothing": "All clothing data",
+        "history": "Wear and wash history",
+        "badges": "Earned badges",
+        "images": "Uploaded images",
+        "subscription": "Subscription information"
+      },
+      "irreversible": "This action cannot be undone",
+      "continue": "Continue Deletion"
+    },
+    "auth": {
+      "title": "Identity Verification",
+      "subtitle": "Please re-authenticate to delete your account",
+      "passwordPlaceholder": "Enter password",
+      "confirm": "Confirm",
+      "googleReauth": "Re-authenticate with Google",
+      "appleReauth": "Re-authenticate with Apple ID",
+      "passwordError": "Incorrect password",
+      "authError": "Authentication failed",
+      "googleError": "Google authentication failed",
+      "appleError": "Apple authentication failed",
+      "googleFlowError": "Google authentication flow did not complete successfully",
+      "appleFlowError": "Apple authentication flow did not complete successfully",
+      "googleCanceled": "Google authentication was canceled",
+      "appleCanceled": "Apple authentication was canceled",
+      "googleConfigError": "Google authentication configuration is incomplete. Please check environment variables.",
+      "tokenNotFound": "Authentication token not found. Please click the password reset link again.",
+      "tokenExpired": "Password reset link has expired. Please get a new reset link.",
+      "sessionSetupError": "Failed to set up session: {{message}}",
+      "passwordUpdateError": "Failed to update password: {{message}}",
+      "userNotAuthenticated": "User is not authenticated",
+      "tokenFetchError": "Failed to fetch token",
+      "accountDeleteError": "Failed to delete account: {{message}}",
+      "accountDeleteFailed": "Failed to delete account",
+      "notAnonymousUser": "User is not anonymous",
+      "linkIdentityUrlError": "Failed to get URL from linkIdentity",
+      "dataDeleteError": "Failed to delete data: {{message}}",
+      "dataDeleteFailed": "Failed to delete data"
+    },
+    "final": {
+      "title": "Final Confirmation",
+      "question": "Are you sure you want to delete your account?",
+      "warning": "This action cannot be undone.\nAll your data will be permanently deleted.",
+      "delete": "Delete Account"
+    },
+    "success": {
+      "title": "Account Deleted",
+      "message": "Your account has been successfully deleted."
+    },
+    "error": {
+      "message": "An error occurred while deleting your account."
+    }
+  },
+  "subscription": {
+    "title": "Premium Plan",
+    "header": {
+      "title": "Manage Unlimited Items with Premium",
+      "subtitle": "Register all your precious clothes for more comprehensive wardrobe management",
+      "premiumBadge": "Premium Member"
+    },
+    "loading": "Loading...",
+    "error": {
+      "back": "Back"
+    },
+    "plans": {
+      "sectionTitle": "Plan Comparison",
+      "free": {
+        "title": "Free Plan",
+        "features": {
+          "itemLimit": "Register up to 5 precious clothes",
+          "recording": "Easy daily wear & wash recording",
+          "history": "Review styling with wear history",
+          "statistics": "Comprehensive wardrobe overview with detailed statistics",
+          "analysis": "Laundry efficiency analysis, environmental impact & savings visualization"
+        }
+      },
+      "monthly": {
+        "title": "Monthly Plan",
+        "features": {
+          "allFree": "All features of the free plan",
+          "unlimited": "Register unlimited favorite items"
+        },
+        "purchaseButton": "Purchase Monthly Plan"
+      },
+      "yearly": {
+        "title": "Annual Plan",
+        "monthlyEquivalent": "Monthly equivalent: {{price}}",
+        "features": {
+          "allFree": "All features of the free plan",
+          "unlimited": "Register unlimited favorite items"
+        },
+        "purchaseButton": "Purchase Annual Plan"
+      }
+    },
+    "subscription": {
+      "sectionTitle": "Subscription Details",
+      "activeTitle": "Active Premium Plan",
+      "activeBadge": "Active",
+      "plan": "Subscription Plan",
+      "yearlyPlan": "Annual Plan",
+      "monthlyPlan": "Monthly Plan",
+      "originalPurchase": "Original Purchase Date",
+      "currentPurchase": "Current Subscription Start",
+      "nextRenewal": "Next Renewal Date",
+      "note": "To cancel or modify your subscription, please use the App Store (iOS) or Google Play (Android)."
+    },
+    "actions": {
+      "restorePurchases": "Restore Purchases",
+      "manageSubscription": "Manage Subscription"
+    },
+    "alerts": {
+      "accountRequired": {
+        "title": "Account Registration Required",
+        "premium": "Account registration is required to use premium features.",
+        "restore": "Account registration is required to use the restore purchases feature.",
+        "manage": "Account registration is required to manage subscriptions.",
+        "cancel": "Cancel",
+        "register": "Register Account"
+      },
+      "purchase": {
+        "successTitle": "Purchase Complete",
+        "successMessage": "Successfully upgraded to Premium Plan!",
+        "errorTitle": "Purchase Error",
+        "errorMessage": "An error occurred during the purchase process. Please try again."
+      },
+      "restore": {
+        "successTitle": "Restore Purchases",
+        "successMessage": "Purchase history has been verified.",
+        "errorTitle": "Restore Error",
+        "errorMessage": "An error occurred while restoring purchase history."
+      }
+    },
+    "agreement": {
+      "prefix": "By purchasing the Premium Plan, you agree to the ",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "suffix": "."
+    },
+    "dataRetention": {
+      "sectionTitle": "About Data Retention",
+      "preserved": "Items created during Premium registration are safely retained even after subscription cancellation.",
+      "freeLimit": "The free plan displays only the latest 5 items, but data beyond the 6th item is not deleted.",
+      "reupgrade": "When you upgrade to Premium Plan again, all saved items will be displayed again."
+    }
+  },
+  "itemList": {
+    "needsWash": "Time to wash",
+    "wearCount": "{{count}} wears",
+    "remainingWears": "{{count}} more wears until wash",
+    "lastWorn": "Last worn",
+    "none": "None",
+    "actions": {
+      "wear": "Wear",
+      "wash": "Wash"
+    },
+    "modal": {
+      "selectWearDate": "Select wear date",
+      "selectWashDate": "Select wash date"
+    },
+    "empty": {
+      "all": "No items found",
+      "category": "No items in {{category}} category"
+    },
+    "alerts": {
+      "wearRecorded": "Wear Record",
+      "wearRecordedMessage": "Added wear record for {{date}}",
+      "washRecorded": "Wash Record",
+      "washRecordedMessage": "Added wash record for {{date}}",
+      "duplicateError": "Duplicate Error",
+      "wearDuplicateMessage": "Wear record for {{date}} already exists",
+      "washDuplicateMessage": "Wash record for {{date}} already exists",
+      "wearError": "Failed to add wear record for {{date}}",
+      "washError": "Failed to add wash record for {{date}}"
+    }
+  },
+  "history": {
+    "wear": "Wear",
+    "wash": "Wash",
+    "empty": "No history found",
+    "showCalendar": "Show Calendar",
+    "hint": {
+      "longPress": "Long press to delete history"
+    },
+    "actions": {
+      "wore": "Wore",
+      "washed": "Washed"
+    },
+    "deleteHistory": {
+      "title": "Delete {{eventType}} History",
+      "message": "Delete {{date}} history for {{itemName}}?",
+      "successTitle": "Deleted Successfully",
+      "successMessage": "Deleted {{eventType}} history for {{itemName}} on {{date}}",
+      "errorTitle": "Delete Error",
+      "errorMessage": "Failed to delete {{eventType}} history. Please try again."
+    }
+  },
+  "months": {
+    "january": "January",
+    "february": "February",
+    "march": "March",
+    "april": "April",
+    "may": "May",
+    "june": "June",
+    "july": "July",
+    "august": "August",
+    "september": "September",
+    "october": "October",
+    "november": "November",
+    "december": "December"
+  },
+  "days": {
+    "sunday": "Sun",
+    "monday": "Mon",
+    "tuesday": "Tue",
+    "wednesday": "Wed",
+    "thursday": "Thu",
+    "friday": "Fri",
+    "saturday": "Sat"
+  },
+  "wear": "Wear",
+  "wash": "Wash",
+  "reset_display": "Reset Display",
+  "editItem": {
+    "title": "Edit Item",
+    "saveButton": "Save Changes",
+    "form": {
+      "image": {
+        "select": "Tap to select image",
+        "change": "Tap to change image",
+        "error": "Failed to select image"
+      },
+      "category": {
+        "label": "Category"
+      },
+      "brand": {
+        "label": "Brand",
+        "helpTitle": "Brand not found?",
+        "helpMessage": "If your brand is not in the list, select 'Others' and write the brand name in the memo field."
+      },
+      "name": {
+        "label": "Item Name",
+        "placeholder": "e.g., My favorite white shirt"
+      },
+      "washThreshold": {
+        "label": "Wash Threshold",
+        "description": "Set how many wears before washing",
+        "unit": "times"
+      },
+      "condition": {
+        "label": "Condition",
+        "description": "Select whether purchased new or used",
+        "new": "New",
+        "used": "Used"
+      },
+      "purchasePrice": {
+        "label": "Purchase Price",
+        "description": "Enter the purchase price of the item",
+        "placeholder": "e.g., 5000"
+      },
+      "memo": {
+        "label": "Memo",
+        "description": "Enter notes about this item",
+        "placeholder": "e.g., Favorite shirt. Use as inner layer in winter."
+      },
+      "required": "*Required",
+      "optional": "(Optional)"
+    },
+    "alerts": {
+      "discardTitle": "Discard Changes",
+      "discardMessage": "Your changes will not be saved. Are you sure?",
+      "discard": "Discard",
+      "successTitle": "Success",
+      "successMessage": "Item has been updated",
+      "errorMessage": "Failed to update item",
+      "retry": "Retry"
+    }
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "next": "Next",
+    "start": "Get Started",
+    "steps": {
+      "1": {
+        "title": "Make Your Favorites Last Forever",
+        "titleShort": "Make Favorites Last",
+        "description": [
+          "Extend clothing lifespan with proper washing frequency",
+          "Eco-friendly and wallet-friendly clothing management",
+          "Experience the benefits through data visualization"
+        ],
+        "footer": "Your data is securely managed"
+      },
+      "2": {
+        "title": "Snap Photos for Easy Registration",
+        "description": [
+          "Photograph your favorite items with your smartphone",
+          "Set 'how many wears before washing'",
+          "Record brand, purchase price, and notes too"
+        ]
+      },
+      "3": {
+        "title": "Record Wear & Wash with One Tap",
+        "description": [
+          "One tap recording every time you wear",
+          "One tap when you do laundry too",
+          "Know the optimal washing timing at a glance"
+        ]
+      },
+      "4": {
+        "title": "Review Outfits Through History",
+        "description": [
+          "Check past wear history in calendar view",
+          "See usage status for each item at a glance",
+          "Use for outfit coordination review"
+        ]
+      },
+      "5": {
+        "title": "Visualize Data, Feel the Impact",
+        "description": [
+          "Visualize washing efficiency, environmental impact, and savings",
+          "Analyze your fashion trends",
+          "Support you in extending clothing lifespan"
+        ],
+        "footer": "Let's achieve a fashion lifestyle that's kind to clothes, the planet, and your wallet!"
+      }
+    }
+  },
+  "categories": {
+    "all": "All",
+    "tops": "Tops",
+    "bottoms": "Bottoms",
+    "jacket": "Jacket",
+    "outerwear": "Outerwear",
+    "setup": "Set Up",
+    "dress": "Dress",
+    "shoes": "Shoes",
+    "bag": "Bag",
+    "accessories": "Accessories",
+    "others": "Others"
+  },
+  "tabs": {
+    "home": "Home",
+    "homeHeader": "Closet",
+    "history": "History",
+    "stats": "Statistics",
+    "settings": "Settings",
+    "batchRecord": "Batch Record"
+  }
+} 

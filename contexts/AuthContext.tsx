@@ -5,6 +5,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Platform } from 'react-native';
 import { auth } from '../lib/authClient';
 import { deleteImage } from '../lib/imageUtils';
@@ -51,6 +52,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -322,7 +324,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // 環境変数の確認
       if (!process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID) {
-        throw new Error('Google認証の設定が不完全です。環境変数を確認してください。');
+        throw new Error(t('deleteAccount.auth.googleConfigError'));
       }
 
       await promptAsync();
@@ -540,7 +542,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const activeToken = token || recoveryToken;
 
       if (!activeToken) {
-        throw new Error('認証トークンが見つかりません。パスワードリセットリンクを再度クリックしてください。');
+        throw new Error(t('deleteAccount.auth.tokenNotFound'));
       }
 
       // recovery用のaccess_tokenとrefresh_tokenでセッションを設定
@@ -555,10 +557,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             sessionError.message?.includes('invalid') ||
             sessionError.message?.includes('Token has expired') ||
             sessionError.message?.includes('Invalid token')) {
-          throw new Error('パスワードリセットリンクの有効期限が切れています。新しいリセットリンクを取得してください。');
+          throw new Error(t('deleteAccount.auth.tokenExpired'));
         }
 
-        throw new Error(`セッションの設定に失敗しました: ${sessionError.message}`);
+        throw new Error(t('deleteAccount.auth.sessionSetupError', { message: sessionError.message }));
       }
 
       // セッション設定後、パスワードを更新
@@ -573,11 +575,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             error.message?.includes('invalid') ||
             error.message?.includes('Token has expired') ||
             error.message?.includes('Invalid token')) {
-          throw new Error('パスワードリセットリンクの有効期限が切れています。新しいリセットリンクを取得してください。');
+          throw new Error(t('deleteAccount.auth.tokenExpired'));
         }
 
         // その他のエラー
-        throw new Error(`パスワードの更新に失敗しました: ${error.message}`);
+        throw new Error(t('deleteAccount.auth.passwordUpdateError', { message: error.message }));
       }
 
       // 成功したらrecoveryTokenをクリア
@@ -718,13 +720,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const deleteAccount = async () => {
     try {
       if (!user?.id) {
-        throw new Error('ユーザーが認証されていません');
+        throw new Error(t('deleteAccount.auth.userNotAuthenticated'));
       }
 
       // アクセストークンを取得
       const { data: sessionData } = await auth.getSession();
       const accessToken = sessionData.session?.access_token;
-      if (!accessToken) throw new Error('トークン取得に失敗しました');
+      if (!accessToken) throw new Error(t('deleteAccount.auth.tokenFetchError'));
 
       const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
       const fnUrl = `${supabaseUrl}/functions/v1/delete-user-account`;
@@ -739,12 +741,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!res.ok) {
         const txt = await res.text();
-        throw new Error(`アカウント削除に失敗しました: ${txt}`);
+        throw new Error(t('deleteAccount.auth.accountDeleteError', { message: txt }));
       }
 
       const json = await res.json();
       if (!json.success) {
-        throw new Error('アカウント削除に失敗しました');
+        throw new Error(t('deleteAccount.auth.accountDeleteFailed'));
       }
       const deletedImagePaths: string[] = json.detail?.[0]?.deleted_image_paths || [];
 
@@ -787,7 +789,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const startEmailLinking = async (email: string) => {
     try {
       if (!isAnonymous) {
-        throw new Error('匿名ユーザーではありません');
+        throw new Error(t('deleteAccount.auth.notAnonymousUser'));
       }
 
 
@@ -809,7 +811,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Googleアカウントを匿名ユーザーにリンク
   const linkGoogleIdentity = async () => {
     try {
-      if (!isAnonymous) throw new Error('匿名ユーザーではありません');
+      if (!isAnonymous) throw new Error(t('deleteAccount.auth.notAnonymousUser'));
 
 
       // Supabase からリンク用 URL を取得
@@ -820,20 +822,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) throw error;
-      if (!data?.url) throw new Error('linkIdentity から URL を取得できませんでした');
+      if (!data?.url) throw new Error(t('deleteAccount.auth.linkIdentityUrlError'));
 
       // ブラウザで OAuth フローを開始
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
 
       if (result.type === 'dismiss') {
-        throw new Error('Google認証がキャンセルされました');
+        throw new Error(t('deleteAccount.auth.googleCanceled'));
       }
 
       // Deep-link URL を手動で処理する
       if (result.type === 'success' && result.url) {
         await handleDeepLink(result.url);
       } else {
-        throw new Error('Google認証フローが正常に完了しませんでした');
+        throw new Error(t('deleteAccount.auth.googleFlowError'));
       }
     } catch (err) {
       console.error('Error linking Google identity:', err);
@@ -844,7 +846,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Appleアカウントを匿名ユーザーにリンク
   const linkAppleIdentity = async () => {
     try {
-      if (!isAnonymous) throw new Error('匿名ユーザーではありません');
+      if (!isAnonymous) throw new Error(t('deleteAccount.auth.notAnonymousUser'));
 
       if (Platform.OS !== 'ios') {
         throw new Error('Apple Sign In is only available on iOS devices');
@@ -858,20 +860,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) throw error;
-      if (!data?.url) throw new Error('linkIdentity から URL を取得できませんでした');
+      if (!data?.url) throw new Error(t('deleteAccount.auth.linkIdentityUrlError'));
 
       // ブラウザで OAuth フローを開始
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
 
       if (result.type === 'dismiss') {
-        throw new Error('Apple認証がキャンセルされました');
+        throw new Error(t('deleteAccount.auth.appleCanceled'));
       }
 
       // Deep-link URL を手動で処理する
       if (result.type === 'success' && result.url) {
         await handleDeepLink(result.url);
       } else {
-        throw new Error('Apple認証フローが正常に完了しませんでした');
+        throw new Error(t('deleteAccount.auth.appleFlowError'));
       }
     } catch (err: any) {
       // ユーザーキャンセルは無視（複数のパターンをチェック）
@@ -879,7 +881,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         err.code === 'ERR_CANCELED' || 
         err.message?.includes('user canceled') ||
         err.message?.includes('The user canceled') ||
-        err.message?.includes('Apple認証がキャンセルされました');
+        err.message?.includes(t('deleteAccount.auth.appleCanceled'));
 
       if (!isUserCanceled) {
         console.error('Error linking Apple identity:', err);
@@ -892,7 +894,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setPasswordForLinkedAccount = async (password: string) => {
     try {
       if (!user) {
-        throw new Error('ユーザーが認証されていません');
+        throw new Error(t('deleteAccount.auth.userNotAuthenticated'));
       }
 
       const { error } = await auth.updateUser({
@@ -912,7 +914,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resetAnonymousData = async () => {
     try {
       if (!isAnonymous) {
-        throw new Error('匿名ユーザーではありません');
+        throw new Error(t('deleteAccount.auth.notAnonymousUser'));
       }
 
       // 1. Edge Functionを経由してユーザーのデータを削除
@@ -929,13 +931,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!response.ok) {
           const errorText = await response.text();
           console.error('Edge Function error:', errorText);
-          throw new Error(`データ削除に失敗しました: ${errorText}`);
+          throw new Error(t('deleteAccount.auth.dataDeleteError', { message: errorText }));
         }
 
         // レスポンスから削除された画像パスを取得
         const json = await response.json();
         if (!json.success) {
-          throw new Error('データ削除に失敗しました');
+          throw new Error(t('deleteAccount.auth.dataDeleteFailed'));
         }
 
         const deletedImagePaths: string[] = json.detail?.[0]?.deleted_image_paths || [];
@@ -993,16 +995,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const provider = getAuthProvider();
-    const providerNames = {
-      email: 'メール/パスワード',
-      google: 'Google',
-      apple: 'Apple',
-      anonymous: 'ゲスト',
-      unknown: '不明'
-    };
-
+    
+    // 生の値を返すように変更（翻訳はUI側で行う）
     return {
-      provider: providerNames[provider],
+      provider: provider, // 'email', 'google', 'apple', 'anonymous', 'unknown'
       email: user.email || null,
       createdAt: user.created_at || null
     };

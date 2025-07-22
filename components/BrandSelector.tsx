@@ -1,15 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import {
-  Animated,
-  Keyboard,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View
+    Animated,
+    Keyboard,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View
 } from "react-native";
 import { useClothing } from "../contexts/ClothingContext";
 import { useTheme } from "../contexts/ThemeContext";
@@ -22,6 +23,7 @@ interface BrandSelectorProps {
 export default function BrandSelector({ value, onValueChange }: BrandSelectorProps) {
   const { brands, getBrandSuggestions } = useClothing();
   const theme = useTheme();
+  const { t } = useTranslation();
   const [searchText, setSearchText] = useState("");
   const [selectedBrand, setSelectedBrand] = useState(value);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -75,10 +77,16 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
     inputRef.current?.focus();
   };
 
-  // 検索フィールドをフォーカス
+  // 検索フィールドをフォーカス / トグル
   const handleFocusSearch = () => {
-    setShowSuggestions(true);
-    inputRef.current?.focus();
+    if (showSuggestions) {
+      // 既に表示されている場合は閉じる
+      handleCloseSuggestions();
+    } else {
+      // 表示されていない場合は開く
+      setShowSuggestions(true);
+      inputRef.current?.focus();
+    }
   };
 
   // 候補リストを閉じる
@@ -223,7 +231,7 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
         >
           <Ionicons name="pricetag-outline" size={20} color={theme.text + "99"} style={styles.searchIcon} />
           <Text style={styles.selectedBrandText}>
-            {selectedBrand || "ブランドを選択してください"}
+            {selectedBrand || t('brandSelector.placeholder')}
           </Text>
           <Ionicons 
             name={showSuggestions ? "chevron-up" : "chevron-down"} 
@@ -247,7 +255,7 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
               style={styles.searchInput}
               value={searchText}
               onChangeText={setSearchText}
-              placeholder="ブランドを検索..."
+              placeholder={t('brandSelector.searchPlaceholder')}
               placeholderTextColor={theme.text + "77"}
               autoCapitalize="none"
               returnKeyType="search"
@@ -281,7 +289,7 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
               ) : (
                 <View style={styles.noResultsContainer}>
                   <Text style={styles.noResultsText}>
-                    {searchText ? "検索結果がありません" : "ブランドが見つかりません"}
+                    {t('brandSelector.noResults')}
                   </Text>
                 </View>
               )}
@@ -291,7 +299,7 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
                 style={styles.closeOption}
                 onPress={handleCloseSuggestions}
               >
-                <Text style={styles.closeOptionText}>閉じる</Text>
+                <Text style={styles.closeOptionText}>{t('brandSelector.close')}</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>

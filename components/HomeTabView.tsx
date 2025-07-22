@@ -2,6 +2,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuth } from '../contexts/AuthContext';
@@ -97,6 +98,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
   };
 
   const theme = useTheme();
+  const { t } = useTranslation();
 
   // Expose the resetTab function to the parent component
   useImperativeHandle(ref, () => ({
@@ -192,15 +194,15 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
       if (isAnonymous) {
         // 匿名ユーザー向けメッセージ
         Alert.alert(
-          "アイテム登録制限",
-          `現在${currentItemCount}件のアイテムが登録されています。\n\n無料プランでは最大5件まで登録可能です。\n\nアカウント登録してプレミアムプランにアップグレードすると、無制限にアイテムを登録できます。`,
+          t('home.itemLimit.title'),
+          t('home.itemLimit.messageAnonymous', { count: currentItemCount }),
           [
             {
-              text: "キャンセル",
+              text: t('common.cancel'),
               style: "cancel"
             },
             {
-              text: "アカウント登録",
+              text: t('home.itemLimit.register'),
               onPress: () => router.push("/auth/link-account")
             }
           ]
@@ -208,15 +210,15 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
       } else {
         // 通常の無料ユーザー向けメッセージ
         Alert.alert(
-          "アイテム登録制限",
-          `現在${currentItemCount}件のアイテムが登録されています。\n\n無料プランでは最大5件まで登録可能です。\n\nプレミアムプランにアップグレードすると、無制限にアイテムを登録できます。`,
+          t('home.itemLimit.title'),
+          t('home.itemLimit.messageFree', { count: currentItemCount }),
           [
             {
-              text: "キャンセル",
+              text: t('common.cancel'),
               style: "cancel"
             },
             {
-              text: "プレミアムプランを見る",
+              text: t('home.itemLimit.viewPremium'),
               onPress: () => router.push("/subscription")
             }
           ]
@@ -371,7 +373,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
     return (
       <GestureHandlerRootView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3498db" />
-        <Text style={styles.loadingText}>データを読み込み中...</Text>
+        <Text style={styles.loadingText}>{t('common.loading.processing')}</Text>
       </GestureHandlerRootView>
     );
   }
@@ -404,7 +406,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
                       activeIndex === index && styles.activeTabText,
                     ]}
                   >
-                    {category.name}
+                    {t(`categories.${category.id}`)}
                   </Text>
                   <View
                     style={[
@@ -440,7 +442,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
           <View style={styles.bannerContent}>
             <Ionicons name="person-outline" size={20} color="#e74c3c" />
             <Text style={[styles.anonymousBannerText, { color: theme.text }]}>
-              ゲスト利用中 - 長期間経過するとデータが失われる可能性があります。アカウント登録をお願いします。
+              {t('home.anonymousBanner.message')}
             </Text>
             <Ionicons name="chevron-forward" size={16} color="#e74c3c" />
           </View>
@@ -456,7 +458,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
           <View style={styles.bannerContent}>
             <Ionicons name="eye-off" size={20} color="#FFD700" />
             <Text style={styles.bannerText}>
-              {hiddenItemsCount}件のアイテムが非表示になっています
+              {t('home.premiumBanner.message', { count: hiddenItemsCount })}
             </Text>
             <Ionicons name="chevron-forward" size={16} color="#FFD700" />
           </View>

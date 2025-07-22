@@ -3,17 +3,37 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import ItemCalendar from "../../components/ItemCalendar";
 import { useClothing } from "../../contexts/ClothingContext";
 import { useTheme } from "../../contexts/ThemeContext";
-import { formatDateJapanese, formatDateToLocalISOString } from '../../lib/dateUtils';
+import { formatDateToLocalISOString } from '../../lib/dateUtils';
 import { getImageUrl } from '../../lib/storageClient';
 import { AppClothingItem } from '../../types/database';
+
+// カテゴリ値から翻訳キーへのマッピング
+const getCategoryTranslationKey = (categoryValue: string): string => {
+  const categoryMap: Record<string, string> = {
+    'トップス': 'categories.tops',
+    'ボトムス': 'categories.bottoms',
+    'ジャケット': 'categories.jacket',
+    'アウター': 'categories.outerwear',
+    'セットアップ': 'categories.setup',
+    'ワンピース': 'categories.dress',
+    'シューズ': 'categories.shoes',
+    'バッグ': 'categories.bag',
+    '小物': 'categories.accessories',
+    'その他': 'categories.others'
+  };
+  
+  return categoryMap[categoryValue] || categoryValue;
+};
 
 export default function ItemDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { t, i18n } = useTranslation();
   const { clothingItems, wearItem, washItem, deleteItem, deleteWearHistory, deleteWashHistory } = useClothing();
   const [item, setItem] = useState<AppClothingItem | null>(null);
   const colorScheme = useColorScheme(); // 現在のカラースキーム（ライト/ダーク）を取得
@@ -53,59 +73,60 @@ export default function ItemDetail() {
     loadImageUrl();
   }, [item]);
 
-  // 日付選択の変更ハンドラー
+  // 日付フォーマット関数をロケール対応に
+  const formatDateLocalized = (date: string | Date) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return dateObj.toLocaleDateString(i18n.language === 'ja' ? 'ja-JP' : 'en-US');
+  };
+
+  // Android用の日付変更ハンドラー
   const onDateChange = async (event: any, selectedDate?: Date) => {
-    // キャンセルされた場合は何もせずに日付ピッカーを閉じる
-    if (event.type === 'dismissed') {
-      setShowWearDatePicker(false);
-      setShowWashDatePicker(false);
-      return;
-    }
-
-    const currentDate = selectedDate || new Date();
-    setSelectedDate(currentDate);
-
     if (Platform.OS === 'android') {
       setShowWearDatePicker(false);
       setShowWashDatePicker(false);
+    }
 
-      // Androidの場合は日付選択後に直接アクションを実行
-      if (showWearDatePicker && selectedDate) {
+    if (selectedDate && item) {
+      const currentDate = selectedDate;
+      
+      if (showWearDatePicker || showWearModal) {
+        // 着用記録の処理
         try {
           const formattedDate = formatDateToLocalISOString(currentDate);
-          const japaneseDate = formatDateJapanese(currentDate);
-          await wearItem(item!.id, formattedDate);
-          Alert.alert("着用記録", `${japaneseDate}に着用記録を追加しました`);
+          const localizedDate = formatDateLocalized(currentDate);
+          await wearItem(item.id, formattedDate);
+          Alert.alert(t('itemDetail.actions.recordWear'), t('itemDetail.alerts.wearRecorded', { date: localizedDate }));
         } catch (error: any) {
-          const japaneseDate = formatDateJapanese(currentDate);
+          const localizedDate = formatDateLocalized(currentDate);
           console.error('Error adding wear record:', error);
           console.error('Error code:', error?.code);
           console.error('Error message:', error?.message);
 
           // Check if the error is about duplicate records
           if (error?.message && error.message.includes('着用記録は既に存在します')) {
-            Alert.alert("重複エラー", `${japaneseDate}の着用記録は既に存在します`);
+            Alert.alert(t('common.error'), t('itemDetail.alerts.wearDuplicate', { date: localizedDate }));
           } else {
-            Alert.alert("エラー", `${japaneseDate}の着用記録の追加に失敗しました`);
+            Alert.alert(t('common.error'), t('itemDetail.alerts.wearError', { date: localizedDate }));
           }
         }
-      } else if (showWashDatePicker && selectedDate) {
+      } else if (showWashDatePicker || showWashModal) {
+        // 洗濯記録の処理
         try {
           const formattedDate = formatDateToLocalISOString(currentDate);
-          const japaneseDate = formatDateJapanese(currentDate);
-          await washItem(item!.id, formattedDate);
-          Alert.alert("洗濯記録", `${japaneseDate}に洗濯記録を追加しました`);
+          const localizedDate = formatDateLocalized(currentDate);
+          await washItem(item.id, formattedDate);
+          Alert.alert(t('itemDetail.actions.recordWash'), t('itemDetail.alerts.washRecorded', { date: localizedDate }));
         } catch (error: any) {
-          const japaneseDate = formatDateJapanese(currentDate);
+          const localizedDate = formatDateLocalized(currentDate);
           console.error('Error adding wash record:', error);
           console.error('Error code:', error?.code);
           console.error('Error message:', error?.message);
 
           // Check if the error is about duplicate records
           if (error?.message && error.message.includes('洗濯記録は既に存在します')) {
-            Alert.alert("重複エラー", `${japaneseDate}の洗濯記録は既に存在します`);
+            Alert.alert(t('common.error'), t('itemDetail.alerts.washDuplicate', { date: localizedDate }));
           } else {
-            Alert.alert("エラー", `${japaneseDate}の洗濯記録の追加に失敗しました`);
+            Alert.alert(t('common.error'), t('itemDetail.alerts.washError', { date: localizedDate }));
           }
         }
       }
@@ -149,21 +170,21 @@ export default function ItemDetail() {
     if (item) {
       try {
         const formattedDate = formatDateToLocalISOString(selectedDate);
-        const japaneseDate = formatDateJapanese(selectedDate);
+        const localizedDate = formatDateLocalized(selectedDate);
         await wearItem(item.id, formattedDate);
-        Alert.alert("着用記録", `${japaneseDate}に着用記録を追加しました`);
+        Alert.alert(t('itemDetail.actions.recordWear'), t('itemDetail.alerts.wearRecorded', { date: localizedDate }));
         setShowWearModal(false);
       } catch (error: any) {
-        const japaneseDate = formatDateJapanese(selectedDate);
+        const localizedDate = formatDateLocalized(selectedDate);
         console.error('Error adding wear record:', error);
         console.error('Error code:', error?.code);
         console.error('Error message:', error?.message);
 
         // Check if the error is about duplicate records
         if (error?.message && error.message.includes('着用記録は既に存在します')) {
-          Alert.alert("重複エラー", `${japaneseDate}の着用記録は既に存在します`);
+          Alert.alert(t('common.error'), t('itemDetail.alerts.wearDuplicate', { date: localizedDate }));
         } else {
-          Alert.alert("エラー", `${japaneseDate}の着用記録の追加に失敗しました`);
+          Alert.alert(t('common.error'), t('itemDetail.alerts.wearError', { date: localizedDate }));
         }
         // エラーの場合でもモーダルは閉じる
         setShowWearModal(false);
@@ -176,21 +197,21 @@ export default function ItemDetail() {
     if (item) {
       try {
         const formattedDate = formatDateToLocalISOString(selectedDate);
-        const japaneseDate = formatDateJapanese(selectedDate);
+        const localizedDate = formatDateLocalized(selectedDate);
         await washItem(item.id, formattedDate);
-        Alert.alert("洗濯記録", `${japaneseDate}に洗濯記録を追加しました`);
+        Alert.alert(t('itemDetail.actions.recordWash'), t('itemDetail.alerts.washRecorded', { date: localizedDate }));
         setShowWashModal(false);
       } catch (error: any) {
-        const japaneseDate = formatDateJapanese(selectedDate);
+        const localizedDate = formatDateLocalized(selectedDate);
         console.error('Error adding wash record:', error);
         console.error('Error code:', error?.code);
         console.error('Error message:', error?.message);
 
         // Check if the error is about duplicate records
         if (error?.message && error.message.includes('洗濯記録は既に存在します')) {
-          Alert.alert("重複エラー", `${japaneseDate}の洗濯記録は既に存在します`);
+          Alert.alert(t('common.error'), t('itemDetail.alerts.washDuplicate', { date: localizedDate }));
         } else {
-          Alert.alert("エラー", `${japaneseDate}の洗濯記録の追加に失敗しました`);
+          Alert.alert(t('common.error'), t('itemDetail.alerts.washError', { date: localizedDate }));
         }
         // エラーの場合でもモーダルは閉じる
         setShowWashModal(false);
@@ -200,30 +221,29 @@ export default function ItemDetail() {
 
   const handleDeleteItem = () => {
     Alert.alert(
-      "アイテムの削除",
-      "このアイテムを削除してもよろしいですか？\n\n※削除すると、このアイテムに関連する着用履歴や洗濯履歴などのデータもすべて削除されます。",
+      t('itemDetail.alerts.deleteConfirm'),
+      t('itemDetail.alerts.deleteMessage'),
       [
-        { text: "キャンセル", style: "cancel" },
+        { text: t('common.cancel'), style: "cancel" },
         { 
-          text: "削除", 
+          text: t('itemDetail.actions.deleteItem'), 
           style: "destructive",
           onPress: async () => {
             try {
-              const itemName = item!.name;
               await deleteItem(item!.id);
               Alert.alert(
-                "削除完了", 
-                `「${itemName}」を削除しました`,
+                t('itemDetail.alerts.deleteSuccess'), 
+                undefined,
                 [
                   {
-                    text: "OK",
+                    text: t('common.ok'),
                     onPress: () => router.replace("/")
                   }
                 ]
               );
             } catch (err) {
               console.error('Error in handleDeleteItem:', err);
-              Alert.alert("削除エラー", "アイテムの削除に失敗しました。もう一度お試しください。");
+              Alert.alert(t('common.error'), t('itemDetail.alerts.deleteError'));
             }
           }
         }
@@ -236,10 +256,11 @@ export default function ItemDetail() {
     if (item) {
       try {
         await deleteWearHistory(item.id, date);
-        Alert.alert("削除完了", `${formatDateJapanese(date)}の着用履歴を削除しました`);
+        const localizedDate = formatDateLocalized(date);
+        Alert.alert(t('itemDetail.alerts.deleteSuccess'), t('itemDetail.alerts.wearHistoryDeleted', { date: localizedDate }));
       } catch (err) {
         console.error('Error in handleDeleteWearHistory:', err);
-        Alert.alert("削除エラー", "着用履歴の削除に失敗しました。もう一度お試しください。");
+        Alert.alert(t('common.error'), t('itemDetail.alerts.deleteError'));
       }
     }
   };
@@ -249,10 +270,11 @@ export default function ItemDetail() {
     if (item) {
       try {
         await deleteWashHistory(item.id, date);
-        Alert.alert("削除完了", `${formatDateJapanese(date)}の洗濯履歴を削除しました`);
+        const localizedDate = formatDateLocalized(date);
+        Alert.alert(t('itemDetail.alerts.deleteSuccess'), t('itemDetail.alerts.washHistoryDeleted', { date: localizedDate }));
       } catch (err) {
         console.error('Error in handleDeleteWashHistory:', err);
-        Alert.alert("削除エラー", "洗濯履歴の削除に失敗しました。もう一度お試しください。");
+        Alert.alert(t('common.error'), t('itemDetail.alerts.deleteError'));
       }
     }
   };
@@ -505,7 +527,7 @@ export default function ItemDetail() {
   if (!item) {
     return (
         <View style={styles.container}>
-          <Text>アイテムが見つかりません</Text>
+          <Text style={{ color: theme.text }}>{t('itemDetail.notFound')}</Text>
         </View>
     );
   }
@@ -524,7 +546,7 @@ export default function ItemDetail() {
           display="default"
           onChange={onDateChange}
           maximumDate={new Date()} // 未来の日付は選択できないように
-          locale="ja-JP"
+          locale={i18n.language === 'ja' ? 'ja-JP' : 'en-US'}
           themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
         />
       )}
@@ -538,7 +560,7 @@ export default function ItemDetail() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>着用日を選択</Text>
+            <Text style={styles.modalTitle}>{t('itemDetail.actions.recordWear')}</Text>
             <DateTimePicker
               value={selectedDate}
               mode="date"
@@ -546,7 +568,7 @@ export default function ItemDetail() {
               onChange={onDateChange}
               maximumDate={new Date()} // 未来の日付は選択できないように
               style={styles.datePicker}
-              locale="ja-JP"
+              locale={i18n.language === 'ja' ? 'ja-JP' : 'en-US'}
               themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
             />
             <View style={styles.modalButtons}>
@@ -554,13 +576,13 @@ export default function ItemDetail() {
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setShowWearModal(false)}
               >
-                <Text style={styles.modalButtonText}>キャンセル</Text>
+                <Text style={styles.modalButtonText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
                 onPress={confirmWearDate}
               >
-                <Text style={styles.modalButtonText}>確定</Text>
+                <Text style={styles.modalButtonText}>{t('common.ok')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -576,7 +598,7 @@ export default function ItemDetail() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>洗濯日を選択</Text>
+            <Text style={styles.modalTitle}>{t('itemDetail.actions.recordWash')}</Text>
             <DateTimePicker
               value={selectedDate}
               mode="date"
@@ -584,7 +606,7 @@ export default function ItemDetail() {
               onChange={onDateChange}
               maximumDate={new Date()} // 未来の日付は選択できないように
               style={styles.datePicker}
-              locale="ja-JP"
+              locale={i18n.language === 'ja' ? 'ja-JP' : 'en-US'}
               themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
             />
             <View style={styles.modalButtons}>
@@ -592,13 +614,13 @@ export default function ItemDetail() {
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setShowWashModal(false)}
               >
-                <Text style={styles.modalButtonText}>キャンセル</Text>
+                <Text style={styles.modalButtonText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
                 onPress={confirmWashDate}
               >
-                <Text style={styles.modalButtonText}>確定</Text>
+                <Text style={styles.modalButtonText}>{t('common.ok')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -628,18 +650,20 @@ export default function ItemDetail() {
               onPress={() => router.push(`/item/edit/${item.id}`)}
             >
               <Ionicons name="pencil" size={18} color="#fff" />
-              <Text style={styles.editButtonText}>編集</Text>
+              <Text style={styles.editButtonText}>{t('itemDetail.actions.edit')}</Text>
             </TouchableOpacity>
         </View>
         <View style={styles.categoryContainer}>
-          <Text style={styles.categoryLabel}>カテゴリ:</Text>
-          <Text style={styles.categoryValue}>{item.category || 'なし'}</Text>
+          <Text style={styles.categoryLabel}>{t('itemDetail.labels.category')}</Text>
+          <Text style={styles.categoryValue}>
+            {item.category ? t(getCategoryTranslationKey(item.category)) : t('itemDetail.stats.none')}
+          </Text>
         </View>
 
         {/* ブランド情報 */}
         {item.brand && (
           <View style={styles.categoryContainer}>
-            <Text style={styles.categoryLabel}>ブランド:</Text>
+            <Text style={styles.categoryLabel}>{t('itemDetail.labels.brand')}</Text>
             <Text style={styles.categoryValue}>{item.brand}</Text>
           </View>
         )}
@@ -647,12 +671,12 @@ export default function ItemDetail() {
         {/* 状態情報 */}
         {item.condition && (
           <View style={styles.categoryContainer}>
-            <Text style={styles.categoryLabel}>状態:</Text>
+            <Text style={styles.categoryLabel}>{t('itemDetail.labels.condition')}</Text>
             <Text style={styles.categoryValue}>
-              {item.condition === "新品" ? (
-                <React.Fragment><Ionicons name="star" size={16} color={theme.text} style={{marginRight: 4}} /> 新品</React.Fragment>
+              {item.condition === "新品" || item.condition === "New" ? (
+                <React.Fragment><Ionicons name="star" size={16} color={theme.text} style={{marginRight: 4}} /> {t('itemDetail.labels.new')}</React.Fragment>
               ) : (
-                <React.Fragment><Ionicons name="repeat" size={16} color={theme.text} style={{marginRight: 4}} /> 中古</React.Fragment>
+                <React.Fragment><Ionicons name="repeat" size={16} color={theme.text} style={{marginRight: 4}} /> {t('itemDetail.labels.used')}</React.Fragment>
               )}
             </Text>
           </View>
@@ -661,7 +685,7 @@ export default function ItemDetail() {
         {/* 購入価格情報 */}
         {item.purchasePrice && (
           <View style={styles.categoryContainer}>
-            <Text style={styles.categoryLabel}>購入価格:</Text>
+            <Text style={styles.categoryLabel}>{t('itemDetail.labels.purchasePrice')}</Text>
             <Text style={styles.categoryValue}>¥{item.purchasePrice.toLocaleString()}</Text>
           </View>
         )}
@@ -672,7 +696,7 @@ export default function ItemDetail() {
               onPress={handleWearItem}
           >
             <Ionicons name="shirt" size={24} color="white" />
-            <Text style={styles.actionButtonText}>着用記録</Text>
+            <Text style={styles.actionButtonText}>{t('itemDetail.actions.recordWear')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -680,42 +704,46 @@ export default function ItemDetail() {
               onPress={handleWashItem}
           >
             <Ionicons name="water" size={24} color="white" />
-            <Text style={styles.actionButtonText}>洗濯記録</Text>
+            <Text style={styles.actionButtonText}>{t('itemDetail.actions.recordWash')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>着用回数:</Text>
+            <Text style={styles.statLabel}>{t('itemDetail.stats.wearCount')}</Text>
             <Text style={styles.statValue}>{item.wearCount}</Text>
           </View>
 
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>洗濯閾値:</Text>
+            <Text style={styles.statLabel}>{t('itemDetail.stats.washThreshold')}</Text>
             <Text style={styles.statValue}>{item.washThreshold}</Text>
           </View>
 
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>最終着用日:</Text>
-            <Text style={styles.statValue}>{item.lastWorn ? formatDateJapanese(item.lastWorn) : "なし"}</Text>
+            <Text style={styles.statLabel}>{t('itemDetail.stats.lastWorn')}</Text>
+            <Text style={styles.statValue}>
+              {item.lastWorn ? formatDateLocalized(item.lastWorn) : t('itemDetail.stats.none')}
+            </Text>
           </View>
 
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>最終洗濯日:</Text>
-            <Text style={styles.statValue}>{item.lastWashed ? formatDateJapanese(item.lastWashed) : "なし"}</Text>
+            <Text style={styles.statLabel}>{t('itemDetail.stats.lastWashed')}</Text>
+            <Text style={styles.statValue}>
+              {item.lastWashed ? formatDateLocalized(item.lastWashed) : t('itemDetail.stats.none')}
+            </Text>
           </View>
         </View>
 
-        {/* [id].tsx の一部を修正（プログレスバーの部分） */}
+        {/* 洗濯状態表示 */}
         <View style={styles.wearInfoContainer}>
           <Text style={styles.wearInfoLabel}>
             {needsWash ? (
               <React.Fragment>
-                洗濯しましょう <Text style={styles.parenthesisText}>({item.wearCount}回着用)</Text>
+                {t('itemDetail.washStatus.needsWash')} <Text style={styles.parenthesisText}>{t('itemDetail.washStatus.wearCount', { count: item.wearCount })}</Text>
               </React.Fragment>
             ) : (
               <React.Fragment>
-                あと{remainingWears}回で洗濯 <Text style={styles.parenthesisText}>({item.wearCount}回着用)</Text>
+                {t('itemDetail.washStatus.remainingWears', { count: remainingWears })} <Text style={styles.parenthesisText}>{t('itemDetail.washStatus.wearCount', { count: item.wearCount })}</Text>
               </React.Fragment>
             )}
           </Text>
@@ -738,7 +766,7 @@ export default function ItemDetail() {
           <View style={styles.memoContainer}>
             <View style={styles.memoHeader}>
               <Ionicons name="document-text-outline" size={20} color={theme.text} />
-              <Text style={styles.memoTitle}>メモ</Text>
+              <Text style={styles.memoTitle}>{t('itemDetail.memo.title')}</Text>
             </View>
             <Text style={styles.memoText}>{item.memo}</Text>
           </View>
@@ -756,7 +784,7 @@ export default function ItemDetail() {
           onPress={handleDeleteItem}
         >
           <Ionicons name="trash" size={24} color="#fff" />
-          <Text style={styles.deleteButtonBottomText}>このアイテムを削除</Text>
+          <Text style={styles.deleteButtonBottomText}>{t('itemDetail.actions.deleteItem')}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

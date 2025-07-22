@@ -1,14 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
-  Dimensions,
-  FlatList,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    FlatList,
+    Platform,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useOnboarding } from '../contexts/OnboardingContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -19,11 +20,12 @@ const { width, height } = Dimensions.get('window');
 const PlaceholderImage = ({ iconName, color }: { iconName: keyof typeof Ionicons.glyphMap, color: string }) => {
   const theme = useTheme();
   const isSmallScreen = height < 700; // iPhone SE等の小さい画面を判定
+  const isVerySmallScreen = height < 680; // iPhone SE 3等のより小さい画面を判定
 
   return (
     <View style={{
-      width: width * 0.8,
-      height: height * (isSmallScreen ? 0.25 : 0.3), // 小さい画面では高さを縮小
+      width: width * (isVerySmallScreen ? 0.7 : 0.8), // より小さい画面では幅も縮小
+      height: height * (isVerySmallScreen ? 0.2 : isSmallScreen ? 0.25 : 0.3), // 段階的にサイズ調整
       backgroundColor: theme.card,
       borderRadius: 10,
       justifyContent: 'center',
@@ -31,89 +33,73 @@ const PlaceholderImage = ({ iconName, color }: { iconName: keyof typeof Ionicons
       borderWidth: 1,
       borderColor: theme.border,
     }}>
-      <Ionicons name={iconName} size={isSmallScreen ? 60 : 80} color={color} />
+      <Ionicons name={iconName} size={isVerySmallScreen ? 50 : isSmallScreen ? 60 : 80} color={color} />
     </View>
   );
 };
-
-// Onboarding steps data
-const onboardingSteps = [
-  {
-    id: '1',
-    title: 'お気に入りを、一生ものに',
-    description: [
-      '適切な洗濯頻度で衣類のの寿命を延ばす',
-      'お財布にも環境にもやさしい衣類管理',
-      'データで効果を実感できる'
-    ],
-    iconName: 'shirt' as keyof typeof Ionicons.glyphMap,
-    iconColor: '#3498db',
-    buttonText: '次へ',
-    footer: 'データは安全に管理されます',
-    isBulletPoints: true,
-  },
-  {
-    id: '2',
-    title: '写真を撮って、簡単登録',
-    description: [
-      'お気に入りのアイテムをスマホで撮影',
-      '「何回着たら洗濯するか」を設定',
-      'ブランドや購入価格、メモも残せる'
-    ],
-    iconName: 'camera' as keyof typeof Ionicons.glyphMap,
-    iconColor: '#e74c3c',
-    buttonText: '次へ',
-    isBulletPoints: true,
-  },
-  {
-    id: '3',
-    title: '着用・洗濯をタップで記録',
-    description: [
-      '着るたびに1タップで記録完了',
-      '洗濯するときも1タップ',
-      '適切な洗濯タイミングがひと目でわかる'
-    ],
-    iconName: 'checkmark-circle' as keyof typeof Ionicons.glyphMap,
-    iconColor: '#2ecc71',
-    buttonText: '次へ',
-    isBulletPoints: true,
-  },
-  {
-    id: '4',
-    title: '履歴でコーディネートを振り返り',
-    description: [
-      'カレンダー表示で過去の着用履歴を確認',
-      'アイテムごとの使用状況もひと目でわかる',
-      'コーディネートの振り返りに活用'
-    ],
-    iconName: 'calendar' as keyof typeof Ionicons.glyphMap,
-    iconColor: '#f39c12',
-    buttonText: '次へ',
-    isBulletPoints: true,
-  },
-  {
-    id: '5',
-    title: 'データで可視化、効果を実感',
-    description: [
-      '洗濯効率や環境への影響、節約効果を可視化',
-      'あなたのファッション傾向も分析',
-      '衣類の寿命を延ばせるようにサポート'
-    ],
-    iconName: 'stats-chart' as keyof typeof Ionicons.glyphMap,
-    iconColor: '#9b59b6',
-    buttonText: '始める',
-    footer: '衣類にも地球にも、お財布にもやさしいファッションライフを実現しましょう！',
-    finalStep: true,
-    isBulletPoints: true,
-  },
-];
 
 export default function Onboarding() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const { completeOnboarding } = useOnboarding();
   const theme = useTheme();
+  const { t } = useTranslation();
   const flatListRef = useRef<FlatList>(null);
   const isSmallScreen = height < 700; // iPhone SE等の小さい画面を判定
+  const isVerySmallScreen = height < 680; // iPhone SE 3等のより小さい画面を判定
+
+  // Generate onboarding steps from translation data
+  const onboardingSteps = [
+    {
+      id: '1',
+      title: isVerySmallScreen 
+        ? (t('onboarding.steps.1.titleShort', { defaultValue: t('onboarding.steps.1.title') }))
+        : t('onboarding.steps.1.title'),
+      description: t('onboarding.steps.1.description', { returnObjects: true }) as string[],
+      iconName: 'shirt' as keyof typeof Ionicons.glyphMap,
+      iconColor: '#3498db',
+      buttonText: t('onboarding.next'),
+      footer: t('onboarding.steps.1.footer'),
+      isBulletPoints: true,
+    },
+    {
+      id: '2',
+      title: t('onboarding.steps.2.title'),
+      description: t('onboarding.steps.2.description', { returnObjects: true }) as string[],
+      iconName: 'camera' as keyof typeof Ionicons.glyphMap,
+      iconColor: '#e74c3c',
+      buttonText: t('onboarding.next'),
+      isBulletPoints: true,
+    },
+    {
+      id: '3',
+      title: t('onboarding.steps.3.title'),
+      description: t('onboarding.steps.3.description', { returnObjects: true }) as string[],
+      iconName: 'checkmark-circle' as keyof typeof Ionicons.glyphMap,
+      iconColor: '#2ecc71',
+      buttonText: t('onboarding.next'),
+      isBulletPoints: true,
+    },
+    {
+      id: '4',
+      title: t('onboarding.steps.4.title'),
+      description: t('onboarding.steps.4.description', { returnObjects: true }) as string[],
+      iconName: 'calendar' as keyof typeof Ionicons.glyphMap,
+      iconColor: '#f39c12',
+      buttonText: t('onboarding.next'),
+      isBulletPoints: true,
+    },
+    {
+      id: '5',
+      title: t('onboarding.steps.5.title'),
+      description: t('onboarding.steps.5.description', { returnObjects: true }) as string[],
+      iconName: 'stats-chart' as keyof typeof Ionicons.glyphMap,
+      iconColor: '#9b59b6',
+      buttonText: t('onboarding.start'),
+      footer: t('onboarding.steps.5.footer'),
+      finalStep: true,
+      isBulletPoints: true,
+    },
+  ];
 
   const styles = StyleSheet.create({
     container: {
@@ -140,67 +126,69 @@ export default function Onboarding() {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'space-between', // centerからspace-betweenに変更
-      padding: 20,
-      paddingTop: Platform.OS === 'android' ? 30 : 20, // Add extra padding for Android
-      paddingBottom: Platform.OS === 'android' ? 30 : 20, // Add extra padding for Android
+      padding: isVerySmallScreen ? 15 : 20, // より小さい画面ではパディングを縮小
+      paddingTop: Platform.OS === 'android' ? 30 : (isVerySmallScreen ? 15 : 20), // Add extra padding for Android
+      paddingBottom: Platform.OS === 'android' ? 30 : (isVerySmallScreen ? 15 : 20), // Add extra padding for Android
     },
     imageContainer: {
-      flex: isSmallScreen ? 1.5 : 2, // 小さい画面では画像領域を縮小
+      flex: isVerySmallScreen ? 1.2 : isSmallScreen ? 1.5 : 2, // より細かく調整
       justifyContent: 'center',
       alignItems: 'center',
       width: '100%',
+      marginBottom: isVerySmallScreen ? 10 : 0, // 小さい画面では下マージンを追加
     },
     image: {
       width: width * 0.8,
       height: height * 0.3,
     },
     textContainer: {
-      flex: isSmallScreen ? 1.5 : 1, // 小さい画面ではテキスト領域を拡大
+      flex: isVerySmallScreen ? 1.8 : isSmallScreen ? 1.5 : 1, // より細かく調整
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'flex-start', // 上寄せに変更
       width: '100%',
-      paddingHorizontal: 20,
+      paddingHorizontal: isVerySmallScreen ? 15 : 20, // より小さい画面では横パディングを縮小
     },
     title: {
-      fontSize: isSmallScreen ? 20 : 24, // 小さい画面では文字サイズを縮小
+      fontSize: isVerySmallScreen ? 18 : isSmallScreen ? 20 : 24, // より細かく調整
       fontWeight: 'bold',
-      marginBottom: isSmallScreen ? 15 : 20,
+      marginBottom: isVerySmallScreen ? 10 : isSmallScreen ? 15 : 20, // より細かく調整
       textAlign: 'center',
       color: theme.text,
     },
     description: {
-      fontSize: isSmallScreen ? 14 : 16,
+      fontSize: isVerySmallScreen ? 13 : isSmallScreen ? 14 : 16, // より細かく調整
       textAlign: 'center',
       color: theme.text + "99", // with transparency
-      marginBottom: 6,
-      lineHeight: isSmallScreen ? 20 : 24,
+      marginBottom: isVerySmallScreen ? 4 : 6, // より小さい画面では間隔を縮小
+      lineHeight: isVerySmallScreen ? 18 : isSmallScreen ? 20 : 24, // より細かく調整
     },
     descriptionBullet: {
-      fontSize: isSmallScreen ? 14 : 16,
+      fontSize: isVerySmallScreen ? 13 : isSmallScreen ? 14 : 16, // より細かく調整
       textAlign: 'left',
       color: theme.text + "99", // with transparency
-      marginBottom: 6,
+      marginBottom: isVerySmallScreen ? 4 : 6, // より小さい画面では間隔を縮小
       alignSelf: 'flex-start',
+      lineHeight: isVerySmallScreen ? 18 : isSmallScreen ? 20 : 24, // 行間も調整
     },
     footer: {
-      fontSize: 14,
+      fontSize: isVerySmallScreen ? 12 : 14, // より小さい画面では文字サイズを縮小
       color: theme.text + "99", // less transparency for better readability
-      marginTop: 20,
+      marginTop: isVerySmallScreen ? 10 : 20, // より小さい画面では上マージンを縮小
       textAlign: 'center',
       fontWeight: '500', // slightly bolder for emphasis
-      lineHeight: 20, // better line spacing for readability
+      lineHeight: isVerySmallScreen ? 16 : 20, // より細かく調整
     },
     button: {
       backgroundColor: '#3498db', // Keep blue for brand consistency
-      paddingVertical: 15,
-      paddingHorizontal: 40,
+      paddingVertical: isVerySmallScreen ? 12 : 15, // より小さい画面では縦パディングを縮小
+      paddingHorizontal: isVerySmallScreen ? 30 : 40, // より小さい画面では横パディングを縮小
       borderRadius: 30,
-      marginTop: 30,
-      marginBottom: Platform.OS === 'ios' ? 40 : 20,
+      marginTop: isVerySmallScreen ? 15 : 30, // より小さい画面では上マージンを縮小
+      marginBottom: Platform.OS === 'ios' ? (isVerySmallScreen ? 20 : 40) : 20, // より小さい画面では下マージンを縮小
     },
     buttonText: {
       color: 'white', // Keep white for contrast on blue background
-      fontSize: 18,
+      fontSize: isVerySmallScreen ? 16 : 18, // より小さい画面では文字サイズを縮小
       fontWeight: '600',
     },
     dotsContainer: {
@@ -308,7 +296,7 @@ export default function Onboarding() {
           style={styles.skipButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Increase touch area
         >
-          <Text style={styles.skipText}>スキップ</Text>
+          <Text style={styles.skipText}>{t('onboarding.skip')}</Text>
         </TouchableOpacity>
       </View>
 

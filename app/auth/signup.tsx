@@ -1,8 +1,10 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { getPrivacyUrl, getTermsUrl } from '../../lib/i18n';
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('');
@@ -11,15 +13,16 @@ export default function SignupScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const { signUp } = useAuth();
   const theme = useTheme();
+  const { t } = useTranslation();
 
   const handleSignUp = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert('エラー', '全ての項目を入力してください');
+      Alert.alert(t('common.error'), t('signup.alert.emptyFields'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('エラー', 'パスワードが一致しません');
+      Alert.alert(t('common.error'), t('signup.alert.passwordMismatch'));
       return;
     }
 
@@ -27,12 +30,12 @@ export default function SignupScreen() {
       setIsLoading(true);
       await signUp(email, password);
       Alert.alert(
-        '確認コード送信',
-        'メールに 6 桁の確認コードを送信しました。コードを入力してください。',
-        [{ text: 'OK', onPress: () => router.replace({ pathname: '/auth/verify', params: { email, type: 'signup' } }) }]
+        t('signup.codeSentTitle'),
+        t('signup.codeSentMessage'),
+        [{ text: t('common.ok'), onPress: () => router.replace({ pathname: '/auth/verify', params: { email, type: 'signup' } }) }]
       );
     } catch (error: any) {
-      Alert.alert('登録エラー', error.message || 'アカウント登録に失敗しました');
+      Alert.alert(t('signup.registerErrorTitle'), error.message || t('signup.registerFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -45,11 +48,11 @@ export default function SignupScreen() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Text style={[styles.title, { color: theme.text }]}>アカウント作成</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{t('signup.title')}</Text>
 
         <TextInput
           style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-          placeholder="メールアドレス"
+          placeholder={t('common.placeholder.email')}
           placeholderTextColor={theme.textSecondary}
           value={email}
           onChangeText={setEmail}
@@ -59,7 +62,7 @@ export default function SignupScreen() {
 
         <TextInput
           style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-          placeholder="パスワード"
+          placeholder={t('common.placeholder.password')}
           placeholderTextColor={theme.textSecondary}
           value={password}
           onChangeText={setPassword}
@@ -68,7 +71,7 @@ export default function SignupScreen() {
 
         <TextInput
           style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-          placeholder="パスワード（確認）"
+          placeholder={t('signup.placeholder.passwordConfirm')}
           placeholderTextColor={theme.textSecondary}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
@@ -81,36 +84,36 @@ export default function SignupScreen() {
           disabled={isLoading}
         >
           <Text style={[styles.buttonText, { color: '#ffffff' }]}>
-            {isLoading ? '登録中...' : 'アカウント作成'}
+            {isLoading ? t('common.loading.registering') : t('signup.button.create')}
           </Text>
         </TouchableOpacity>
 
         {/* 規約同意注釈 */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 12 }}>
-          <Text style={{ color: theme.textSecondary }}>「アカウント作成」をタップすると、</Text>
+          <Text style={{ color: theme.textSecondary }}>{t('signup.agreement.prefix')}</Text>
           <Text
             style={{ color: theme.primary, textDecorationLine: 'underline' }}
-            onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/terms.html', title: '利用規約' } })}
+            onPress={() => router.push({ pathname: '/webview', params: { url: getTermsUrl(), title: t('signup.agreement.terms') } })}
           >
-            利用規約
+            {t('signup.agreement.terms')}
           </Text>
-          <Text style={{ color: theme.textSecondary }}>と</Text>
+          <Text style={{ color: theme.textSecondary }}>{t('common.and')}</Text>
           <Text
             style={{ color: theme.primary, textDecorationLine: 'underline' }}
-            onPress={() => router.push({ pathname: '/webview', params: { url: 'https://everwearapp.com/privacy.html', title: 'プライバシーポリシー' } })}
+            onPress={() => router.push({ pathname: '/webview', params: { url: getPrivacyUrl(), title: t('signup.agreement.privacy') } })}
           >
-            プライバシーポリシー
+            {t('signup.agreement.privacy')}
           </Text>
-          <Text style={{ color: theme.textSecondary }}>に同意したものとみなします。</Text>
+          <Text style={{ color: theme.textSecondary }}>{t('signup.agreement.suffix')}</Text>
         </View>
 
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-            すでにアカウントをお持ちの場合は
+            {t('signup.footer.already')}
           </Text>
           <TouchableOpacity onPress={handleLogin}>
             <Text style={[styles.footerLink, { color: theme.primary }]}>
-              ログイン
+              {t('signup.footer.login')}
             </Text>
           </TouchableOpacity>
         </View>

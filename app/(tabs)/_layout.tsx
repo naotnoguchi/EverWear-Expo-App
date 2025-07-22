@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useRouter } from "expo-router";
 import React, { useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabReset } from "../../contexts/TabResetContext";
@@ -9,6 +10,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 export default function TabsLayout() {
   const theme = useTheme();
   const router = useRouter();
+  const { t } = useTranslation();
   const { lastTabName, setLastTabName, resetTab } = useTabReset();
   const insets = useSafeAreaInsets();
 
@@ -99,15 +101,18 @@ export default function TabsLayout() {
         fontSize: 12, // 他のタブと同じサイズ
         color: "#95a5a6",
         fontWeight: '600',
+        textAlign: 'center',
+        maxWidth: 80, // 最大幅を設定して折り返しを防止
+        lineHeight: 14, // 行間を調整
       },
     });
 
     const tabConfig: Array<{ name: string; icon: string; label: string } | 'center'> = [
-      { name: 'home', icon: 'home', label: 'ホーム' },
-      { name: 'history', icon: 'calendar', label: '履歴' },
+      { name: 'home', icon: 'home', label: t('tabs.home') },
+      { name: 'history', icon: 'calendar', label: t('tabs.history') },
       'center', // 中央の余白を示すマーカー
-      { name: 'stats', icon: 'stats-chart', label: '統計' },
-      { name: 'settings', icon: 'settings', label: '設定' },
+      { name: 'stats', icon: 'stats-chart', label: t('tabs.stats') },
+      { name: 'settings', icon: 'settings', label: t('tabs.settings') },
     ];
 
     return (
@@ -129,7 +134,7 @@ export default function TabsLayout() {
                       style={styles.floatingButtonIcon}
                     />
                     <Text style={styles.floatingButtonLabel}>
-                      一括記録
+                      {t('tabs.batchRecord')}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -198,8 +203,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: "ホーム",
-          headerTitle: "クローゼット",
+          title: t('tabs.home'),
+          headerTitle: t('tabs.homeHeader'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -211,7 +216,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="history"
         options={{
-          title: "履歴",
+          title: t('tabs.history'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar" size={size} color={color} />
           ),
@@ -223,7 +228,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="stats"
         options={{
-          title: "統計",
+          title: t('tabs.stats'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="stats-chart" size={size} color={color} />
           ),
@@ -235,7 +240,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "設定",
+          title: t('tabs.settings'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings" size={size} color={color} />
           ),

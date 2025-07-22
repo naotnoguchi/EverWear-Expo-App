@@ -3,8 +3,8 @@ import { AppClothingItem, WashHistory, WearHistory } from '../types/database';
 
 export interface Badge {
   id: string;
-  name: string;
-  description: string;
+  nameKey: string;  // 翻訳キー
+  descKey: string;  // 翻訳キー
   iconName: string;
   color: string;
   category: 'milestone' | 'achievement' | 'special';
@@ -96,8 +96,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'first-item',
-      name: '初めてのアイテム',
-      description: '最初のアイテムを登録しました',
+      nameKey: 'badges.names.firstItem',
+      descKey: 'badges.descriptions.firstItem',
       iconName: 'shirt',
       color: '#10B981',
       category: 'milestone'
@@ -107,8 +107,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'first-wear',
-      name: '初めての着用',
-      description: '最初の着用記録を追加しました',
+      nameKey: 'badges.names.firstWear',
+      descKey: 'badges.descriptions.firstWear',
       iconName: 'calendar',
       color: '#3B82F6',
       category: 'milestone'
@@ -118,8 +118,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'first-wash',
-      name: '初めての洗濯',
-      description: '最初の洗濯記録を追加しました',
+      nameKey: 'badges.names.firstWash',
+      descKey: 'badges.descriptions.firstWash',
       iconName: 'water-drop',
       color: '#06B6D4',
       category: 'milestone'
@@ -131,8 +131,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'item-collector-5',
-      name: 'アイテムコレクター',
-      description: '5個のアイテムを登録しました',
+      nameKey: 'badges.names.itemCollector5',
+      descKey: 'badges.descriptions.itemCollector5',
       iconName: 'shirt',
       color: '#8B5CF6',
       category: 'achievement'
@@ -142,8 +142,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'item-collector-15',
-      name: 'ファッション愛好家',
-      description: '15個のアイテムを登録しました',
+      nameKey: 'badges.names.itemCollector15',
+      descKey: 'badges.descriptions.itemCollector15',
       iconName: 'shirt',
       color: '#A855F7',
       category: 'achievement'
@@ -153,8 +153,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'item-collector-30',
-      name: 'ワードローブマスター',
-      description: '30個のアイテムを登録しました',
+      nameKey: 'badges.names.itemCollector30',
+      descKey: 'badges.descriptions.itemCollector30',
       iconName: 'shirt',
       color: '#9333EA',
       category: 'achievement'
@@ -166,8 +166,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'wear-achiever-item-10',
-      name: 'お気に入り発見',
-      description: '同じアイテムを10回着用しました',
+      nameKey: 'badges.names.wearAchieverItem10',
+      descKey: 'badges.descriptions.wearAchieverItem10',
       iconName: 'heart',
       color: '#EC4899',
       category: 'achievement'
@@ -177,8 +177,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'wear-achiever-item-30',
-      name: 'ヘビロテアイテム',
-      description: '同じアイテムを30回着用しました',
+      nameKey: 'badges.names.wearAchieverItem30',
+      descKey: 'badges.descriptions.wearAchieverItem30',
       iconName: 'heart',
       color: '#DB2777',
       category: 'achievement'
@@ -188,8 +188,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'wear-achiever-item-50',
-      name: '運命の一着',
-      description: '同じアイテムを50回着用しました',
+      nameKey: 'badges.names.wearAchieverItem50',
+      descKey: 'badges.descriptions.wearAchieverItem50',
       iconName: 'heart',
       color: '#BE185D',
       category: 'achievement'
@@ -201,8 +201,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'wear-master-10',
-      name: '着用記録ルーキー',
-      description: '累計10回着用しました',
+      nameKey: 'badges.names.wearMaster10',
+      descKey: 'badges.descriptions.wearMaster10',
       iconName: 'calendar',
       color: '#65A30D',
       category: 'achievement'
@@ -212,8 +212,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'wear-master-50',
-      name: '着用記録エキスパート',
-      description: '累計50回着用しました',
+      nameKey: 'badges.names.wearMaster50',
+      descKey: 'badges.descriptions.wearMaster50',
       iconName: 'calendar',
       color: '#16A34A',
       category: 'achievement'
@@ -223,8 +223,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'wear-master-100',
-      name: '着用記録マスター',
-      description: '累計100回着用しました',
+      nameKey: 'badges.names.wearMaster100',
+      descKey: 'badges.descriptions.wearMaster100',
       iconName: 'calendar',
       color: '#15803D',
       category: 'achievement'
@@ -236,8 +236,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'wash-master-10',
-      name: '洗濯記録ルーキー',
-      description: '累計10回洗濯記録をつけました',
+      nameKey: 'badges.names.washMaster10',
+      descKey: 'badges.descriptions.washMaster10',
       iconName: 'water-drop',
       color: '#0EA5E9',
       category: 'achievement'
@@ -247,8 +247,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'wash-master-30',
-      name: '洗濯記録エキスパート',
-      description: '累計30回洗濯記録をつけました',
+      nameKey: 'badges.names.washMaster30',
+      descKey: 'badges.descriptions.washMaster30',
       iconName: 'water-drop',
       color: '#0284C7',
       category: 'achievement'
@@ -258,8 +258,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'wash-master-50',
-      name: '洗濯マスター',
-      description: '累計50回洗濯記録をつけました',
+      nameKey: 'badges.names.washMaster50',
+      descKey: 'badges.descriptions.washMaster50',
       iconName: 'water-drop',
       color: '#0369A1',
       category: 'achievement'
@@ -271,8 +271,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'wash-saver-10',
-      name: '洗濯削減ルーキー',
-      description: '10回分の洗濯を削減しました',
+      nameKey: 'badges.names.washSaver10',
+      descKey: 'badges.descriptions.washSaver10',
       iconName: 'leaf',
       color: '#059669',
       category: 'achievement'
@@ -282,8 +282,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'wash-saver-50',
-      name: '洗濯削減エキスパート',
-      description: '50回分の洗濯を削減しました',
+      nameKey: 'badges.names.washSaver50',
+      descKey: 'badges.descriptions.washSaver50',
       iconName: 'leaf',
       color: '#047857',
       category: 'achievement'
@@ -293,8 +293,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'wash-saver-100',
-      name: '洗濯削減マスター',
-      description: '100回分の洗濯を削減しました',
+      nameKey: 'badges.names.washSaver100',
+      descKey: 'badges.descriptions.washSaver100',
       iconName: 'leaf',
       color: '#065F46',
       category: 'achievement'
@@ -306,8 +306,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'category-master',
-      name: 'カテゴリマスター',
-      description: '7種類のカテゴリのアイテムを登録しました',
+      nameKey: 'badges.names.categoryMaster',
+      descKey: 'badges.descriptions.categoryMaster',
       iconName: 'star',
       color: '#D97706',
       category: 'special'
@@ -317,8 +317,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'premium-unlocked',
-      name: 'プレミアムユーザー',
-      description: 'プレミアムプランを利用中です',
+      nameKey: 'badges.names.premiumUnlocked',
+      descKey: 'badges.descriptions.premiumUnlocked',
       iconName: 'crown',
       color: '#F59E0B',
       category: 'special'
@@ -328,8 +328,8 @@ export const BADGE_DEFINITIONS: BadgeEvaluator[] = [
   {
     badge: {
       id: 'consistent-tracker',
-      name: '継続は力なり',
-      description: '100日連続で記録をつけました',
+      nameKey: 'badges.names.consistentTracker',
+      descKey: 'badges.descriptions.consistentTracker',
       iconName: 'fire',
       color: '#DC2626',
       category: 'special'

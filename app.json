@@ -18,7 +18,8 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "アプリが衣類の写真を撮影するために、カメラへのアクセスが必要です。",
-        "NSPhotoLibraryUsageDescription": "アプリが衣類の写真を管理するために、フォトライブラリへのアクセスが必要です。"
+        "NSPhotoLibraryUsageDescription": "アプリが衣類の写真を管理するために、フォトライブラリへのアクセスが必要です。",
+        "CFBundleLocalizations": ["en", "ja"]
       }
     },
     "android": {
@@ -75,6 +76,9 @@
         "projectId": "dcf5e6cc-aa85-4c36-8992-8c50b97d87b4"
       }
     },
-    "owner": "naotnoguchi"
+    "owner": "naotnoguchi",
+    "locales": {
+      "ja": "./locales/ja.json"
+    }
   }
 }

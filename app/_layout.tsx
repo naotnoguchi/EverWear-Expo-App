@@ -30,14 +30,6 @@ function MainApp() {
   // i18n
   const { t } = useTranslation();
 
-  const adaptedBadgeNotifications = React.useMemo(() =>
-    badgeNotifications.map((n: any) => ({
-      id: n.id,
-      name: n.name,
-      description: n.description,
-      imageUrl: n.iconName || n.imageUrl || '',
-    })),
-  [badgeNotifications]);
 
   // ディープリンクリスナーを設定
   useEffect(() => {
@@ -223,7 +215,7 @@ function MainApp() {
         <Stack.Screen name="webview" options={{ headerBackTitle: t('common.back') }} />
       </Stack>
       <BadgeNotificationManager 
-        notifications={adaptedBadgeNotifications} 
+        notifications={badgeNotifications} 
         onDismiss={clearBadgeNotification} 
       />
     </>

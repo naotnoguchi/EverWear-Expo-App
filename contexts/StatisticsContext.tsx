@@ -22,8 +22,8 @@ const SHOWN_BADGE_NOTIFICATIONS_KEY = 'shown_badge_notifications';
 // 新しいバッジ通知の型
 interface BadgeNotification {
   id: string;
-  name: string;
-  description: string;
+  nameKey: string;
+  descKey: string;
   iconName: string;
   color: string;
 }
@@ -252,8 +252,8 @@ export function StatisticsProvider({ children }: { children: React.ReactNode }) 
         if (newlyEarnedBadges.length > 0) {
           const notifications = newlyEarnedBadges.map(badge => ({
             id: badge.id,
-            name: badge.name,
-            description: badge.description,
+            nameKey: badge.nameKey,
+            descKey: badge.descKey,
             iconName: badge.iconName,
             color: badge.color
           }));

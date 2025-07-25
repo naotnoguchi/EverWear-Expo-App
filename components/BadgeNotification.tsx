@@ -1,13 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface BadgeNotification {
   id: string;
-  name: string;
-  description: string;
-  imageUrl: string;
+  nameKey: string;
+  descKey: string;
+  iconName: string;
+  color: string;
 }
 
 interface BadgeNotificationProps {
@@ -16,6 +18,7 @@ interface BadgeNotificationProps {
 }
 
 export function BadgeNotification({ notification, onDismiss }: BadgeNotificationProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(-100));
@@ -142,9 +145,9 @@ export function BadgeNotification({ notification, onDismiss }: BadgeNotification
           <View style={styles.badge}>
             <Text style={styles.badgeText}>🏆 新しいバッジ獲得！</Text>
           </View>
-          <Text style={styles.title}>{notification.name}</Text>
+          <Text style={styles.title}>{t(notification.nameKey)}</Text>
           <Text style={styles.description} numberOfLines={2}>
-            {notification.description}
+            {t(notification.descKey)}
           </Text>
         </View>
 

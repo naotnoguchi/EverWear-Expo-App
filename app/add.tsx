@@ -20,6 +20,7 @@ import BrandSelector from "../components/BrandSelector";
 import { useClothing } from "../contexts/ClothingContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { showImagePickerOptions } from "../lib/imageUtils";
+import { CATEGORIES, getCategoryTranslationKey, getCategoryIconName, CategoryId } from "../types/categories";
 
 export default function AddItem() {
   const router = useRouter();
@@ -27,26 +28,12 @@ export default function AddItem() {
   const theme = useTheme();
   const { t } = useTranslation();
 
-  // カテゴリ定義を多言語化対応に
-  const getCategories = () => [
-    { id: "tops", nameKey: "addItem.categories.tops", icon: "shirt-outline" },
-    { id: "bottoms", nameKey: "addItem.categories.bottoms", icon: "file-tray-outline" },
-    { id: "jacket", nameKey: "addItem.categories.jacket", icon: "library-outline" },
-    { id: "outerwear", nameKey: "addItem.categories.outerwear", icon: "hand-left-outline" },
-    { id: "setup", nameKey: "addItem.categories.setup", icon: "layers-outline" },
-    { id: "dress", nameKey: "addItem.categories.dress", icon: "woman-outline" },
-    { id: "shoes", nameKey: "addItem.categories.shoes", icon: "footsteps-outline" },
-    { id: "bag", nameKey: "addItem.categories.bag", icon: "bag-outline" },
-    { id: "accessories", nameKey: "addItem.categories.accessories", icon: "glasses-outline" },
-    { id: "others", nameKey: "addItem.categories.others", icon: "ellipsis-horizontal-circle-outline" },
-  ];
-
   // ブランド情報を読み込む
   useEffect(() => {
     loadBrands();
   }, [loadBrands]);
   const [name, setName] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryId | "">("");
   const [brand, setBrand] = useState(""); // ブランド状態を追加
   const [washThreshold, setWashThreshold] = useState("3");
   const [imageSelected, setImageSelected] = useState(false);
@@ -165,9 +152,7 @@ export default function AddItem() {
     }
   };
 
-  const handleCategorySelect = (categoryKey: string) => {
-    // 翻訳キーから実際のカテゴリ名を取得
-    const categoryId = getCategories().find(cat => cat.nameKey === categoryKey)?.id || '';
+  const handleCategorySelect = (categoryId: CategoryId) => {
     setSelectedCategory(categoryId);
     triggerHaptic();
   };
@@ -443,18 +428,18 @@ export default function AddItem() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>{t('addItem.form.category.label')} <Text style={styles.requiredText}>{t('addItem.form.required')}</Text></Text>
               <View style={styles.categoryContainer}>
-                {getCategories().map((category) => (
+                {CATEGORIES.map((category) => (
                   <TouchableOpacity
                     key={category.id}
                     style={[
                       styles.categoryButton,
                       selectedCategory === category.id && styles.selectedCategory,
                     ]}
-                    onPress={() => handleCategorySelect(category.nameKey)}
+                    onPress={() => handleCategorySelect(category.id)}
                     activeOpacity={0.7}
                   >
                     <Ionicons 
-                      name={category.icon as any} 
+                      name={category.iconName as any} 
                       size={20} 
                       color={selectedCategory === category.id ? "#fff" : theme.text + "99"} 
                       style={styles.categoryIcon}
@@ -465,7 +450,7 @@ export default function AddItem() {
                         selectedCategory === category.id && styles.selectedCategoryText,
                       ]}
                     >
-                      {t(category.nameKey)}
+                      {t(getCategoryTranslationKey(category.id))}
                     </Text>
                   </TouchableOpacity>
                 ))}

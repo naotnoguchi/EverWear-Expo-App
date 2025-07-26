@@ -172,16 +172,16 @@ export default function RankingScreen() {
   // Category options
   const categoryOptions: { label: string; value: CategoryValue }[] = [
     { label: t('categories.all'), value: null },
-    { label: t('categories.tops'), value: 'トップス' },
-    { label: t('categories.bottoms'), value: 'ボトムス' },
-    { label: t('categories.jacket'), value: 'ジャケット' },
-    { label: t('categories.outerwear'), value: 'アウター' },
-    { label: t('categories.setup'), value: 'セットアップ' },
-    { label: t('categories.dress'), value: 'ワンピース' },
-    { label: t('categories.shoes'), value: 'シューズ' },
-    { label: t('categories.bag'), value: 'バッグ' },
-    { label: t('categories.accessories'), value: '小物' },
-    { label: t('categories.others'), value: 'その他' },
+    { label: t('categories.tops'), value: 'tops' },
+    { label: t('categories.bottoms'), value: 'bottoms' },
+    { label: t('categories.jacket'), value: 'jacket' },
+    { label: t('categories.outerwear'), value: 'outerwear' },
+    { label: t('categories.setup'), value: 'setup' },
+    { label: t('categories.dress'), value: 'dress' },
+    { label: t('categories.shoes'), value: 'shoes' },
+    { label: t('categories.bag'), value: 'bag' },
+    { label: t('categories.accessories'), value: 'accessories' },
+    { label: t('categories.others'), value: 'others' },
   ];
 
   const styles = StyleSheet.create({

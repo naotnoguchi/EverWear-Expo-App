@@ -1,5 +1,4 @@
 import React, { forwardRef } from "react";
-import { CategoryId, getCategoryValueById } from "../../types/categories";
 import ItemList, { ItemListRefType } from "../ItemList";
 
 interface JacketItemsProps {
@@ -7,7 +6,7 @@ interface JacketItemsProps {
 }
 
 const JacketItems = forwardRef<ItemListRefType, JacketItemsProps>(({ onRefresh }, ref) => {
-    return <ItemList ref={ref} category={getCategoryValueById(CategoryId.JACKET)} onRefresh={onRefresh} />;
+    return <ItemList ref={ref} category="jacket" onRefresh={onRefresh} />;
 });
 
 JacketItems.displayName = 'JacketItems';

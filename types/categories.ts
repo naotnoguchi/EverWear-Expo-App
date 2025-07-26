@@ -1,82 +1,54 @@
 // types/categories.ts
 
-// カテゴリIDの列挙型（型安全性の強化）
-export enum CategoryId {
-  ALL = "all",
-  TOPS = "tops",
-  BOTTOMS = "bottoms",
-  JACKET = "jacket",
-  OUTERWEAR = "outerwear",
-  SETUP = "setup",
-  DRESS = "dress",
-  SHOES = "shoes",
-  BAG = "bag",
-  ACCESSORIES = "accessories",
-  OTHERS = "others"
-}
+// カテゴリIDの型（データベースで使用される英語ID）
+export type CategoryId = "tops" | "bottoms" | "jacket" | "outerwear" | "setup" | "dress" | "shoes" | "bag" | "accessories" | "others";
 
-// カテゴリの表示名の型（型安全性の強化）
-export type CategoryDisplayName = "すべて" | "トップス" | "ボトムス" | "ジャケット" | "アウター" | "セットアップ" | "ワンピース" | "シューズ" | "バッグ" | "小物" | "その他";
+// カテゴリの値の型（データベースで使用される値 - 英語IDに統一）
+export type CategoryValue = CategoryId | null;
 
-// カテゴリの値の型（データベースで使用される値）
-export type CategoryValue = "トップス" | "ボトムス" | "ジャケット" | "アウター" | "セットアップ" | "ワンピース" | "シューズ" | "バッグ" | "小物" | "その他" | null;
-
-// カテゴリ定義のインターフェース
+// カテゴリ定義のインターフェース（英語IDベース）
 export interface Category {
   id: CategoryId;
-  name: CategoryDisplayName;
-  value: CategoryValue;
+  iconName: string;
 }
 
-// カテゴリ定義の配列（アプリケーション全体で使用）
+// カテゴリ定義の配列（英語IDベース、アプリケーション全体で使用）
 export const CATEGORIES: Category[] = [
-  { id: CategoryId.ALL, name: "すべて", value: null },
-  { id: CategoryId.TOPS, name: "トップス", value: "トップス" },
-  { id: CategoryId.BOTTOMS, name: "ボトムス", value: "ボトムス" },
-  { id: CategoryId.JACKET, name: "ジャケット", value: "ジャケット" },
-  { id: CategoryId.OUTERWEAR, name: "アウター", value: "アウター" },
-  { id: CategoryId.SETUP, name: "セットアップ", value: "セットアップ" },
-  { id: CategoryId.DRESS, name: "ワンピース", value: "ワンピース" },
-  { id: CategoryId.SHOES, name: "シューズ", value: "シューズ" },
-  { id: CategoryId.BAG, name: "バッグ", value: "バッグ" },
-  { id: CategoryId.ACCESSORIES, name: "小物", value: "小物" },
-  { id: CategoryId.OTHERS, name: "その他", value: "その他" }
+  { id: "tops", iconName: "shirt-outline" },
+  { id: "bottoms", iconName: "file-tray-outline" },
+  { id: "jacket", iconName: "library-outline" },
+  { id: "outerwear", iconName: "hand-left-outline" },
+  { id: "setup", iconName: "layers-outline" },
+  { id: "dress", iconName: "woman-outline" },
+  { id: "shoes", iconName: "footsteps-outline" },
+  { id: "bag", iconName: "bag-outline" },
+  { id: "accessories", iconName: "glasses-outline" },
+  { id: "others", iconName: "ellipsis-horizontal-circle-outline" }
 ];
 
-// カテゴリIDから対応するカテゴリ値を取得するヘルパー関数
-export function getCategoryValueById(categoryId: CategoryId): CategoryValue {
+// カテゴリIDから翻訳キーを取得するヘルパー関数
+export function getCategoryTranslationKey(categoryId: CategoryId): string {
+  return `categories.${categoryId}`;
+}
+
+// カテゴリIDからアイコン名を取得するヘルパー関数
+export function getCategoryIconName(categoryId: CategoryId): string {
   const category = CATEGORIES.find(cat => cat.id === categoryId);
-  return category ? category.value : null;
+  return category ? category.iconName : "ellipsis-horizontal-circle-outline";
 }
 
-// カテゴリIDから対応するカテゴリ名を取得するヘルパー関数
-export function getCategoryNameById(categoryId: CategoryId): CategoryDisplayName {
-  const category = CATEGORIES.find(cat => cat.id === categoryId);
-  if (!category) throw new Error(`Invalid category ID: ${categoryId}`);
-  return category.name;
-}
-
-// カテゴリ値からカテゴリIDを取得するヘルパー関数
-export function getCategoryIdByValue(value: CategoryValue): CategoryId {
-  const category = CATEGORIES.find(cat => cat.value === value);
-  return category ? category.id : CategoryId.OTHERS;
-}
-
-// 拡張マッピング関数：日本語表示名と英語IDの両方に対応
-export function getCategoryIdByValueExtended(value: string): CategoryId {
+// 文字列値からカテゴリIDを取得するヘルパー関数（移行期間用）
+export function getCategoryIdByValueExtended(value: string | null): CategoryId {
+  if (!value) return "others";
+  
   // 既に英語IDの場合
-  if (Object.values(CategoryId).includes(value as CategoryId)) {
+  const validIds: CategoryId[] = ["tops", "bottoms", "jacket", "outerwear", "setup", "dress", "shoes", "bag", "accessories", "others"];
+  if (validIds.includes(value as CategoryId)) {
     return value as CategoryId;
   }
   
-  // 日本語表示名の場合
-  return getCategoryIdByValue(value as CategoryValue);
-}
-
-// カテゴリ値から翻訳キーを取得するヘルパー関数（両方の形式に対応）
-export function getCategoryKeyFromValue(categoryValue: string): string {
-  const categoryMap: Record<string, string> = {
-    // 日本語形式（従来）
+  // 日本語表示名から英語IDへのマッピング（移行期間用）
+  const legacyMapping: Record<string, CategoryId> = {
     'トップス': 'tops',
     'ボトムス': 'bottoms',
     'ジャケット': 'jacket',
@@ -86,19 +58,8 @@ export function getCategoryKeyFromValue(categoryValue: string): string {
     'シューズ': 'shoes',
     'バッグ': 'bag',
     '小物': 'accessories',
-    'その他': 'others',
-    // 英語ID形式（新規対応）
-    'tops': 'tops',
-    'bottoms': 'bottoms',
-    'jacket': 'jacket',
-    'outerwear': 'outerwear',
-    'setup': 'setup',
-    'dress': 'dress',
-    'shoes': 'shoes',
-    'bag': 'bag',
-    'accessories': 'accessories',
-    'others': 'others'
+    'その他': 'others'
   };
   
-  return categoryMap[categoryValue] || 'others';
+  return legacyMapping[value] || 'others';
 }

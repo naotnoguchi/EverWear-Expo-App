@@ -4,7 +4,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { clearSpecificImageCache } from "@/lib/cacheManager";
 import { showImagePickerOptions } from "@/lib/imageUtils";
 import { getImageUrl } from "@/lib/storageClient";
-import { CategoryValue, getCategoryIdByValueExtended, getCategoryValueById } from '@/types/categories';
+import { CategoryValue, getCategoryIdByValueExtended, getCategoryTranslationKey, CATEGORIES, CategoryId } from '@/types/categories';
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
@@ -24,31 +24,12 @@ import {
     View,
 } from "react-native";
 
-// カテゴリ定義を翻訳対応に
-const getCategoriesWithTranslation = (t: any) => [
-  { id: "tops", key: "categories.tops", icon: "shirt-outline" },
-  { id: "bottoms", key: "categories.bottoms", icon: "file-tray-outline" },
-  { id: "jacket", key: "categories.jacket", icon: "library-outline" },
-  { id: "outerwear", key: "categories.outerwear", icon: "hand-left-outline" },
-  { id: "setup", key: "categories.setup", icon: "layers-outline" },
-  { id: "dress", key: "categories.dress", icon: "woman-outline" },
-  { id: "shoes", key: "categories.shoes", icon: "footsteps-outline" },
-  { id: "bag", key: "categories.bag", icon: "bag-outline" },
-  { id: "accessories", key: "categories.accessories", icon: "glasses-outline" },
-  { id: "others", key: "categories.others", icon: "ellipsis-horizontal-circle-outline" },
-];
-
-// カテゴリ値から翻訳キーへのマッピング（統一された拡張マッピング関数を使用）
-const getCategoryTranslationKey = (categoryValue: string): string => {
-  const categoryId = getCategoryIdByValueExtended(categoryValue);
-  return `categories.${categoryId}`;
-};
-
-// 翻訳キーからカテゴリ値への逆マッピング（統一された関数を使用）
-const getValueFromTranslationKey = (translationKey: string): string => {
-  const categoryId = translationKey.replace('categories.', '');
-  const categoryValue = getCategoryValueById(categoryId as any);
-  return categoryValue || 'その他';
+// 翻訳キーからカテゴリIDへの逆マッピング
+const getCategoryIdFromTranslationKey = (translationKey: string): CategoryId => {
+  const categoryId = translationKey.replace('categories.', '') as CategoryId;
+  // 有効なカテゴリIDかチェック
+  const validIds: CategoryId[] = ["tops", "bottoms", "jacket", "outerwear", "setup", "dress", "shoes", "bag", "accessories", "others"];
+  return validIds.includes(categoryId) ? categoryId : "others";
 };
 
 
@@ -59,7 +40,7 @@ export default function EditItem() {
   const theme = useTheme();
   const { t } = useTranslation();
   const [name, setName] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryId | "">("");
   const [brand, setBrand] = useState(""); // ブランド状態を追加
   const [washThreshold, setWashThreshold] = useState("3");
   const [imageUrl, setImageUrl] = useState("");
@@ -98,7 +79,9 @@ export default function EditItem() {
     if (item) {
       // フォーム状態を設定
       setName(item.name);
-      setSelectedCategory(item.category || ""); // nullの場合は空文字を設定
+      // カテゴリ値を確実に英語IDに変換
+      const categoryId = item.category ? getCategoryIdByValueExtended(item.category) : "";
+      setSelectedCategory(categoryId);
       setBrand(item.brand || ""); // ブランド情報を設定
       setWashThreshold(String(item.washThreshold));
       setImageUrl(item.image);
@@ -110,7 +93,7 @@ export default function EditItem() {
       // 初期値を保存
       setInitialValues({
         name: item.name,
-        category: item.category || "", // nullの場合は空文字を設定
+        category: categoryId, // 変換された英語IDを保存
         brand: item.brand || "",
         washThreshold: String(item.washThreshold),
         imageUrl: item.image,
@@ -301,8 +284,8 @@ export default function EditItem() {
     }
   };
 
-  const handleCategorySelect = (category: string) => {
-    setSelectedCategory(category);
+  const handleCategorySelect = (categoryId: CategoryId) => {
+    setSelectedCategory(categoryId);
     triggerHaptic();
   };
 
@@ -587,29 +570,29 @@ export default function EditItem() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>{t('editItem.form.category.label')} <Text style={styles.requiredText}>{t('editItem.form.required')}</Text></Text>
               <View style={styles.categoryContainer}>
-                {getCategoriesWithTranslation(t).map((category) => (
+                {CATEGORIES.map((category) => (
                   <TouchableOpacity
                     key={category.id}
                     style={[
                       styles.categoryButton,
-                      selectedCategory === getValueFromTranslationKey(category.key) && styles.selectedCategory,
+                      selectedCategory === category.id && styles.selectedCategory,
                     ]}
-                    onPress={() => handleCategorySelect(getValueFromTranslationKey(category.key))}
+                    onPress={() => handleCategorySelect(category.id)}
                     activeOpacity={0.7}
                   >
                     <Ionicons 
-                      name={category.icon as any} 
+                      name={category.iconName as any} 
                       size={20} 
-                      color={selectedCategory === getValueFromTranslationKey(category.key) ? "#fff" : theme.text + "99"} 
+                      color={selectedCategory === category.id ? "#fff" : theme.text + "99"} 
                       style={styles.categoryIcon}
                     />
                     <Text
                       style={[
                         styles.categoryText,
-                        selectedCategory === getValueFromTranslationKey(category.key) && styles.selectedCategoryText,
+                        selectedCategory === category.id && styles.selectedCategoryText,
                       ]}
                     >
-                      {t(category.key)}
+                      {t(getCategoryTranslationKey(category.id))}
                     </Text>
                   </TouchableOpacity>
                 ))}

@@ -25,7 +25,7 @@ import { useTabReset } from '../../contexts/TabResetContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useImageUrls } from '../../hooks/useImageUrls';
 import { formatDateLocalized } from '../../lib/dateUtils';
-import { getCategoryKeyFromValue } from '../../types/categories';
+import { getCategoryIdByValueExtended, getCategoryTranslationKey } from '../../types/categories';
 
 // React Native の LayoutAnimation を有効化（Android用）
 if (Platform.OS === 'android') {
@@ -377,7 +377,7 @@ export default function History() {
             <Text style={styles.historyTitle}>{item.itemName}</Text>
           )}
           <Text style={styles.historyCategory}>
-            {item.brand ? `${item.brand} / ${t(`categories.${getCategoryKeyFromValue(item.category)}`)}` : t(`categories.${getCategoryKeyFromValue(item.category)}`)}
+            {item.brand ? `${item.brand} / ${t(getCategoryTranslationKey(getCategoryIdByValueExtended(item.category)))}` : t(getCategoryTranslationKey(getCategoryIdByValueExtended(item.category)))}
           </Text>
           <Text style={styles.historyAction}>
             {item.eventType === "wear" ? t('history.actions.wore') : t('history.actions.washed')}

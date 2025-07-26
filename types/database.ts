@@ -1,5 +1,5 @@
 // Database type definitions for EverWear
-import { CategoryValue } from './categories';
+import { CategoryId, CategoryValue } from './categories';
 
 // User type (matches Supabase auth user)
 export interface User {

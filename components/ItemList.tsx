@@ -13,22 +13,13 @@ import { getPrivateUrls } from '../lib/storageClient';
 import { CategoryValue } from '../types/categories';
 import { ClothingItem } from '../types/clothing';
 
-// カテゴリ値から翻訳キーへのマッピング
+// カテゴリ値から翻訳キーへのマッピング（統一されたカテゴリシステムを使用）
+import { getCategoryIdByValueExtended, getCategoryTranslationKey as getTranslationKey } from '../types/categories';
+
 const getCategoryTranslationKey = (categoryValue: CategoryValue): string => {
-  const categoryMap: Record<string, string> = {
-    'トップス': 'categories.tops',
-    'ボトムス': 'categories.bottoms',
-    'ジャケット': 'categories.jacket',
-    'アウター': 'categories.outerwear',
-    'セットアップ': 'categories.setup',
-    'ワンピース': 'categories.dress',
-    'シューズ': 'categories.shoes',
-    'バッグ': 'categories.bag',
-    '小物': 'categories.accessories',
-    'その他': 'categories.others'
-  };
-  
-  return categoryValue ? categoryMap[categoryValue] || categoryValue : '';
+  if (!categoryValue) return '';
+  const categoryId = getCategoryIdByValueExtended(categoryValue);
+  return getTranslationKey(categoryId);
 };
 
 // 公開するメソッドの型定義

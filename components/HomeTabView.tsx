@@ -25,25 +25,31 @@ import ShoesItems from "./categories/ShoesItems";
 import TopsItems from "./categories/TopsItems";
 
 // カテゴリ定義のインポート
-import { CATEGORIES, CategoryId, getCategoryValueById } from "../types/categories";
+import { CATEGORIES, CategoryId, getCategoryTranslationKey } from "../types/categories";
 import { ItemListRefType } from "./ItemList";
 
-// カテゴリとコンポーネントのマッピング
-const categoryComponents: Record<CategoryId, React.ComponentType<{ 
+// HomeTabView用の拡張カテゴリ配列（"all"カテゴリを含む）
+const HOME_CATEGORIES = [
+  { id: "all", iconName: "apps-outline" },
+  ...CATEGORIES
+];
+
+// カテゴリとコンポーネントのマッピング（"all"カテゴリを追加）
+const categoryComponents: Record<string, React.ComponentType<{ 
   ref?: React.Ref<ItemListRefType>;
   onRefresh?: () => void;
 }>> = {
-  [CategoryId.ALL]: AllItems,
-  [CategoryId.TOPS]: TopsItems,
-  [CategoryId.BOTTOMS]: BottomsItems,
-  [CategoryId.JACKET]: JacketItems,
-  [CategoryId.OUTERWEAR]: OuterwearItems,
-  [CategoryId.SETUP]: SetupItems,
-  [CategoryId.DRESS]: DressItems,
-  [CategoryId.SHOES]: ShoesItems,
-  [CategoryId.BAG]: BagItems,
-  [CategoryId.ACCESSORIES]: AccessoriesItems,
-  [CategoryId.OTHERS]: OthersItems,
+  "all": AllItems,
+  "tops": TopsItems,
+  "bottoms": BottomsItems,
+  "jacket": JacketItems,
+  "outerwear": OuterwearItems,
+  "setup": SetupItems,
+  "dress": DressItems,
+  "shoes": ShoesItems,
+  "bag": BagItems,
+  "accessories": AccessoriesItems,
+  "others": OthersItems,
 };
 
 const { width } = Dimensions.get("window");
@@ -63,7 +69,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
 
   // カテゴリコンポーネントへの参照を保持する配列
   const categoryRefs = useRef<Array<ItemListRefType | null>>(
-    Array(CATEGORIES.length).fill(null)
+    Array(HOME_CATEGORIES.length).fill(null)
   );
 
   // ソートモーダルの表示状態（他の場所でも使用される可能性があるため維持）
@@ -76,16 +82,15 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
   // カテゴリごとのアイテム数を計算する関数 - メモ化して再計算を防止
   const categoryItemCounts = useMemo(() => {
     // 各カテゴリのアイテム数を計算して保存するオブジェクト
-    const counts: Record<CategoryId, number> = {} as Record<CategoryId, number>;
+    const counts: Record<string, number> = {};
 
     // ALL カテゴリは全アイテム数
-    counts[CategoryId.ALL] = clothingItems.length;
+    counts["all"] = clothingItems.length;
 
     // 他のカテゴリはフィルタリングして計算
-    for (const category of CATEGORIES) {
-      if (category.id !== CategoryId.ALL) {
-        const categoryValue = getCategoryValueById(category.id);
-        counts[category.id] = clothingItems.filter(item => item.category === categoryValue).length;
+    for (const category of HOME_CATEGORIES) {
+      if (category.id !== "all") {
+        counts[category.id] = clothingItems.filter(item => item.category === category.id).length;
       }
     }
 
@@ -93,8 +98,8 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
   }, [clothingItems]);
 
   // カテゴリIDからアイテム数を取得する関数
-  const getCategoryItemCount = (categoryId: CategoryId): number => {
-    return categoryItemCounts[categoryId];
+  const getCategoryItemCount = (categoryId: string): number => {
+    return categoryItemCounts[categoryId] || 0;
   };
 
   const theme = useTheme();
@@ -131,7 +136,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
 
   // タブが変更されたときのハンドラー
   const handleTabChange = (index: number) => {
-    if (index >= 0 && index < CATEGORIES.length && index !== activeIndex) {
+    if (index >= 0 && index < HOME_CATEGORIES.length && index !== activeIndex) {
       setActiveIndex(index);
 
       // タブスクロールビューの位置を調整
@@ -181,7 +186,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
 
   // アイテム追加ボタンのハンドラー
   const handleAddItem = () => {
-    const currentItemCount = getCategoryItemCount(CategoryId.ALL);
+    const currentItemCount = getCategoryItemCount("all");
 
     // プレミアムユーザーは制限なし
     if (isPremium) {
@@ -390,7 +395,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
             contentContainerStyle={styles.tabsScrollContainer}
             style={styles.scrollView}
           >
-            {CATEGORIES.map((category, index) => (
+            {HOME_CATEGORIES.map((category, index) => (
               <TouchableOpacity
                 key={category.id}
                 style={[
@@ -406,7 +411,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
                       activeIndex === index && styles.activeTabText,
                     ]}
                   >
-                    {t(`categories.${category.id}`)}
+                    {category.id === "all" ? t('categories.all') : t(getCategoryTranslationKey(category.id as CategoryId))}
                   </Text>
                   <View
                     style={[
@@ -478,7 +483,7 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
           decelerationRate="fast"
           style={styles.horizontalScroller}
         >
-          {CATEGORIES.map((category, index) => {
+          {HOME_CATEGORIES.map((category, index) => {
             const CategoryComponent = categoryComponents[category.id];
             return (
               <View key={category.id} style={[styles.pageContainer, { width }]}>

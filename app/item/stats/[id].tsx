@@ -496,9 +496,9 @@ export default function ItemDetailScreen() {
   // カテゴリに基づく洗濯アドバイスを取得
   const getWashingAdvice = useCallback((category: CategoryValue) => {
     switch (category) {
-      case 'ボトムス':
+      case 'bottoms':
         return t('itemStats.efficiency.tip.bottoms');
-      case 'アウター':
+      case 'outerwear':
         return t('itemStats.efficiency.tip.outerwear');
       default:
         return t('itemStats.efficiency.tip.default');

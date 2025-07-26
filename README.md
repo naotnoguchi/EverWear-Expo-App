@@ -35,6 +35,35 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Development Commands
+
+### Development Build
+
+開発ビルドを使用してアプリを起動する場合：
+
+```bash
+npx expo start --dev-client --clear
+```
+
+- `--dev-client`: 開発ビルドを使用してアプリを起動します
+- `--clear`: キャッシュをクリアしてから起動します（キャッシュ関連の問題を解決する際に有用）
+
+### EAS Build for Development
+
+開発用のネイティブバイナリをビルドする場合：
+
+#### iOS Development Build
+```bash
+eas build --profile development --platform ios
+```
+
+#### Android Development Build
+```bash
+eas build --profile development --platform android
+```
+
+これらのコマンドは開発用のネイティブアプリをビルドし、デバイスやシミュレーターでテストできるようになります。
+
 ## Get a fresh project
 
 When you're ready, run:

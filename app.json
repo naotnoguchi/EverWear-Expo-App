@@ -78,7 +78,8 @@
     },
     "owner": "naotnoguchi",
     "locales": {
-      "ja": "./locales/ja.json"
+      "ja": "./locales/ja.json",
+      "en": "./locales/en.json"
     }
   }
 }

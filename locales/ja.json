@@ -1,4 +1,17 @@
 {
+  "categories": {
+    "all": "すべて",
+    "tops": "トップス",
+    "bottoms": "ボトムス",
+    "jacket": "ジャケット",
+    "outerwear": "アウター",
+    "setup": "セットアップ",
+    "dress": "ワンピース",
+    "shoes": "シューズ",
+    "bag": "バッグ",
+    "accessories": "小物",
+    "others": "その他"
+  },
   "common": {
     "loading": {
       "processing": "処理中...",

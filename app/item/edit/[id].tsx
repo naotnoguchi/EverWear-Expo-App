@@ -4,7 +4,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { clearSpecificImageCache } from "@/lib/cacheManager";
 import { showImagePickerOptions } from "@/lib/imageUtils";
 import { getImageUrl } from "@/lib/storageClient";
-import { CategoryValue } from '@/types/categories';
+import { CategoryValue, getCategoryIdByValueExtended, getCategoryValueById } from '@/types/categories';
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
@@ -38,40 +38,17 @@ const getCategoriesWithTranslation = (t: any) => [
   { id: "others", key: "categories.others", icon: "ellipsis-horizontal-circle-outline" },
 ];
 
-// カテゴリ値から翻訳キーへのマッピング
+// カテゴリ値から翻訳キーへのマッピング（統一された拡張マッピング関数を使用）
 const getCategoryTranslationKey = (categoryValue: string): string => {
-  const categoryMap: Record<string, string> = {
-    'トップス': 'categories.tops',
-    'ボトムス': 'categories.bottoms',
-    'ジャケット': 'categories.jacket',
-    'アウター': 'categories.outerwear',
-    'セットアップ': 'categories.setup',
-    'ワンピース': 'categories.dress',
-    'シューズ': 'categories.shoes',
-    'バッグ': 'categories.bag',
-    '小物': 'categories.accessories',
-    'その他': 'categories.others'
-  };
-  
-  return categoryMap[categoryValue] || 'categories.others';
+  const categoryId = getCategoryIdByValueExtended(categoryValue);
+  return `categories.${categoryId}`;
 };
 
-// 翻訳キーからカテゴリ値への逆マッピング
+// 翻訳キーからカテゴリ値への逆マッピング（統一された関数を使用）
 const getValueFromTranslationKey = (translationKey: string): string => {
-  const keyToValueMap: Record<string, string> = {
-    'categories.tops': 'トップス',
-    'categories.bottoms': 'ボトムス',
-    'categories.jacket': 'ジャケット',
-    'categories.outerwear': 'アウター',
-    'categories.setup': 'セットアップ',
-    'categories.dress': 'ワンピース',
-    'categories.shoes': 'シューズ',
-    'categories.bag': 'バッグ',
-    'categories.accessories': '小物',
-    'categories.others': 'その他'
-  };
-  
-  return keyToValueMap[translationKey] || 'その他';
+  const categoryId = translationKey.replace('categories.', '');
+  const categoryValue = getCategoryValueById(categoryId as any);
+  return categoryValue || 'その他';
 };
 
 

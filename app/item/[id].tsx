@@ -11,23 +11,12 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { formatDateToLocalISOString } from '../../lib/dateUtils';
 import { getImageUrl } from '../../lib/storageClient';
 import { AppClothingItem } from '../../types/database';
+import { getCategoryIdByValueExtended } from '../../types/categories';
 
-// カテゴリ値から翻訳キーへのマッピング
+// カテゴリ値から翻訳キーへのマッピング（統一された拡張マッピング関数を使用）
 const getCategoryTranslationKey = (categoryValue: string): string => {
-  const categoryMap: Record<string, string> = {
-    'トップス': 'categories.tops',
-    'ボトムス': 'categories.bottoms',
-    'ジャケット': 'categories.jacket',
-    'アウター': 'categories.outerwear',
-    'セットアップ': 'categories.setup',
-    'ワンピース': 'categories.dress',
-    'シューズ': 'categories.shoes',
-    'バッグ': 'categories.bag',
-    '小物': 'categories.accessories',
-    'その他': 'categories.others'
-  };
-  
-  return categoryMap[categoryValue] || categoryValue;
+  const categoryId = getCategoryIdByValueExtended(categoryValue);
+  return `categories.${categoryId}`;
 };
 
 export default function ItemDetail() {

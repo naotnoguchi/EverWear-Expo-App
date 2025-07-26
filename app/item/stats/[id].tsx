@@ -9,7 +9,7 @@ import { useTheme } from "../../../contexts/ThemeContext";
 import { formatDateLocalized } from "../../../lib/dateUtils";
 import { getPrivateUrl } from "../../../lib/storageClient";
 import { ItemDetailStats } from "../../../services/statisticsServiceFactory";
-import { CategoryValue } from "../../../types/categories";
+import { CategoryValue, getCategoryIdByValueExtended } from "../../../types/categories";
 
 export default function ItemDetailScreen() {
   const { t, i18n } = useTranslation();
@@ -410,19 +410,9 @@ export default function ItemDetailScreen() {
   const getCategoryName = useCallback((category: CategoryValue) => {
     if (!category) return '';
     
-    const categoryMap: Record<string, string> = {
-      'トップス': 'tops',
-      'ボトムス': 'bottoms',
-      'ワンピース': 'dress',
-      'アウター': 'outerwear',
-      'ジャケット': 'jacket',
-      'シューズ': 'shoes',
-      'バッグ': 'bag',
-      '小物': 'accessories',
-      'セットアップ': 'setup',
-      'その他': 'others'
-    };
-    return t(`itemStats.categories.${categoryMap[category]}`);
+    // 統一された拡張マッピング関数を使用
+    const categoryId = getCategoryIdByValueExtended(category);
+    return t(`categories.${categoryId}`);
   }, [t]);
 
   // 曜日名を翻訳する関数

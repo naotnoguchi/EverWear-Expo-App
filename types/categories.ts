@@ -59,5 +59,46 @@ export function getCategoryNameById(categoryId: CategoryId): CategoryDisplayName
 // カテゴリ値からカテゴリIDを取得するヘルパー関数
 export function getCategoryIdByValue(value: CategoryValue): CategoryId {
   const category = CATEGORIES.find(cat => cat.value === value);
-  return category ? category.id : CategoryId.ALL;
+  return category ? category.id : CategoryId.OTHERS;
+}
+
+// 拡張マッピング関数：日本語表示名と英語IDの両方に対応
+export function getCategoryIdByValueExtended(value: string): CategoryId {
+  // 既に英語IDの場合
+  if (Object.values(CategoryId).includes(value as CategoryId)) {
+    return value as CategoryId;
+  }
+  
+  // 日本語表示名の場合
+  return getCategoryIdByValue(value as CategoryValue);
+}
+
+// カテゴリ値から翻訳キーを取得するヘルパー関数（両方の形式に対応）
+export function getCategoryKeyFromValue(categoryValue: string): string {
+  const categoryMap: Record<string, string> = {
+    // 日本語形式（従来）
+    'トップス': 'tops',
+    'ボトムス': 'bottoms',
+    'ジャケット': 'jacket',
+    'アウター': 'outerwear',
+    'セットアップ': 'setup',
+    'ワンピース': 'dress',
+    'シューズ': 'shoes',
+    'バッグ': 'bag',
+    '小物': 'accessories',
+    'その他': 'others',
+    // 英語ID形式（新規対応）
+    'tops': 'tops',
+    'bottoms': 'bottoms',
+    'jacket': 'jacket',
+    'outerwear': 'outerwear',
+    'setup': 'setup',
+    'dress': 'dress',
+    'shoes': 'shoes',
+    'bag': 'bag',
+    'accessories': 'accessories',
+    'others': 'others'
+  };
+  
+  return categoryMap[categoryValue] || 'others';
 }

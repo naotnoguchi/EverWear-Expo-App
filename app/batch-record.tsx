@@ -22,7 +22,7 @@ import { useClothing } from "../contexts/ClothingContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useImageUrls } from '../hooks/useImageUrls';
 import { formatDateJapanese, formatDateToLocalISOString } from '../lib/dateUtils';
-import { CategoryValue, getCategoryIdByValue } from '../types/categories';
+import { CategoryValue, getCategoryIdByValueExtended } from '../types/categories';
 
 // BatchResult interface is defined in ClothingContext
 type BatchResult = {
@@ -53,13 +53,13 @@ export default function BatchRecord() {
 
   // カテゴリ翻訳関数
   const getCategoryName = (categoryValue: CategoryValue) => {
-    if (!categoryValue) return t('batchRecord.categories.others');
+    if (!categoryValue) return t('categories.others');
     
     // CategoryValue（日本語表示名）からカテゴリIDを取得
-    const categoryId = getCategoryIdByValue(categoryValue);
+    const categoryId = getCategoryIdByValueExtended(categoryValue);
     
     // カテゴリIDを翻訳キーに変換
-    return t(`addItem.categories.${categoryId}`);
+    return t(`categories.${categoryId}`);
   };
   
   const [selectedDate, setSelectedDate] = useState(new Date());

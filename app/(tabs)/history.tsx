@@ -25,24 +25,7 @@ import { useTabReset } from '../../contexts/TabResetContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useImageUrls } from '../../hooks/useImageUrls';
 import { formatDateLocalized } from '../../lib/dateUtils';
-
-// カテゴリ値から翻訳キーへのマッピング
-const getCategoryKeyFromValue = (categoryValue: string): string => {
-  const categoryMap: Record<string, string> = {
-    'トップス': 'tops',
-    'ボトムス': 'bottoms',
-    'ジャケット': 'jacket',
-    'アウター': 'outerwear',
-    'セットアップ': 'setup',
-    'ワンピース': 'dress',
-    'シューズ': 'shoes',
-    'バッグ': 'bag',
-    '小物': 'accessories',
-    'その他': 'others'
-  };
-  
-  return categoryMap[categoryValue] || 'others';
-};
+import { getCategoryKeyFromValue } from '../../types/categories';
 
 // React Native の LayoutAnimation を有効化（Android用）
 if (Platform.OS === 'android') {

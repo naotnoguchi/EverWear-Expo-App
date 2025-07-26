@@ -1,4 +1,17 @@
 {
+  "categories": {
+    "all": "All",
+    "tops": "Tops",
+    "bottoms": "Bottoms",
+    "jacket": "Jacket",
+    "outerwear": "Outerwear",
+    "setup": "Set Up",
+    "dress": "Dress",
+    "shoes": "Shoes",
+    "bag": "Bag",
+    "accessories": "Accessories",
+    "others": "Others"
+  },
   "common": {
     "loading": {
       "processing": "Processing...",

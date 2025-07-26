@@ -8,7 +8,7 @@ import { useStatistics } from "../contexts/StatisticsContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useImageUrls } from '../hooks/useImageUrls';
 import { EfficiencyItem, Period } from "../services/statisticsServiceFactory";
-import { CategoryValue, getCategoryIdByValue } from "../types/categories";
+import { CategoryValue, getCategoryIdByValueExtended } from "../types/categories";
 
 export default function EfficiencyScreen() {
   const router = useRouter();
@@ -20,10 +20,10 @@ export default function EfficiencyScreen() {
     if (!categoryValue) return '';
     
     // CategoryValue（日本語表示名）からカテゴリIDを取得
-    const categoryId = getCategoryIdByValue(categoryValue);
+    const categoryId = getCategoryIdByValueExtended(categoryValue);
     
     // カテゴリIDを翻訳キーに変換
-    return t(`addItem.categories.${categoryId}`);
+    return t(`categories.${categoryId}`);
   };
 
   // 統計コンテキストを使用（新しいAPI）

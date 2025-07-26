@@ -9,7 +9,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useImageUrls } from '../hooks/useImageUrls';
 import { getPrivateUrls } from "../lib/storageClient";
 import { Period, RankingItem } from "../services/statisticsServiceFactory";
-import { CategoryValue, getCategoryIdByValue } from "../types/categories";
+import { CategoryValue, getCategoryIdByValueExtended } from "../types/categories";
 
 export default function RankingScreen() {
   const theme = useTheme();
@@ -20,10 +20,10 @@ export default function RankingScreen() {
     if (!categoryValue) return '';
     
     // CategoryValue（日本語表示名）からカテゴリIDを取得
-    const categoryId = getCategoryIdByValue(categoryValue);
+    const categoryId = getCategoryIdByValueExtended(categoryValue);
     
     // カテゴリIDを翻訳キーに変換
-    return t(`addItem.categories.${categoryId}`);
+    return t(`categories.${categoryId}`);
   };
 
   // 統計コンテキストを使用（新しいAPI）
@@ -174,17 +174,17 @@ export default function RankingScreen() {
 
   // Category options
   const categoryOptions: { label: string; value: CategoryValue }[] = [
-    { label: t('ranking.categories.all'), value: null },
-    { label: t('addItem.categories.tops'), value: 'トップス' },
-    { label: t('addItem.categories.bottoms'), value: 'ボトムス' },
-    { label: t('addItem.categories.jacket'), value: 'ジャケット' },
-    { label: t('addItem.categories.outerwear'), value: 'アウター' },
-    { label: t('addItem.categories.setup'), value: 'セットアップ' },
-    { label: t('addItem.categories.dress'), value: 'ワンピース' },
-    { label: t('addItem.categories.shoes'), value: 'シューズ' },
-    { label: t('addItem.categories.bag'), value: 'バッグ' },
-    { label: t('addItem.categories.accessories'), value: '小物' },
-    { label: t('addItem.categories.others'), value: 'その他' },
+    { label: t('categories.all'), value: null },
+    { label: t('categories.tops'), value: 'トップス' },
+    { label: t('categories.bottoms'), value: 'ボトムス' },
+    { label: t('categories.jacket'), value: 'ジャケット' },
+    { label: t('categories.outerwear'), value: 'アウター' },
+    { label: t('categories.setup'), value: 'セットアップ' },
+    { label: t('categories.dress'), value: 'ワンピース' },
+    { label: t('categories.shoes'), value: 'シューズ' },
+    { label: t('categories.bag'), value: 'バッグ' },
+    { label: t('categories.accessories'), value: '小物' },
+    { label: t('categories.others'), value: 'その他' },
   ];
 
   const styles = StyleSheet.create({

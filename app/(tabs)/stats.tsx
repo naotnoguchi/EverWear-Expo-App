@@ -11,7 +11,7 @@ import { formatDateLocalized } from "../../lib/dateUtils";
 import { getPrivateUrls } from "../../lib/storageClient";
 import type { BadgeWithStatus } from "../../services/badgeService";
 import { Period, RankingItem } from "../../services/statisticsServiceFactory";
-import { CategoryValue, getCategoryIdByValue } from "../../types/categories";
+import { CategoryValue, getCategoryIdByValueExtended } from "../../types/categories";
 
 export default function Stats() {
   const theme = useTheme();
@@ -24,10 +24,10 @@ export default function Stats() {
     if (!categoryValue) return '';
     
     // CategoryValue（日本語表示名）からカテゴリIDを取得
-    const categoryId = getCategoryIdByValue(categoryValue);
+    const categoryId = getCategoryIdByValueExtended(categoryValue);
     
     // カテゴリIDを翻訳キーに変換
-    return t(`addItem.categories.${categoryId}`);
+    return t(`categories.${categoryId}`);
   };
 
   // 画像URL管理用の状態

@@ -5,6 +5,7 @@ import {
     Dimensions,
     FlatList,
     Platform,
+    PixelRatio,
     SafeAreaView,
     StyleSheet,
     Text,
@@ -17,15 +18,36 @@ import { useTheme } from '../contexts/ThemeContext';
 const { width, height } = Dimensions.get('window');
 
 // Placeholder component for images
-const PlaceholderImage = ({ iconName, color }: { iconName: keyof typeof Ionicons.glyphMap, color: string }) => {
+const PlaceholderImage = ({ iconName, color, isSmallScreen, isEnglish }: { 
+  iconName: keyof typeof Ionicons.glyphMap, 
+  color: string,
+  isSmallScreen: boolean,
+  isEnglish: boolean
+}) => {
   const theme = useTheme();
-  const isSmallScreen = height < 700; // iPhone SE等の小さい画面を判定
-  const isVerySmallScreen = height < 680; // iPhone SE 3等のより小さい画面を判定
+
+  const getImageSize = () => {
+    if (isSmallScreen) {
+      return {
+        width: width * 0.8, // Japanese: increased from 0.7 to 0.75 (between small and large)
+        height: height * 0.25, // Japanese: increased from 0.2 to 0.25 (between small and large)
+        iconSize: 60, // Japanese: increased from 50 to 60 (between small and large)
+      };
+    } else {
+      return {
+        width: width * 0.8,
+        height: height * 0.3,
+        iconSize: isEnglish ? 70 : 80,
+      };
+    }
+  };
+
+  const imageSize = getImageSize();
 
   return (
     <View style={{
-      width: width * (isVerySmallScreen ? 0.7 : 0.8), // より小さい画面では幅も縮小
-      height: height * (isVerySmallScreen ? 0.2 : isSmallScreen ? 0.25 : 0.3), // 段階的にサイズ調整
+      width: imageSize.width,
+      height: imageSize.height,
       backgroundColor: theme.card,
       borderRadius: 10,
       justifyContent: 'center',
@@ -33,7 +55,7 @@ const PlaceholderImage = ({ iconName, color }: { iconName: keyof typeof Ionicons
       borderWidth: 1,
       borderColor: theme.border,
     }}>
-      <Ionicons name={iconName} size={isVerySmallScreen ? 50 : isSmallScreen ? 60 : 80} color={color} />
+      <Ionicons name={iconName} size={imageSize.iconSize} color={color} />
     </View>
   );
 };
@@ -42,18 +64,86 @@ export default function Onboarding() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const { completeOnboarding } = useOnboarding();
   const theme = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const flatListRef = useRef<FlatList>(null);
-  const isSmallScreen = height < 700; // iPhone SE等の小さい画面を判定
-  const isVerySmallScreen = height < 680; // iPhone SE 3等のより小さい画面を判定
+  
+  // Simplified screen size detection (2 levels instead of 3)
+  const isSmallScreen = height < 750; // iPhone 13 Pro (844px) and smaller
+  
+  // Language detection
+  const isEnglish = i18n.language === 'en';
+  
+  // Device font scale detection
+  const fontScale = PixelRatio.getFontScale();
+  const isLargeFontScale = fontScale > 1.2;
+
+  // Helper functions for dynamic layout
+  const getFlexRatios = () => {
+    if (isSmallScreen) {
+      return {
+        imageContainer: 1.5,
+        textContainer: isEnglish ? 2.0 : 1.5,
+      };
+    } else {
+      return {
+        imageContainer: 1.5,
+        textContainer: 1.5,
+      };
+    }
+  };
+
+  const getFontSizes = () => {
+    if (isSmallScreen) {
+      return {
+        title: isEnglish ? 18 : 20,
+        description: isEnglish ? 13 : 14,
+        footer: isEnglish ? 11 : 12,
+      };
+    } else {
+      return {
+        title: isEnglish ? 22 : 24,
+        description: isEnglish ? 15 : 16,
+        footer: isEnglish ? 13 : 14,
+      };
+    }
+  };
+
+  const getSpacing = () => {
+    if (isSmallScreen) {
+      return {
+        titleMarginBottom: isEnglish ? 8 : 5, // Japanese: 2/3 of current spacing (8 * 2/3 ≈ 5)
+        descriptionMarginBottom: 8,
+        footerMarginTop: isEnglish ? 8 : 10,
+        buttonMarginTop: isEnglish ? 10 : 15,
+      };
+    } else {
+      return {
+        titleMarginBottom: isEnglish ? 12 : 8, // Japanese: 2/3 of current spacing (12 * 2/3 = 8)
+        descriptionMarginBottom: isEnglish ? 5 : 6,
+        footerMarginTop: isEnglish ? 15 : 20,
+        buttonMarginTop: isEnglish ? 20 : 30,
+      };
+    }
+  };
+
+  const getAdjustedFontSize = (baseSize: number) => {
+    let adjustedSize = baseSize;
+    // Adjust for large font scale settings
+    if (isLargeFontScale) {
+      adjustedSize *= 0.9;
+    }
+    return adjustedSize;
+  };
+
+  const flexRatios = getFlexRatios();
+  const fontSizes = getFontSizes();
+  const spacing = getSpacing();
 
   // Generate onboarding steps from translation data
   const onboardingSteps = [
     {
       id: '1',
-      title: isVerySmallScreen 
-        ? (t('onboarding.steps.1.titleShort', { defaultValue: t('onboarding.steps.1.title') }))
-        : t('onboarding.steps.1.title'),
+      title: t('onboarding.steps.1.title'),
       description: t('onboarding.steps.1.description', { returnObjects: true }) as string[],
       iconName: 'shirt' as keyof typeof Ionicons.glyphMap,
       iconColor: '#3498db',
@@ -125,70 +215,65 @@ export default function Onboarding() {
       width,
       flex: 1,
       alignItems: 'center',
-      justifyContent: 'space-between', // centerからspace-betweenに変更
-      padding: isVerySmallScreen ? 15 : 20, // より小さい画面ではパディングを縮小
-      paddingTop: Platform.OS === 'android' ? 30 : (isVerySmallScreen ? 15 : 20), // Add extra padding for Android
-      paddingBottom: Platform.OS === 'android' ? 30 : (isVerySmallScreen ? 15 : 20), // Add extra padding for Android
+      justifyContent: 'space-between',
+      padding: isSmallScreen ? 15 : 20,
+      paddingTop: Platform.OS === 'android' ? 30 : (isSmallScreen ? 10 : 20),
+      paddingBottom: Platform.OS === 'android' ? 20 : (isSmallScreen ? 10 : 20),
     },
     imageContainer: {
-      flex: isVerySmallScreen ? 1.2 : isSmallScreen ? 1.5 : 2, // より細かく調整
       justifyContent: 'center',
       alignItems: 'center',
       width: '100%',
-      marginBottom: isVerySmallScreen ? 10 : 0, // 小さい画面では下マージンを追加
+      minHeight: isSmallScreen ? 80 : 120, // Ensure minimum height
     },
     image: {
       width: width * 0.8,
       height: height * 0.3,
     },
     textContainer: {
-      flex: isVerySmallScreen ? 1.8 : isSmallScreen ? 1.5 : 1, // より細かく調整
       alignItems: 'center',
-      justifyContent: 'flex-start', // 上寄せに変更
+      justifyContent: 'flex-start',
       width: '100%',
-      paddingHorizontal: isVerySmallScreen ? 15 : 20, // より小さい画面では横パディングを縮小
+      paddingHorizontal: isSmallScreen ? 10 : 15,
+      maxHeight: isSmallScreen ? height * 0.5 : height * 0.4, // Limit maximum height
     },
     title: {
-      fontSize: isVerySmallScreen ? 18 : isSmallScreen ? 20 : 24, // より細かく調整
+      fontSize: getAdjustedFontSize(fontSizes.title),
       fontWeight: 'bold',
-      marginBottom: isVerySmallScreen ? 10 : isSmallScreen ? 15 : 20, // より細かく調整
       textAlign: 'center',
       color: theme.text,
+      lineHeight: getAdjustedFontSize(fontSizes.title) * 1.2,
     },
     description: {
-      fontSize: isVerySmallScreen ? 13 : isSmallScreen ? 14 : 16, // より細かく調整
-      textAlign: 'center',
-      color: theme.text + "99", // with transparency
-      marginBottom: isVerySmallScreen ? 4 : 6, // より小さい画面では間隔を縮小
-      lineHeight: isVerySmallScreen ? 18 : isSmallScreen ? 20 : 24, // より細かく調整
+      fontSize: getAdjustedFontSize(fontSizes.description),
+      textAlign: isEnglish ? 'left' : 'center', // English is left-aligned for better readability
+      color: theme.text + "99",
+      lineHeight: getAdjustedFontSize(fontSizes.description) * 1.4,
     },
     descriptionBullet: {
-      fontSize: isVerySmallScreen ? 13 : isSmallScreen ? 14 : 16, // より細かく調整
+      fontSize: getAdjustedFontSize(fontSizes.description),
       textAlign: 'left',
-      color: theme.text + "99", // with transparency
-      marginBottom: isVerySmallScreen ? 4 : 6, // より小さい画面では間隔を縮小
+      color: theme.text + "99",
       alignSelf: 'flex-start',
-      lineHeight: isVerySmallScreen ? 18 : isSmallScreen ? 20 : 24, // 行間も調整
+      lineHeight: getAdjustedFontSize(fontSizes.description) * 1.4,
     },
     footer: {
-      fontSize: isVerySmallScreen ? 12 : 14, // より小さい画面では文字サイズを縮小
-      color: theme.text + "99", // less transparency for better readability
-      marginTop: isVerySmallScreen ? 10 : 20, // より小さい画面では上マージンを縮小
+      fontSize: getAdjustedFontSize(fontSizes.footer),
+      color: theme.text + "99",
       textAlign: 'center',
-      fontWeight: '500', // slightly bolder for emphasis
-      lineHeight: isVerySmallScreen ? 16 : 20, // より細かく調整
+      fontWeight: '500',
+      lineHeight: getAdjustedFontSize(fontSizes.footer) * 1.3,
     },
     button: {
-      backgroundColor: '#3498db', // Keep blue for brand consistency
-      paddingVertical: isVerySmallScreen ? 12 : 15, // より小さい画面では縦パディングを縮小
-      paddingHorizontal: isVerySmallScreen ? 30 : 40, // より小さい画面では横パディングを縮小
+      backgroundColor: '#3498db',
+      paddingVertical: isSmallScreen ? 12 : 15,
+      paddingHorizontal: isSmallScreen ? 30 : 40,
       borderRadius: 30,
-      marginTop: isVerySmallScreen ? 15 : 30, // より小さい画面では上マージンを縮小
-      marginBottom: Platform.OS === 'ios' ? (isVerySmallScreen ? 20 : 40) : 20, // より小さい画面では下マージンを縮小
+      marginBottom: 20,
     },
     buttonText: {
-      color: 'white', // Keep white for contrast on blue background
-      fontSize: isVerySmallScreen ? 16 : 18, // より小さい画面では文字サイズを縮小
+      color: 'white',
+      fontSize: getAdjustedFontSize(isSmallScreen ? 16 : 18),
       fontWeight: '600',
     },
     dotsContainer: {
@@ -217,33 +302,47 @@ export default function Onboarding() {
   }, index: number }) => {
     return (
       <View style={styles.slide}>
-        <View style={styles.imageContainer}>
+        <View style={[styles.imageContainer, { flex: flexRatios.imageContainer }]}>
           <PlaceholderImage 
             iconName={item.iconName}
             color={item.iconColor}
+            isSmallScreen={isSmallScreen}
+            isEnglish={isEnglish}
           />
         </View>
 
-        <View style={styles.textContainer}>
-          <Text style={styles.title}>{item.title}</Text>
+        <View style={[styles.textContainer, { flex: flexRatios.textContainer }]}>
+          <Text style={[styles.title, { marginBottom: spacing.titleMarginBottom }]}>
+            {item.title}
+          </Text>
 
           {Array.isArray(item.description) ? (
             item.description.map((desc, i) => (
-              <Text key={i} style={item.isBulletPoints ? styles.descriptionBullet : styles.description}>
+              <Text 
+                key={i} 
+                style={[
+                  item.isBulletPoints ? styles.descriptionBullet : styles.description,
+                  { marginBottom: spacing.descriptionMarginBottom }
+                ]}
+              >
                 {item.isBulletPoints ? '• ' : ''}{desc}
               </Text>
             ))
           ) : (
-            <Text style={styles.description}>{item.description}</Text>
+            <Text style={[styles.description, { marginBottom: spacing.descriptionMarginBottom }]}>
+              {item.description}
+            </Text>
           )}
 
           {item.footer && (
-            <Text style={styles.footer}>{item.footer}</Text>
+            <Text style={[styles.footer, { marginTop: spacing.footerMarginTop }]}>
+              {item.footer}
+            </Text>
           )}
         </View>
 
         <TouchableOpacity 
-          style={styles.button}
+          style={[styles.button, { marginTop: spacing.buttonMarginTop }]}
           onPress={() => {
             if (index === onboardingSteps.length - 1) {
               // Last step - complete onboarding

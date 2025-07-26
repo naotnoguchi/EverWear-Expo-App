@@ -120,7 +120,7 @@ export const addClothingItem = async (item: Omit<AppClothingItem, 'id'>, imageUr
   let imageUrl = item.image;
   let uploadedImageUrl: string | null = null;
 
-  if (imageUri && imageUri !== item.image) {
+  if (imageUri && !imageUri.startsWith('http')) {
     uploadedImageUrl = await uploadImage(imageUri, userId);
     if (uploadedImageUrl) {
       imageUrl = uploadedImageUrl;

@@ -1,25 +1,15 @@
 import { useEffect, useState } from 'react';
 import { getPrivateUrls } from '../lib/storageClient';
 
-interface ImageOptions {
-  width?: number;
-  height?: number;
-  quality?: number;
-  resize?: 'cover' | 'contain' | 'fill';
-}
-
 /**
  * 画像URLを一括で取得するカスタムフック
  * @param items 画像情報を含む配列
- * @param options 画像オプション (width, height, quality, resize)
  * @returns 画像URLのマップ (id -> url)
  */
 export const useImageUrls = (
-  items: { id: string; imageUrl: string }[],
-  options: ImageOptions = {}
+  items: { id: string; imageUrl: string }[]
 ) => {
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
-  const { width = 320, height = 320 } = options;
 
   useEffect(() => {
     const loadAllImageUrls = async () => {
@@ -38,8 +28,8 @@ export const useImageUrls = (
         // 画像パスの配列を抽出
         const imagePaths = itemsNeedingUrls.map(item => item.imageUrl);
         
-        // 一括で署名付きURLを取得（指定されたサイズで取得）
-        const urls = await getPrivateUrls(imagePaths, width, height);
+        // 一括で署名付きURLを取得
+        const urls = await getPrivateUrls(imagePaths);
         
         // 取得したURLをマッピング
         const newImageUrls: Record<string, string> = {};
@@ -59,7 +49,7 @@ export const useImageUrls = (
     };
 
     loadAllImageUrls();
-  }, [items, width, height]);
+  }, [items]);
 
   return imageUrls;
 }; 

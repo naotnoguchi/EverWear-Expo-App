@@ -78,10 +78,7 @@ export default function BatchRecord() {
   const imageUrls = useImageUrls(allClothingItems.map(item => ({ 
     id: item.id, 
     imageUrl: item.image || ''
-  })), { 
-    width: 200, 
-    height: 200
-  });
+  })));
 
   // 画面が開かれた時に状態をリセット
   useEffect(() => {

@@ -186,10 +186,7 @@ export default function History() {
   const imageUrls = useImageUrls(historyData.map(item => ({ 
     id: item.itemId, 
     imageUrl: item.imageUrl || ''
-  })), { 
-    width: 320, 
-    height: 320
-  });
+  })));
 
   // Filter history data based on selected date only
   const filteredHistory = useMemo(() => {

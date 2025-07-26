@@ -50,8 +50,8 @@ export default function ItemDetail() {
       if (!item) return;
 
       try {
-        // アイテム詳細では高解像度(1024x1024)を使用
-        const url = await getImageUrl(item.image, 1024, 1024);
+        // 固定サイズ(1024x1024)でアップロードされた画像を使用
+        const url = await getImageUrl(item.image);
         setImageUrl(url);
       } catch (error) {
         console.error(`Error generating URL for item ${item.id}:`, error);

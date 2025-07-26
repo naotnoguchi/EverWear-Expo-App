@@ -37,10 +37,7 @@ export default function EfficiencyScreen() {
   } = useStatistics();
 
   // 画像URLを取得
-  const imageUrls = useImageUrls(items || [], { 
-    width: 320, 
-    height: 320
-  });
+  const imageUrls = useImageUrls(items || []);
 
   // ローディングとエラーの状態
   const loading = isCalculating;

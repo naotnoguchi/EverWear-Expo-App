@@ -48,10 +48,7 @@ export default function RankingScreen() {
   const selectedCategory = categoryFilter;
 
   // 画像URLを取得
-  const imageUrls = useImageUrls(items || [], { 
-    width: 320, 
-    height: 320
-  });
+  const imageUrls = useImageUrls(items || []);
 
   // 画像URLを一括で取得
   useEffect(() => {

@@ -32,21 +32,14 @@ export const getAuthenticatedStorage = async () => {
 };
 
 // 認証済みユーザー専用のURLを取得する関数
-export const getPrivateUrl = async (path: string, width: number = 320, height: number = 320): Promise<string | null> => {
+export const getPrivateUrl = async (path: string): Promise<string | null> => {
   if (!path) return null;
   
   try {
     const authStorage = await getAuthenticatedStorage();
     const { data, error } = await authStorage
       .from(CLOTHING_BUCKET)
-      .createSignedUrl(path, 60 * 60, {
-        transform: {
-          width,
-          height,
-          resize: 'cover',
-          quality: 80
-        }
-      });
+      .createSignedUrl(path, 60 * 60);
 
     if (error) {
       console.error('Error getting signed URL:', error);
@@ -61,7 +54,7 @@ export const getPrivateUrl = async (path: string, width: number = 320, height: n
 };
 
 // 複数の画像パスから署名付きURLを一括取得する関数
-export const getPrivateUrls = async (paths: string[], width: number = 320, height: number = 320): Promise<(string | null)[]> => {
+export const getPrivateUrls = async (paths: string[]): Promise<(string | null)[]> => {
   if (!paths || paths.length === 0) return [];
 
   try {
@@ -69,7 +62,7 @@ export const getPrivateUrls = async (paths: string[], width: number = 320, heigh
     
     // 各パスに対して個別に署名付きURLを取得
     const urlPromises = paths.map(path => 
-      getPrivateUrl(path, width, height)
+      getPrivateUrl(path)
     );
     
     const urls = await Promise.all(urlPromises);
@@ -81,7 +74,7 @@ export const getPrivateUrls = async (paths: string[], width: number = 320, heigh
 };
 
 // 画像パスからURLを取得する関数（既存のURLはそのまま返す）
-export const getImageUrl = async (imagePath: string | null, width: number = 320, height: number = 320): Promise<string | null> => {
+export const getImageUrl = async (imagePath: string | null): Promise<string | null> => {
   if (!imagePath) return null;
 
   // 既にURLの場合はそのまま返す
@@ -90,5 +83,5 @@ export const getImageUrl = async (imagePath: string | null, width: number = 320,
   }
 
   // パスの場合は署名付きURLを取得
-  return await getPrivateUrl(imagePath, width, height);
+  return await getPrivateUrl(imagePath);
 };

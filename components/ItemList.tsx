@@ -124,7 +124,7 @@ const ItemList = forwardRef<ItemListRefType, ItemListProps>(({ category, onRefre
 
     // カテゴリが指定されている場合はフィルタリング
     if (category) {
-      result = result.filter(item => item.category === category);
+      result = result.filter(item => getCategoryIdByValueExtended(item.category) === category);
     }
 
     // 着用メーターの長さ（wearCount/washThreshold比率）が長い順にソート

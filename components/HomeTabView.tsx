@@ -25,7 +25,7 @@ import ShoesItems from "./categories/ShoesItems";
 import TopsItems from "./categories/TopsItems";
 
 // カテゴリ定義のインポート
-import { CATEGORIES, CategoryId, getCategoryTranslationKey } from "../types/categories";
+import { CATEGORIES, CategoryId, getCategoryTranslationKey, getCategoryIdByValueExtended } from "../types/categories";
 import { ItemListRefType } from "./ItemList";
 
 // HomeTabView用の拡張カテゴリ配列（"all"カテゴリを含む）
@@ -90,7 +90,9 @@ export default forwardRef<HomeTabViewRefType, {}>((props, ref) => {
     // 他のカテゴリはフィルタリングして計算
     for (const category of HOME_CATEGORIES) {
       if (category.id !== "all") {
-        counts[category.id] = clothingItems.filter(item => item.category === category.id).length;
+        counts[category.id] = clothingItems.filter(item => 
+          getCategoryIdByValueExtended(item.category) === category.id
+        ).length;
       }
     }
 

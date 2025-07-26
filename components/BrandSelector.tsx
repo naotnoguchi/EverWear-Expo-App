@@ -95,6 +95,13 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
     Keyboard.dismiss();
   };
 
+  // ブランドをクリア
+  const handleClearBrand = () => {
+    setSelectedBrand("");
+    onValueChange("");
+    setError(null);
+  };
+
   // Define styles with theme colors
   const styles = StyleSheet.create({
     container: {
@@ -120,6 +127,11 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
       color: selectedBrand ? theme.text : theme.text + "77",
       paddingVertical: 4,
     },
+    rightActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
     // 検索入力フィールドのコンテナ
     searchContainer: {
       flexDirection: 'row',
@@ -141,7 +153,8 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
       color: theme.text,
     },
     clearButton: {
-      padding: 8,
+      padding: 4,
+      borderRadius: 12,
     },
     // サジェストリストのコンテナ
     suggestionsContainer: {
@@ -233,11 +246,22 @@ export default function BrandSelector({ value, onValueChange }: BrandSelectorPro
           <Text style={styles.selectedBrandText}>
             {selectedBrand || t('brandSelector.placeholder')}
           </Text>
-          <Ionicons 
-            name={showSuggestions ? "chevron-up" : "chevron-down"} 
-            size={20} 
-            color={theme.text + "99"} 
-          />
+          <View style={styles.rightActions}>
+            {selectedBrand && (
+              <TouchableOpacity 
+                style={styles.clearButton}
+                onPress={handleClearBrand}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close-circle" size={20} color={theme.text + "99"} />
+              </TouchableOpacity>
+            )}
+            <Ionicons 
+              name={showSuggestions ? "chevron-up" : "chevron-down"} 
+              size={20} 
+              color={theme.text + "99"} 
+            />
+          </View>
         </TouchableOpacity>
 
         {/* エラーメッセージ */}

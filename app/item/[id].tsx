@@ -68,54 +68,68 @@ export default function ItemDetail() {
     return dateObj.toLocaleDateString(i18n.language === 'ja' ? 'ja-JP' : 'en-US');
   };
 
-  // Android用の日付変更ハンドラー
+  // 日付変更ハンドラー
   const onDateChange = async (event: any, selectedDate?: Date) => {
+    if (!selectedDate) return;
+
+    // 現在の日付を更新
+    const currentDate = selectedDate;
+    setSelectedDate(currentDate);
+
+    // Android用の処理
     if (Platform.OS === 'android') {
       setShowWearDatePicker(false);
       setShowWashDatePicker(false);
     }
 
-    if (selectedDate && item) {
-      const currentDate = selectedDate;
-      
-      if (showWearDatePicker || showWearModal) {
-        // 着用記録の処理
-        try {
-          const formattedDate = formatDateToLocalISOString(currentDate);
-          const localizedDate = formatDateLocalized(currentDate);
-          await wearItem(item.id, formattedDate);
-          Alert.alert(t('itemDetail.actions.recordWear'), t('itemDetail.alerts.wearRecorded', { date: localizedDate }));
-        } catch (error: any) {
-          const localizedDate = formatDateLocalized(currentDate);
-          console.error('Error adding wear record:', error);
-          console.error('Error code:', error?.code);
-          console.error('Error message:', error?.message);
+    // 日付が選択された場合（「完了」ボタンが押された場合）
+    if (event.type === 'dismissed') {
+      // モーダルを閉じる
+      setShowWearDatePicker(false);
+      setShowWashDatePicker(false);
+    } else if (event.type === 'set' || event.type === 'neutralButtonPressed') {
+      // Android用の日付ピッカーでのみ記録処理を実行
+      // iOS用モーダルでは確定ボタン（confirmWearDate、confirmWashDate）で処理
+      if (Platform.OS === 'android' && item) {
+        if (showWearDatePicker) {
+          // 着用記録の処理
+          try {
+            const formattedDate = formatDateToLocalISOString(currentDate);
+            const localizedDate = formatDateLocalized(currentDate);
+            await wearItem(item.id, formattedDate);
+            Alert.alert(t('itemDetail.actions.recordWear'), t('itemDetail.alerts.wearRecorded', { date: localizedDate }));
+          } catch (error: any) {
+            const localizedDate = formatDateLocalized(currentDate);
+            console.error('Error adding wear record:', error);
+            console.error('Error code:', error?.code);
+            console.error('Error message:', error?.message);
 
-          // Check if the error is about duplicate records
-          if (error?.message && error.message.includes('着用記録は既に存在します')) {
-            Alert.alert(t('common.error'), t('itemDetail.alerts.wearDuplicate', { date: localizedDate }));
-          } else {
-            Alert.alert(t('common.error'), t('itemDetail.alerts.wearError', { date: localizedDate }));
+            // Check if the error is about duplicate records
+            if (error?.message && error.message.includes('着用記録は既に存在します')) {
+              Alert.alert(t('common.error'), t('itemDetail.alerts.wearDuplicate', { date: localizedDate }));
+            } else {
+              Alert.alert(t('common.error'), t('itemDetail.alerts.wearError', { date: localizedDate }));
+            }
           }
-        }
-      } else if (showWashDatePicker || showWashModal) {
-        // 洗濯記録の処理
-        try {
-          const formattedDate = formatDateToLocalISOString(currentDate);
-          const localizedDate = formatDateLocalized(currentDate);
-          await washItem(item.id, formattedDate);
-          Alert.alert(t('itemDetail.actions.recordWash'), t('itemDetail.alerts.washRecorded', { date: localizedDate }));
-        } catch (error: any) {
-          const localizedDate = formatDateLocalized(currentDate);
-          console.error('Error adding wash record:', error);
-          console.error('Error code:', error?.code);
-          console.error('Error message:', error?.message);
+        } else if (showWashDatePicker) {
+          // 洗濯記録の処理
+          try {
+            const formattedDate = formatDateToLocalISOString(currentDate);
+            const localizedDate = formatDateLocalized(currentDate);
+            await washItem(item.id, formattedDate);
+            Alert.alert(t('itemDetail.actions.recordWash'), t('itemDetail.alerts.washRecorded', { date: localizedDate }));
+          } catch (error: any) {
+            const localizedDate = formatDateLocalized(currentDate);
+            console.error('Error adding wash record:', error);
+            console.error('Error code:', error?.code);
+            console.error('Error message:', error?.message);
 
-          // Check if the error is about duplicate records
-          if (error?.message && error.message.includes('洗濯記録は既に存在します')) {
-            Alert.alert(t('common.error'), t('itemDetail.alerts.washDuplicate', { date: localizedDate }));
-          } else {
-            Alert.alert(t('common.error'), t('itemDetail.alerts.washError', { date: localizedDate }));
+            // Check if the error is about duplicate records
+            if (error?.message && error.message.includes('洗濯記録は既に存在します')) {
+              Alert.alert(t('common.error'), t('itemDetail.alerts.washDuplicate', { date: localizedDate }));
+            } else {
+              Alert.alert(t('common.error'), t('itemDetail.alerts.washError', { date: localizedDate }));
+            }
           }
         }
       }
